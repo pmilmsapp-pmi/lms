@@ -8,26 +8,26 @@ import { Course } from '../models/Course';
 const router = Router();
 
 // ==========================================
-// 1. KONFIGURASI FOLDER PENYIMPANAN (FIX VERCEL)
+// 1. KONFIGURASI FOLDER PENYIMPANAN (UPDATED)
 // ==========================================
 
-// Cek apakah sedang di Production (Vercel) atau Development (Local)
-const isProduction = process.env.NODE_ENV === 'production';
+// Logika Baru: Default ke '/tmp' untuk keamanan maksimal di serverless.
+// Kita hanya pakai folder lokal jika JELAS-JELAS tidak ada variabel lingkungan Vercel.
+let UPLOAD_PATH = '/tmp'; 
 
-// JIKA VERCEL: Gunakan '/tmp' (Satu-satunya folder yang bisa ditulis)
-// JIKA LOCAL: Gunakan 'public/uploads'
-const UPLOAD_PATH = isProduction 
-  ? '/tmp' 
-  : path.resolve(process.cwd(), 'public', 'uploads');
+// Jika TIDAK ada variabel 'VERCEL', berarti kita sedang di Localhost
+if (!process.env.VERCEL) {
+    UPLOAD_PATH = path.resolve(process.cwd(), 'public', 'uploads');
+}
 
-// Buat folder jika belum ada
-// Kita bungkus try-catch agar jika Vercel melarang mkdir, server tidak crash
+// Pastikan folder ada (Dibungkus Try-Catch agar server TIDAK CRASH jika gagal)
 if (!fs.existsSync(UPLOAD_PATH)) {
   try {
     fs.mkdirSync(UPLOAD_PATH, { recursive: true });
   } catch (err) {
-    // Di Vercel, /tmp biasanya sudah ada, jadi error mkdir diabaikan saja biar aman
-    console.log('Info: Direktori upload sudah ada atau read-only.'); 
+    console.error(`⚠️ Gagal membuat folder di ${UPLOAD_PATH}. Fallback ke /tmp`);
+    // Jika gagal buat folder lokal, paksa fallback ke /tmp agar server tetap jalan
+    UPLOAD_PATH = '/tmp'; 
   }
 }
 
@@ -36,7 +36,6 @@ const storage = multer.diskStorage({
     cb(null, UPLOAD_PATH);
   },
   filename: (_req, file, cb) => {
-    // Bersihkan nama file dari karakter aneh
     const safeName = file.originalname.replace(/[^a-zA-Z0-9.]/g, '-');
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `${uniqueSuffix}-${safeName}`);
@@ -45,21 +44,19 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // Limit 10MB
+  limits: { fileSize: 10 * 1024 * 1024 } 
 });
 
 // ==========================================
 // 2. ENDPOINTS
 // ==========================================
 
-// A. Upload Generic
 router.post('/', requireAuth, upload.single('file'), (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Tidak ada file.' });
     
-    // Di Vercel, file di /tmp tidak bisa diakses langsung via URL folder public
-    // Kita buat URL khusus untuk membacanya
-    const relUrl = isProduction 
+    // URL Response
+    const relUrl = process.env.VERCEL 
       ? `/api/upload/file/${req.file.filename}` 
       : `/uploads/${req.file.filename}`;
       
@@ -69,13 +66,12 @@ router.post('/', requireAuth, upload.single('file'), (req: any, res: any) => {
   }
 });
 
-// B. Upload Cover Course
 router.post('/course/:courseId/cover', requireAuth, requireFacilitator, upload.single('file'), async (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Tidak ada file.' });
     const { courseId } = req.params;
     
-    const relUrl = isProduction 
+    const relUrl = process.env.VERCEL 
       ? `/api/upload/file/${req.file.filename}` 
       : `/uploads/${req.file.filename}`;
 
@@ -87,12 +83,11 @@ router.post('/course/:courseId/cover', requireAuth, requireFacilitator, upload.s
   }
 });
 
-// C. Upload Signature
 router.post('/signature', requireAuth, upload.single('file'), (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     
-    const fileUrl = isProduction 
+    const fileUrl = process.env.VERCEL 
       ? `/api/upload/file/${req.file.filename}`
       : `/uploads/${req.file.filename}`;
       
@@ -102,17 +97,16 @@ router.post('/signature', requireAuth, upload.single('file'), (req: any, res: an
   }
 });
 
-// [NEW] Helper Route untuk membaca file dari /tmp di Vercel
-// Karena folder /tmp tidak otomatis terbuka untuk umum, kita buat jalur bacanya.
+// Helper Route untuk Vercel
 router.get('/file/:filename', (req: any, res: any) => {
-    // Route ini hanya aktif/berguna saat di Production (Vercel)
-    if (!isProduction) return res.status(404).send("Gunakan folder static biasa di local.");
+    // Hanya aktifkan di Vercel
+    if (!process.env.VERCEL) return res.status(404).send("Gunakan static folder di local");
     
     const filePath = path.join('/tmp', req.params.filename);
     if (fs.existsSync(filePath)) {
         res.sendFile(filePath);
     } else {
-        res.status(404).send("File not found or expired (Files in /tmp are temporary)");
+        res.status(404).send("File not found (Temporary file expired)");
     }
 });
 
