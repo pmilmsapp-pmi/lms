@@ -1,0 +1,15 @@
+
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ES2020",
+    "rootDir": ".",          // <- ganti dari "src" ke "."
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "scripts"]  // boleh tetap
+}

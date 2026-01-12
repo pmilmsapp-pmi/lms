@@ -1,0 +1,10 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="40" viewBox="0 0 160 40">
+  <rect x="0" y="0" width="160" height="40" fill="white"/>
+  <!-- Red cross inside rounded square -->
+  <rect x="6" y="6" rx="6" ry="6" width="28" height="28" fill="#fff" stroke="#d00" stroke-width="2"/>
+  <rect x="18" y="10" width="4" height="20" fill="#d00"/>
+  <rect x="10" y="18" width="20" height="4" fill="#d00"/>
+  <!-- Text PMI -->
+  <text x="42" y="25" font-family="Trebuchet MS, sans-serif" font-size="16" fill="#111">Palang Merah Indonesia</text>
+</svg>
