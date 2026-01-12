@@ -125,12 +125,20 @@ export const API_BASE_URL = RAW_API_BASE.replace(/\/$/, ''); // hapus trailing s
 /**
  * Tipe opsi untuk helper api()
  */
-export interface ApiOptions extends RequestInit {
-  /** Apakah akan menambahkan Authorization dari localStorage (default: true di client) */
+
+export type ApiOptions = Omit<RequestInit, 'body' | 'headers' | 'credentials'> & {
+  /** Boleh object biasa; helper akan stringify jika bukan FormData/Blob */
+  body?: any;
+  /** Sederhanakan headers jadi key-value string */
+  headers?: Record<string, string>;
+  /** Tetap bisa diatur; default 'include' untuk cookie/session */
+  credentials?: RequestCredentials;
+  /** Tambahkan token Authorization dari localStorage (default: true di client) */
   auth?: boolean;
   /** Timeout request dalam ms (default: 30_000) */
   timeoutMs?: number;
-}
+};
+
 
 /**
  * Helper: cek URL absolut
