@@ -1,4 +1,3 @@
-
 import { Router } from 'express';
 import multer from 'multer';
 import fs from 'fs';
@@ -11,14 +10,22 @@ const router = Router();
 // ==========================================
 // 1. KONFIGURASI FOLDER PENYIMPANAN
 // ==========================================
+// Menggunakan process.cwd() aman di CommonJS
 const UPLOAD_PATH = path.resolve(process.cwd(), 'public', 'uploads');
 
 if (!fs.existsSync(UPLOAD_PATH)) {
-  fs.mkdirSync(UPLOAD_PATH, { recursive: true });
+    // Try-catch ditambahkan untuk keamanan di lingkungan serverless yang read-only
+    try {
+        fs.mkdirSync(UPLOAD_PATH, { recursive: true });
+    } catch (err) {
+        console.warn('⚠️ Gagal membuat folder uploads (mungkin read-only env):', err);
+    }
 }
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
+    // Di Vercel (Production), kita arahkan ke /tmp jika penyimpanan permanen gagal
+    // Namun untuk setup dasar, kita biarkan UPLOAD_PATH
     cb(null, UPLOAD_PATH);
   },
   filename: (_req, file, cb) => {
@@ -62,11 +69,10 @@ router.post('/course/:courseId/cover', requireAuth, requireFacilitator, upload.s
   }
 });
 
-// C. [BARU] Upload Signature (Tanda Tangan)
+// C. Upload Signature (Tanda Tangan)
 router.post('/signature', requireAuth, upload.single('file'), (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    // Return path relative agar bisa diakses frontend & PDF generator
     const fileUrl = `/uploads/${req.file.filename}`;
     res.json({ url: fileUrl });
   } catch (error: any) {
