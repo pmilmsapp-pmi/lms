@@ -10,8 +10,8 @@ import fs from 'fs';
 import mongoose from 'mongoose';
 
 // --- IMPORT ROUTES ---
-// Pastikan tidak ada import lain selain daftar di bawah ini
-import authRoutes from './routes/auth-route'; 
+// [FIX] Now pointing to the FRESH file 'authentication.ts'
+import authRoutes from './routes/authentication'; 
 import courseRoutes from './routes/courses';
 import userRoutes from './routes/users';
 import progressRoutes from './routes/progress';
@@ -84,6 +84,7 @@ app.get('/', (req, res) => res.send('LMS PMI Backend is Running!'));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 app.use('/api/courses/certificate', certificateRoutes);
+// [FIX] Using the new route import
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin/users', adminUserRoutes);
