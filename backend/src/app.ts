@@ -43,7 +43,8 @@
 
 // // // --- 3. CORS CONFIGURATION ---
 // // const isDev = (process.env.NODE_ENV || 'development') === 'development';
-// // const origins = (process.env.CORS_ORIGINS || 'http://localhost:3000').split(',').map(s => s.trim()).filter(Boolean);
+// // const origins = (process.env.CORS_ORIGINS || 'https://humanis-r16s.vercel.app
+').split(',').map(s => s.trim()).filter(Boolean);
 
 // // const corsConfig: cors.CorsOptions = {
 // //   origin: (origin, callback) => {
