@@ -9,7 +9,8 @@ import path from 'path';
 import fs from 'fs';
 import mongoose from 'mongoose';
 
-// Import Routes
+// --- IMPORT ROUTES ---
+// PASTIKAN NAMA FILE DI FOLDER ROUTES SAMA PERSIS (HURUF KECIL/BESAR)
 import authRoutes from './routes/auth';
 import courseRoutes from './routes/courses';
 import userRoutes from './routes/users';
@@ -36,7 +37,6 @@ const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://misdbpmi:misdbpmi@cl
 
 mongoose.set('strictQuery', true);
 
-// Fungsi Koneksi Database (Serverless Friendly)
 const connectDB = async () => {
   try {
     if (mongoose.connection.readyState === 0) {
@@ -47,13 +47,9 @@ const connectDB = async () => {
     console.error('❌ [db] Connection error:', err);
   }
 };
-
-// Eksekusi koneksi
 connectDB();
 
 // --- CORS CONFIGURATION ---
-const isDev = (process.env.NODE_ENV || 'development') === 'development';
-// Izinkan semua origin agar tidak ada masalah blocked request di Vercel
 const corsConfig: cors.CorsOptions = {
   origin: true, 
   credentials: true,
@@ -72,16 +68,14 @@ app.use(helmet({
 app.use(compression());
 app.use(morgan('dev'));
 
-// Parsing Body (Limit Besar untuk Upload)
+// Parsing Body
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser(process.env.COOKIE_SECRET || 'pmi-secret'));
 
-// --- STATIC FILES (Hanya Efektif di Local / VPS, Vercel butuh config vercel.json untuk static) ---
-// Namun tetap kita biarkan agar kode konsisten
+// --- STATIC FILES ---
 const UPLOADS_PATH = path.join(process.cwd(), 'public', 'uploads'); 
 if (!fs.existsSync(UPLOADS_PATH)) {
-    // Di Vercel, filesystem read-only, jadi ini mungkin error/ignored tapi aman karena try-catch/silent fail
     try { fs.mkdirSync(UPLOADS_PATH, { recursive: true }); } catch(e) {} 
 }
 app.use('/uploads', express.static(UPLOADS_PATH));
@@ -90,8 +84,8 @@ app.use('/uploads', express.static(UPLOADS_PATH));
 app.get('/', (req, res) => res.send('LMS PMI Backend is Running!'));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
-// Register semua route dari app.ts sebelumnya
-app.use('/api/courses/certificate', certificateRoutes); // Prioritas certificate
+// Register Routes
+app.use('/api/courses/certificate', certificateRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin/users', adminUserRoutes);
@@ -108,19 +102,16 @@ app.use('/api/blog', blogRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/upload', uploadRoutes); 
-app.use('/upload', uploadRoutes); // Alias
+app.use('/upload', uploadRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/comment', commentRoutes);
 
-// --- ERROR HANDLERS ---
-
-// 404 Handler
+// --- 404 & ERROR HANDLERS ---
 app.use((req, res, next) => {
     if (req.url.includes('/uploads/')) return next();
     res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 
-// Global Error Handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("❌ Global Error:", err.message);
   if (err.name === 'ZodError') {
@@ -132,15 +123,13 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
-// --- SERVER STARTUP ---
+// --- SERVER LISTEN (LOCAL ONLY) ---
 const PORT = process.env.PORT || 4000;
-
-// Listen hanya dijalankan di local development
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`🚀 [server] Server running on port ${PORT}`);
   });
 }
 
-// Export App untuk Vercel
+// [WAJIB] Export app untuk Vercel
 export default app;
