@@ -1,16 +1,15 @@
-
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "es2016",
     "module": "commonjs",
-"moduleResolution": "node",
-    "rootDir": ".",          // <- ganti dari "src" ke "."
-    "outDir": "dist",
     "moduleResolution": "node",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
-    "skipLibCheck": true
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "scripts"]  // boleh tetap
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }
