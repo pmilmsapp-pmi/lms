@@ -6,7 +6,8 @@ import { z } from 'zod';
 import PDFDocument from 'pdfkit'; 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+// [FIX] HAPUS import fileURLToPath karena tidak dipakai di CommonJS
+// import { fileURLToPath } from 'url';
 
 // IMPORT CONTROLLER LENGKAP
 import {
@@ -15,17 +16,18 @@ import {
     toggleStatus, reorderModules,
     enrollCourse, verifyEnrollment, checkEnrollmentStatus, getCourseParticipants,
     markCompleteLessonByAdmin, resetQuizByAdmin,
-    // [NEW] Import Chat Controllers & Grading
     getGroupMessages, sendGroupMessage, updateGradingScheme
 } from '../controllers/courseController';
 
 const router = Router();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// [FIX] HAPUS DEFINISI MANUAL INI
+// Di mode CommonJS, __filename dan __dirname sudah otomatis ada.
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 // ==========================================
-// 1. ZOD SCHEMAS (Tetap Sama)
+// 1. ZOD SCHEMAS
 // ==========================================
 const lessonSchema = z.object({
   title: z.string().min(1),
@@ -128,15 +130,14 @@ router.get('/:courseId/check-enrollment', requireAuth, checkEnrollmentStatus);
 router.get('/:courseId/enrollment', requireAuth, checkEnrollmentStatus); // Alias for consistency
 router.get('/enrollments/check/:courseId', requireAuth, checkEnrollmentStatus); // Additional alias
 
-router.get('/:id/participants', requireAuth, getCourseParticipants); // [FIX] allow student/teacher see participants
+router.get('/:id/participants', requireAuth, getCourseParticipants);
 router.post('/verify-enrollment', requireAuth, requireFacilitator, verifyEnrollment);
 router.post('/mark-complete-lesson', requireAuth, requireFacilitator, markCompleteLessonByAdmin);
 router.post('/reset-quiz', requireAuth, requireFacilitator, resetQuizByAdmin);
 
 // ==========================================
-// 4. GROUP CHAT ROUTES [FIXED]
+// 4. GROUP CHAT ROUTES
 // ==========================================
-// Menggunakan endpoint yang konsisten dengan frontend (/groups/messages dan /groups/send)
 router.get('/:id/groups/messages', requireAuth, getGroupMessages);
 router.post('/:id/groups/send', requireAuth, sendGroupMessage);
 
@@ -167,7 +168,7 @@ router.post('/certificate/preview', requireAuth, requireFacilitator, async (req:
         doc.rect(segmentWidth * 2, 0, segmentWidth, headerHeight).fill('#FF8A65');
         doc.rect(segmentWidth * 3, 0, segmentWidth, headerHeight).fill('#FFCCBC');
         
-        // ... (LOGIKA PDF SAMA SEPERTI SEBELUMNYA) ...
+        // [FIX] Menggunakan __dirname secara langsung (bawaan CommonJS)
         const logoPath = path.join(__dirname, '../../assets/logo-pmi.png');
         if (fs.existsSync(logoPath)) { doc.image(logoPath, (totalWidth / 2) - 40, 70, { width: 80 }); } 
         else { doc.fillColor('#D50000').fontSize(12).text('[LOGO PMI]', 0, 90, { align: 'center' }); }
@@ -185,7 +186,7 @@ router.post('/certificate/preview', requireAuth, requireFacilitator, async (req:
     }
 });
 
-// [NEW] Route untuk update Grading Scheme
+// Route untuk update Grading Scheme
 router.put('/:id/grading', requireAuth, requireFacilitator, updateGradingScheme);
 
 export default router;
