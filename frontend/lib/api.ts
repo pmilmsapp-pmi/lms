@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'humanis-b1ytqnqqv-pmilmsapps-projects.vercel.app';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://humanis.vercel.app';
 
 /**
  * Helper untuk request API standard
