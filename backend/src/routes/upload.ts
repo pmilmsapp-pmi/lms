@@ -11,20 +11,23 @@ const router = Router();
 // 1. KONFIGURASI FOLDER PENYIMPANAN (FIX VERCEL)
 // ==========================================
 
-// Cek apakah kita sedang di Vercel (Production) atau Local
+// Cek apakah sedang di Production (Vercel) atau Development (Local)
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Di Vercel wajib pakai /tmp. Di Local pakai public/uploads.
+// JIKA VERCEL: Gunakan '/tmp' (Satu-satunya folder yang bisa ditulis)
+// JIKA LOCAL: Gunakan 'public/uploads'
 const UPLOAD_PATH = isProduction 
   ? '/tmp' 
   : path.resolve(process.cwd(), 'public', 'uploads');
 
-// Buat folder jika belum ada (Hanya berhasil di Local atau di dalam /tmp)
+// Buat folder jika belum ada
+// Kita bungkus try-catch agar jika Vercel melarang mkdir, server tidak crash
 if (!fs.existsSync(UPLOAD_PATH)) {
   try {
     fs.mkdirSync(UPLOAD_PATH, { recursive: true });
   } catch (err) {
-    console.warn('⚠️ Gagal membuat folder uploads (abaikan jika di Vercel read-only):', err);
+    // Di Vercel, /tmp biasanya sudah ada, jadi error mkdir diabaikan saja biar aman
+    console.log('Info: Direktori upload sudah ada atau read-only.'); 
   }
 }
 
@@ -33,7 +36,7 @@ const storage = multer.diskStorage({
     cb(null, UPLOAD_PATH);
   },
   filename: (_req, file, cb) => {
-    // Sanitasi nama file agar aman
+    // Bersihkan nama file dari karakter aneh
     const safeName = file.originalname.replace(/[^a-zA-Z0-9.]/g, '-');
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `${uniqueSuffix}-${safeName}`);
@@ -54,10 +57,10 @@ router.post('/', requireAuth, upload.single('file'), (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Tidak ada file.' });
     
-    // Perhatikan: Di Vercel, file di /tmp tidak bisa diakses via URL statis biasa
-    // Jadi kita kembalikan nama filenya saja atau URL simulasi
+    // Di Vercel, file di /tmp tidak bisa diakses langsung via URL folder public
+    // Kita buat URL khusus untuk membacanya
     const relUrl = isProduction 
-      ? `/api/upload/file/${req.file.filename}` // URL Proxy (opsional) atau biarkan temporary
+      ? `/api/upload/file/${req.file.filename}` 
       : `/uploads/${req.file.filename}`;
       
     return res.status(200).json({ success: true, url: relUrl, file: req.file });
@@ -73,7 +76,7 @@ router.post('/course/:courseId/cover', requireAuth, requireFacilitator, upload.s
     const { courseId } = req.params;
     
     const relUrl = isProduction 
-      ? `/tmp/${req.file.filename}` 
+      ? `/api/upload/file/${req.file.filename}` 
       : `/uploads/${req.file.filename}`;
 
     const course = await Course.findByIdAndUpdate(courseId, { thumbnailUrl: relUrl }, { new: true });
@@ -90,7 +93,7 @@ router.post('/signature', requireAuth, upload.single('file'), (req: any, res: an
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     
     const fileUrl = isProduction 
-      ? `/tmp/${req.file.filename}`
+      ? `/api/upload/file/${req.file.filename}`
       : `/uploads/${req.file.filename}`;
       
     res.json({ url: fileUrl });
@@ -99,16 +102,17 @@ router.post('/signature', requireAuth, upload.single('file'), (req: any, res: an
   }
 });
 
-// [NEW] Helper Route untuk membaca file dari /tmp di Vercel (Opsional)
-// Ini diperlukan karena folder /tmp tidak otomatis terekspos ke publik
+// [NEW] Helper Route untuk membaca file dari /tmp di Vercel
+// Karena folder /tmp tidak otomatis terbuka untuk umum, kita buat jalur bacanya.
 router.get('/file/:filename', (req: any, res: any) => {
-    if (!isProduction) return res.status(404).send("Gunakan static folder di local");
+    // Route ini hanya aktif/berguna saat di Production (Vercel)
+    if (!isProduction) return res.status(404).send("Gunakan folder static biasa di local.");
     
     const filePath = path.join('/tmp', req.params.filename);
     if (fs.existsSync(filePath)) {
         res.sendFile(filePath);
     } else {
-        res.status(404).send("File not found or expired");
+        res.status(404).send("File not found or expired (Files in /tmp are temporary)");
     }
 });
 
