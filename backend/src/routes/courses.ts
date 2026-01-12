@@ -3,7 +3,7 @@ import { Course } from '../models/Course';
 import Enrollment from '../models/Enrollment';
 import { requireAuth, requireFacilitator, AuthedRequest } from '../middleware/auth'; 
 import { z } from 'zod';
-import PDFDocument from 'pdfkit'; 
+import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 // [FIX] HAPUS import fileURLToPath karena tidak dipakai di CommonJS
