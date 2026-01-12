@@ -2,7 +2,8 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ES2020",
+    "module": "commonjs",
+"moduleResolution": "node",
     "rootDir": ".",          // <- ganti dari "src" ke "."
     "outDir": "dist",
     "moduleResolution": "node",
