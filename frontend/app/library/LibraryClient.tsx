@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { api, getImageUrl } from '@/lib/api';
 import Protected from '@/components/Protected';
-import { BookOpen, Search, Download, Star } from 'lucide-react';
+import { BookOpen, Search, Download, Star, FileText } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
 export default function LibraryClient() {
@@ -12,7 +11,7 @@ export default function LibraryClient() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  // Ambil Parameter highlight dari URL
+  // Ambil Parameter highlight dari URL (untuk notifikasi)
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('highlight');
 
@@ -20,7 +19,7 @@ export default function LibraryClient() {
     loadBooks();
   }, []);
 
-  // Scroll otomatis ke buku yang dituju setelah loading selesai
+  // Scroll otomatis ke buku yang dituju
   useEffect(() => {
     if (!loading && highlightId) {
       setTimeout(() => {
@@ -76,7 +75,10 @@ export default function LibraryClient() {
 
         {/* LIST BUKU */}
         {loading ? (
-          <div className="text-center py-20">Memuat pustaka...</div>
+          <div className="text-center py-20 flex flex-col items-center">
+             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-700 mb-4"></div>
+             Memuat pustaka...
+          </div>
         ) : filteredBooks.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed">
             <p className="text-gray-400">Belum ada materi yang dipublikasikan.</p>
@@ -97,37 +99,37 @@ export default function LibraryClient() {
                         : 'bg-white shadow-sm border border-gray-200 hover:shadow-md'
                     }`}
                 >
-                  {/* LABEL BARU (Hanya muncul jika di-highlight) */}
+                  {/* LABEL BARU */}
                   {isHighlighted && (
                     <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl z-20 animate-pulse flex items-center gap-1 shadow-md">
                       <Star size={10} fill="white" /> BARU RILIS
                     </div>
                   )}
 
-                  {/* COVER IMAGE */}
+                  {/* COVER IMAGE AREA */}
                   <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden border-b border-gray-100">
-                    <img
-                      src={
-                        getImageUrl(book.coverUrl) ||
-                        'https://via.placeholder.com/300x400?text=No+Cover'
-                      }
-                      alt={book.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          'https://via.placeholder.com/300x400?text=No+Cover';
-                      }}
-                    />
+                    {book.coverUrl ? (
+                        <img
+                        src={getImageUrl(book.coverUrl)}
+                        alt={book.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            <BookOpen size={48} opacity={0.2} />
+                            <span className="text-xs mt-2">No Cover</span>
+                        </div>
+                    )}
 
                     {/* Kategori Badge */}
-                    <div className="absolute top-2 left-2">
+                    <div className="absolute top-2 left-2 z-10">
                       <span className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold text-red-700 uppercase tracking-wide shadow-sm border border-gray-200">
                         {book.category || 'UMUM'}
                       </span>
                     </div>
 
-                    {/* HOVER OVERLAY */}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
+                    {/* HOVER OVERLAY (TOMBOL DOWNLOAD) */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4 z-20">
                       <a
                         href={getImageUrl(book.fileUrl)}
                         target="_blank"
@@ -157,7 +159,9 @@ export default function LibraryClient() {
 
                     <div className="pt-3 border-t border-gray-100 text-[10px] text-gray-400 flex justify-between items-center font-bold">
                       <span>{book.year || new Date().getFullYear()}</span>
-                      <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">PDF</span>
+                      <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 flex items-center gap-1">
+                        <FileText size={10}/> PDF
+                      </span>
                     </div>
                   </div>
                 </div>

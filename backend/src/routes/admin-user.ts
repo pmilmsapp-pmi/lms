@@ -1,500 +1,575 @@
-// // // // // // import express from 'express';
-// // // // // // import { z } from 'zod';
-// // // // // // import { User } from '../models/User';
-// // // // // // import { requireAuth, requireSuperAdmin } from '../middleware/auth';
-
-// // // // // // const router = express.Router();
-
-// // // // // // // Schema Validasi
-// // // // // // const updateUserSchema = z.object({
-// // // // // //   name: z.string().min(1).optional(),
-// // // // // //   role: z.enum(["STUDENT", "FACILITATOR", "SUPER_ADMIN"]).optional(),
-// // // // // // });
-
-// // // // // // // Endpoint PATCH Update User
-// // // // // // router.patch('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
-// // // // // //   try {
-// // // // // //     const validatedData = updateUserSchema.parse(req.body);
-    
-// // // // // //     const user = await User.findByIdAndUpdate(
-// // // // // //       req.params.id, 
-// // // // // //       validatedData, 
-// // // // // //       { new: true, runValidators: true } // new: true agar mengembalikan data yang sudah update
-// // // // // //     ).select('-passwordHash'); // Jangan kirim password balik
-
-// // // // // //     if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
-
-// // // // // //     res.json({ user });
-// // // // // //   } catch (error) {
-// // // // // //     res.status(400).json({ error: 'Gagal update user' });
-// // // // // //   }
-// // // // // // });
-
-// // // // // // export default router;
-// // // // // import express from 'express';
+// // // // // import express, { Response } from 'express';
+// // // // // import bcrypt from 'bcryptjs';
 // // // // // import { z } from 'zod';
-// // // // // // PERBAIKAN: Gunakan import default (tanpa kurung kurawal)
-// // // // // import User from '../models/User'; 
-// // // // // import { requireAuth, requireSuperAdmin } from '../middleware/auth';
+// // // // // // Import Model dan Interface-nya (IProgress, ICertificate)
+// // // // // import { User } from '../models/User'; 
+// // // // // import { Progress, IProgress } from '../models/Progress'; 
+// // // // // import { Certificate, ICertificate } from '../models/Certificate';
+// // // // // import { requireAuth, requireSuperAdmin, AuthedRequest } from '../middleware/auth';
 
 // // // // // const router = express.Router();
 
-// // // // // const updateUserSchema = z.object({
-// // // // //   name: z.string().min(1).optional(),
-// // // // //   role: z.enum(["STUDENT", "FACILITATOR", "SUPER_ADMIN"]).optional(),
+// // // // // // --- SCHEMA VALIDASI ---
+// // // // // const createUserSchema = z.object({
+// // // // //   email: z.string().email("Format email tidak valid"),
+// // // // //   name: z.string().min(1, "Nama harus diisi"),
+// // // // //   role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']),
+// // // // //   password: z.string().min(6, "Password minimal 6 karakter")
 // // // // // });
 
+// // // // // const updateUserSchema = z.object({
+// // // // //   name: z.string().min(1).optional(),
+// // // // //   role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']).optional(),
+// // // // //   email: z.string().email().optional()
+// // // // // });
+
+// // // // // // --- ROUTES ---
+
+// // // // // // 1. GET ALL USERS
+// // // // // router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
+// // // // //   try {
+// // // // //     const users = await User.find().select('-password').sort({ createdAt: -1 });
+// // // // //     res.json({ success: true, users });
+// // // // //   } catch (error) {
+// // // // //     res.status(500).json({ success: false, error: 'Gagal mengambil daftar pengguna' });
+// // // // //   }
+// // // // // });
+
+// // // // // /**
+// // // // //  * 2. GET USER DETAILS
+// // // // //  * PERBAIKAN: Memberikan tipe data eksplisit pada variabel history dan certificates
+// // // // //  */
+// // // // // router.get('/:id/details', requireAuth, requireSuperAdmin, async (req: AuthedRequest, res: Response) => {
+// // // // //   try {
+// // // // //     const { id } = req.params;
+
+// // // // //     const user = await User.findById(id).select('-password');
+// // // // //     if (!user) {
+// // // // //       return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+// // // // //     }
+
+// // // // //     // SOLUSI ERROR 7034 & 7005: Deklarasikan tipe array secara eksplisit
+// // // // //     let history: any[] = []; 
+// // // // //     let certificates: any[] = [];
+
+// // // // //     // Ambil Sejarah Pelatihan
+// // // // //     try {
+// // // // //       // Menggunakan .lean<IProgress[]>() untuk memberi tahu TS hasil dari query ini
+// // // // //       history = await Progress.find({ userId: id })
+// // // // //         .populate('courseId', 'title thumbnailUrl')
+// // // // //         .lean();
+// // // // //     } catch (e) {
+// // // // //       console.error(`⚠️ Gagal fetch Progress user ${id}`);
+// // // // //     }
+
+// // // // //     // Ambil Sertifikat
+// // // // //     try {
+// // // // //       certificates = await Certificate.find({ userId: id })
+// // // // //         .populate('courseId', 'title')
+// // // // //         .lean();
+// // // // //     } catch (e) {
+// // // // //       console.error(`⚠️ Gagal fetch Certificates user ${id}`);
+// // // // //     }
+
+// // // // //     return res.json({
+// // // // //       success: true,
+// // // // //       user,
+// // // // //       history,
+// // // // //       certificates
+// // // // //     });
+
+// // // // //   } catch (error: any) {
+// // // // //     console.error("🔥 Critical Admin Detail Error:", error.message);
+// // // // //     return res.status(500).json({ 
+// // // // //       success: false, 
+// // // // //       error: 'Gagal memproses detail pengguna', 
+// // // // //       message: error.message 
+// // // // //     });
+// // // // //   }
+// // // // // });
+
+// // // // // // 3. POST CREATE USER
+// // // // // router.post('/', requireAuth, requireSuperAdmin, async (req, res) => {
+// // // // //   try {
+// // // // //     const data = createUserSchema.parse(req.body);
+// // // // //     const existing = await User.findOne({ email: data.email });
+// // // // //     if (existing) return res.status(400).json({ success: false, error: 'Email sudah terdaftar' });
+
+// // // // //     const hashedPassword = await bcrypt.hash(data.password, 10);
+// // // // //     const user = await User.create({
+// // // // //       email: data.email,
+// // // // //       name: data.name,
+// // // // //       role: data.role,
+// // // // //       password: hashedPassword 
+// // // // //     });
+
+// // // // //     res.status(201).json({ success: true, message: 'User berhasil dibuat', userId: user._id });
+// // // // //   } catch (error: any) {
+// // // // //     res.status(400).json({ success: false, error: error.errors?.[0]?.message || error.message });
+// // // // //   }
+// // // // // });
+
+// // // // // // 4. PATCH UPDATE USER
 // // // // // router.patch('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
 // // // // //   try {
 // // // // //     const validatedData = updateUserSchema.parse(req.body);
-    
-// // // // //     // Pastikan req.params.id valid ObjectId mongo jika perlu, 
-// // // // //     // tapi findByIdAndUpdate biasanya handle error cast otomatis atau melempar error
 // // // // //     const user = await User.findByIdAndUpdate(
 // // // // //       req.params.id, 
-// // // // //       validatedData, 
+// // // // //       { $set: validatedData }, 
 // // // // //       { new: true, runValidators: true }
-// // // // //     ).select('-passwordHash');
+// // // // //     ).select('-password');
 
-// // // // //     if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
-
-// // // // //     res.json({ user });
+// // // // //     if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+// // // // //     res.json({ success: true, message: 'User berhasil diperbarui', user });
 // // // // //   } catch (error: any) {
-// // // // //     // Handle error Zod atau Mongoose
-// // // // //     console.error(error); 
-// // // // //     res.status(400).json({ error: error.message || 'Gagal update user' });
+// // // // //     res.status(400).json({ success: false, error: error.message || 'Gagal update user' });
+// // // // //   }
+// // // // // });
+
+// // // // // // 5. DELETE USER
+// // // // // router.delete('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
+// // // // //   try {
+// // // // //     const user = await User.findByIdAndDelete(req.params.id);
+// // // // //     if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+
+// // // // //     await Progress.deleteMany({ userId: req.params.id });
+// // // // //     await Certificate.deleteMany({ userId: req.params.id });
+
+// // // // //     res.json({ success: true, message: 'User dan data terkait berhasil dihapus' });
+// // // // //   } catch (error) {
+// // // // //     res.status(500).json({ success: false, error: 'Gagal menghapus user' });
 // // // // //   }
 // // // // // });
 
 // // // // // export default router;
 
-// // // // import express from 'express';
-// // // // import bcrypt from 'bcryptjs'; // Pastikan install: npm i bcryptjs
+
+// // // // import express, { Response } from 'express';
+// // // // import bcrypt from 'bcryptjs';
 // // // // import { z } from 'zod';
-// // // // import User from '../models/User';
-// // // // import { requireAuth, requireSuperAdmin } from '../middleware/auth';
+// // // // // Import Model dan Interface-nya (IProgress, ICertificate)
+// // // // import { User } from '../models/User'; 
+// // // // import { Progress } from '../models/Progress'; 
+// // // // import { Certificate } from '../models/Certificate';
+// // // // import { requireAuth, requireSuperAdmin, AuthedRequest } from '../middleware/auth';
 
 // // // // const router = express.Router();
 
-// // // // // Validasi Zod
+// // // // // --- SCHEMA VALIDASI ---
 // // // // const createUserSchema = z.object({
-// // // //   email: z.string().email(),
-// // // //   name: z.string().min(1),
-// // // //   role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']),
-// // // //   password: z.string().min(6)
+// // // //   email: z.string().email("Format email tidak valid"),
+// // // //   name: z.string().min(1, "Nama harus diisi"),
+// // // //   // [UPDATED] Tambahkan 'ADMIN' ke enum
+// // // //   role: z.enum(['STUDENT', 'FACILITATOR', 'ADMIN', 'SUPER_ADMIN']),
+// // // //   password: z.string().min(6, "Password minimal 6 karakter"),
+  
+// // // //   // [BARU] Field tambahan optional untuk Admin Wilayah
+// // // //   regionScope: z.enum(['national', 'province', 'regency']).optional(),
+// // // //   managedProvinces: z.array(z.string()).optional(),
+// // // //   managedRegencies: z.array(z.string()).optional(),
+// // // //   permissions: z.array(z.string()).optional()
 // // // // });
 
-// // // // // 1. GET ALL USERS (Hanya Super Admin)
+// // // // const updateUserSchema = z.object({
+// // // //   name: z.string().min(1).optional(),
+// // // //   // [UPDATED] Tambahkan 'ADMIN' ke enum
+// // // //   role: z.enum(['STUDENT', 'FACILITATOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
+// // // //   email: z.string().email().optional(),
+
+// // // //   // [BARU] Field tambahan optional untuk update
+// // // //   regionScope: z.enum(['national', 'province', 'regency']).optional(),
+// // // //   managedProvinces: z.array(z.string()).optional(),
+// // // //   managedRegencies: z.array(z.string()).optional(),
+// // // //   permissions: z.array(z.string()).optional()
+// // // // });
+
+// // // // // --- ROUTES ---
+
+// // // // // 1. GET ALL USERS
 // // // // router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
 // // // //   try {
-// // // //     // Ambil semua user, tapi sembunyikan passwordHash
-// // // //     const users = await User.find().select('-passwordHash').sort({ createdAt: -1 });
-// // // //     res.json({ users });
+// // // //     const users = await User.find().select('-password').sort({ createdAt: -1 });
+// // // //     res.json({ success: true, users });
 // // // //   } catch (error) {
-// // // //     res.status(500).json({ error: 'Gagal mengambil data user' });
+// // // //     res.status(500).json({ success: false, error: 'Gagal mengambil daftar pengguna' });
 // // // //   }
 // // // // });
 
-// // // // // 2. POST CREATE USER (Optional: Admin buat user manual)
+// // // // /**
+// // // //  * 2. GET USER DETAILS
+// // // //  * PERBAIKAN: Memberikan tipe data eksplisit pada variabel history dan certificates
+// // // //  */
+// // // // router.get('/:id/details', requireAuth, requireSuperAdmin, async (req: AuthedRequest, res: Response) => {
+// // // //   try {
+// // // //     const { id } = req.params;
+
+// // // //     const user = await User.findById(id).select('-password');
+// // // //     if (!user) {
+// // // //       return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+// // // //     }
+
+// // // //     // SOLUSI ERROR 7034 & 7005: Deklarasikan tipe array secara eksplisit
+// // // //     let history: any[] = []; 
+// // // //     let certificates: any[] = [];
+
+// // // //     // Ambil Sejarah Pelatihan
+// // // //     try {
+// // // //       // Menggunakan .lean() untuk memberi tahu TS hasil dari query ini
+// // // //       history = await Progress.find({ userId: id })
+// // // //         .populate('courseId', 'title thumbnailUrl')
+// // // //         .lean();
+// // // //     } catch (e) {
+// // // //       console.error(`⚠️ Gagal fetch Progress user ${id}`);
+// // // //     }
+
+// // // //     // Ambil Sertifikat
+// // // //     try {
+// // // //       certificates = await Certificate.find({ userId: id })
+// // // //         .populate('courseId', 'title')
+// // // //         .lean();
+// // // //     } catch (e) {
+// // // //       console.error(`⚠️ Gagal fetch Certificates user ${id}`);
+// // // //     }
+
+// // // //     return res.json({
+// // // //       success: true,
+// // // //       user,
+// // // //       history,
+// // // //       certificates
+// // // //     });
+
+// // // //   } catch (error: any) {
+// // // //     console.error("🔥 Critical Admin Detail Error:", error.message);
+// // // //     return res.status(500).json({ 
+// // // //       success: false, 
+// // // //       error: 'Gagal memproses detail pengguna', 
+// // // //       message: error.message 
+// // // //     });
+// // // //   }
+// // // // });
+
+// // // // // 3. POST CREATE USER
 // // // // router.post('/', requireAuth, requireSuperAdmin, async (req, res) => {
 // // // //   try {
 // // // //     const data = createUserSchema.parse(req.body);
-    
-// // // //     // Cek email duplikat
 // // // //     const existing = await User.findOne({ email: data.email });
-// // // //     if (existing) return res.status(400).json({ error: 'Email sudah terdaftar' });
+// // // //     if (existing) return res.status(400).json({ success: false, error: 'Email sudah terdaftar' });
 
-// // // //     const passwordHash = await bcrypt.hash(data.password, 10);
+// // // //     const hashedPassword = await bcrypt.hash(data.password, 10);
     
+// // // //     // [UPDATED] Create user dengan data tambahan jika ada
 // // // //     const user = await User.create({
 // // // //       email: data.email,
 // // // //       name: data.name,
 // // // //       role: data.role,
-// // // //       passwordHash
+// // // //       password: hashedPassword,
+// // // //       // Field baru optional
+// // // //       regionScope: data.regionScope,
+// // // //       managedProvinces: data.managedProvinces,
+// // // //       managedRegencies: data.managedRegencies,
+// // // //       permissions: data.permissions
 // // // //     });
 
-// // // //     res.status(201).json({ message: 'User berhasil dibuat', user: { email: user.email, id: user._id } });
+// // // //     res.status(201).json({ success: true, message: 'User berhasil dibuat', userId: user._id });
 // // // //   } catch (error: any) {
-// // // //     res.status(400).json({ error: error.message || 'Gagal membuat user' });
+// // // //     res.status(400).json({ success: false, error: error.errors?.[0]?.message || error.message });
 // // // //   }
 // // // // });
 
-// // // // // 3. PATCH UPDATE USER ROLE
+// // // // // 4. PATCH UPDATE USER
 // // // // router.patch('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
 // // // //   try {
-// // // //     const { role, name } = req.body;
-// // // //     // Validasi sederhana role jika ada
-// // // //     if (role && !['STUDENT', 'FACILITATOR', 'SUPER_ADMIN'].includes(role)) {
-// // // //       return res.status(400).json({ error: 'Role tidak valid' });
-// // // //     }
-
+// // // //     const validatedData = updateUserSchema.parse(req.body);
+    
+// // // //     // [UPDATED] Update dengan $set agar field baru tersimpan
 // // // //     const user = await User.findByIdAndUpdate(
 // // // //       req.params.id, 
-// // // //       { ...(role && { role }), ...(name && { name }) }, 
-// // // //       { new: true }
-// // // //     ).select('-passwordHash');
+// // // //       { $set: validatedData }, 
+// // // //       { new: true, runValidators: true }
+// // // //     ).select('-password');
 
-// // // //     if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
-
-// // // //     res.json({ user });
-// // // //   } catch (error) {
-// // // //     res.status(500).json({ error: 'Gagal update user' });
+// // // //     if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+// // // //     res.json({ success: true, message: 'User berhasil diperbarui', user });
+// // // //   } catch (error: any) {
+// // // //     res.status(400).json({ success: false, error: error.message || 'Gagal update user' });
 // // // //   }
 // // // // });
 
-// // // // // 4. DELETE USER
+// // // // // 5. DELETE USER
 // // // // router.delete('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
 // // // //   try {
-// // // //     await User.findByIdAndDelete(req.params.id);
-// // // //     res.json({ message: 'User berhasil dihapus' });
+// // // //     const user = await User.findByIdAndDelete(req.params.id);
+// // // //     if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+
+// // // //     await Progress.deleteMany({ userId: req.params.id });
+// // // //     await Certificate.deleteMany({ userId: req.params.id });
+
+// // // //     res.json({ success: true, message: 'User dan data terkait berhasil dihapus' });
 // // // //   } catch (error) {
-// // // //     res.status(500).json({ error: 'Gagal menghapus user' });
+// // // //     res.status(500).json({ success: false, error: 'Gagal menghapus user' });
 // // // //   }
 // // // // });
 
 // // // // export default router;
-
-// // // import express from 'express';
-// // // import bcrypt from 'bcryptjs';
-// // // import { z } from 'zod';
-// // // // PERBAIKAN: Import default tanpa kurung kurawal
-// // // import { User } from '../models/User'; 
-// // // import { Course } from '../models/Course'; 
-// // // import { Certificate } from '../models/Certificate';
-// // // import { Quiz } from '../models/Quiz';
-// // // // Asumsi model Attempt & Progress ada (sesuai arsitektur awal)
-// // // // Jika belum ada file-nya, nanti kita buatkan dummy/modelnya
-// // // import Attempt from '../models/Attempt'; 
-// // // import Enrollment from '../models/Enrollment';
-
-// // // import { requireAuth, requireSuperAdmin } from '../middleware/auth';
-
-// // // const router = express.Router();
-
-// // // const createUserSchema = z.object({
-// // //   email: z.string().email(),
-// // //   name: z.string().min(1),
-// // //   role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']),
-// // //   password: z.string().min(6)
-// // // });
-
-// // // // 1. GET ALL USERS
-// // // router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
-// // //   try {
-// // //     const users = await User.find().select('-passwordHash').sort({ createdAt: -1 });
-// // //     res.json({ users });
-// // //   } catch (error) {
-// // //     res.status(500).json({ error: 'Gagal ambil data user' });
-// // //   }
-// // // });
-
-// // // // 2. GET USER DETAILS (PROFILE + COURSES + CERTS)
-// // // router.get('/:id/details', requireAuth, requireSuperAdmin, async (req, res) => {
-// // //   try {
-// // //     const { id } = req.params;
-    
-// // //     // 1. Ambil Data User
-// // //     const user = await User.findById(id).select('-passwordHash');
-// // //     if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
-
-// // //     // 2. Ambil Enrollment (Kursus yang diikuti)
-// // //     // Note: Pastikan Model Enrollment sudah ada. Jika belum, buat filenya.
-// // //     const enrollments = await Enrollment.find({ user: id }).populate('course', 'title thumbnailUrl');
-    
-// // //     // 3. Ambil Sertifikat
-// // //     const certificates = await Certificate.find({ user: id }).populate('course', 'title');
-
-// // //     // 4. Ambil Riwayat Quiz (Attempt)
-// // //     const attempts = await Attempt.find({ user: id })
-// // //       .populate('quiz', 'title')
-// // //       .populate({
-// // //         path: 'quiz',
-// // //         populate: { path: 'course', select: 'title' } // Nested populate untuk tahu kursus apa
-// // //       })
-// // //       .sort({ createdAt: -1 });
-
-// // //     res.json({
-// // //       user,
-// // //       enrollments,
-// // //       certificates,
-// // //       attempts
-// // //     });
-
-// // //   } catch (error: any) {
-// // //     console.error(error);
-// // //     res.status(500).json({ error: 'Gagal mengambil detail user' });
-// // //   }
-// // // });
-
-// // // // 3. POST CREATE USER (Tambah User Baru)
-// // // router.post('/', requireAuth, requireSuperAdmin, async (req, res) => {
-// // //   try {
-// // //     const data = createUserSchema.parse(req.body);
-    
-// // //     const existing = await User.findOne({ email: data.email });
-// // //     if (existing) return res.status(400).json({ error: 'Email sudah terdaftar' });
-
-// // //     const passwordHash = await bcrypt.hash(data.password, 10);
-    
-// // //     const user = await User.create({
-// // //       email: data.email,
-// // //       name: data.name,
-// // //       role: data.role,
-// // //       passwordHash
-// // //     });
-
-// // //     res.status(201).json({ message: 'User berhasil dibuat', user });
-// // //   } catch (error: any) {
-// // //     res.status(400).json({ error: error.message || 'Gagal membuat user' });
-// // //   }
-// // // });
-
-// // // // 4. DELETE USER
-// // // router.delete('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
-// // //   try {
-// // //     await User.findByIdAndDelete(req.params.id);
-// // //     // Opsional: Hapus juga Enrollment, Progress, dll yang terkait user ini
-// // //     res.json({ message: 'User berhasil dihapus' });
-// // //   } catch (error) {
-// // //     res.status(500).json({ error: 'Gagal menghapus user' });
-// // //   }
-// // // });
-
-// // // export default router;
 // // // import express, { Response } from 'express';
 // // // import bcrypt from 'bcryptjs';
 // // // import { z } from 'zod';
 // // // import { User } from '../models/User'; 
-// // // import { Course } from '../models/Course'; 
+// // // import { Progress } from '../models/Progress'; 
 // // // import { Certificate } from '../models/Certificate';
-// // // import { Progress } from '../models/Progress'; // Menggunakan Progress sesuai logic sebelumnya
 // // // import { requireAuth, requireSuperAdmin, AuthedRequest } from '../middleware/auth';
 
 // // // const router = express.Router();
 
 // // // // --- SCHEMA VALIDASI ---
-
 // // // const createUserSchema = z.object({
 // // //   email: z.string().email("Format email tidak valid"),
 // // //   name: z.string().min(1, "Nama harus diisi"),
-// // //   role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']),
-// // //   password: z.string().min(6, "Password minimal 6 karakter")
+// // //   // [UPDATED] Tambahkan 'ADMIN' ke enum
+// // //   role: z.enum(['STUDENT', 'FACILITATOR', 'ADMIN', 'SUPER_ADMIN']),
+// // //   password: z.string().min(6, "Password minimal 6 karakter"),
+  
+// // //   // [BARU] Field tambahan untuk Admin
+// // //   regionScope: z.enum(['national', 'province', 'regency']).optional(),
+// // //   managedProvinces: z.array(z.string()).optional(),
+// // //   managedRegencies: z.array(z.string()).optional(),
+// // //   permissions: z.array(z.string()).optional()
 // // // });
 
 // // // const updateUserSchema = z.object({
 // // //   name: z.string().min(1).optional(),
-// // //   role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']).optional(),
-// // //   email: z.string().email().optional()
+// // //   role: z.enum(['STUDENT', 'FACILITATOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
+// // //   email: z.string().email().optional(),
+
+// // //   // [BARU] Field Admin & Status
+// // //   regionScope: z.enum(['national', 'province', 'regency']).optional(),
+// // //   managedProvinces: z.array(z.string()).optional(),
+// // //   managedRegencies: z.array(z.string()).optional(),
+// // //   permissions: z.array(z.string()).optional(),
+// // //   isBanned: z.boolean().optional(),
+// // //   bannedReason: z.string().optional()
 // // // });
 
 // // // // --- ROUTES ---
 
-// // // /**
-// // //  * 1. GET ALL USERS
-// // //  * Mengambil semua daftar pengguna untuk tabel admin
-// // //  */
+// // // // 1. GET ALL USERS
 // // // router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
 // // //   try {
 // // //     const users = await User.find().select('-password').sort({ createdAt: -1 });
-// // //     res.json({ users });
+// // //     res.json({ success: true, users });
 // // //   } catch (error) {
-// // //     res.status(500).json({ error: 'Gagal mengambil data user' });
+// // //     res.status(500).json({ success: false, error: 'Gagal mengambil daftar pengguna' });
 // // //   }
 // // // });
 
-// // // /**
-// // //  * 2. GET USER DETAILS
-// // //  * Mengambil profil lengkap, riwayat kursus, dan sertifikat user tertentu
-// // //  */
+// // // // 2. GET USER DETAILS
 // // // router.get('/:id/details', requireAuth, requireSuperAdmin, async (req: AuthedRequest, res: Response) => {
 // // //   try {
 // // //     const { id } = req.params;
-    
-// // //     // A. Ambil Data User
+
 // // //     const user = await User.findById(id).select('-password');
-// // //     if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
+// // //     if (!user) {
+// // //       return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+// // //     }
 
-// // //     // B. Ambil Progress (Kursus yang diikuti)
-// // //     // Mencari di koleksi Progress dan menarik data judul kursus
-// // //     const history = await Progress.find({ userId: id })
-// // //       .populate('courseId', 'title thumbnailUrl');
-    
-// // //     // C. Ambil Sertifikat
-// // //     const certificates = await Certificate.find({ userId: id })
-// // //       .populate('courseId', 'title');
+// // //     let history: any[] = []; 
+// // //     let certificates: any[] = [];
 
-// // //     res.json({
+// // //     try {
+// // //       history = await Progress.find({ userId: id })
+// // //         .populate('courseId', 'title thumbnailUrl')
+// // //         .lean();
+// // //     } catch (e) {
+// // //       console.error(`⚠️ Gagal fetch Progress user ${id}`);
+// // //     }
+
+// // //     try {
+// // //       certificates = await Certificate.find({ userId: id })
+// // //         .populate('courseId', 'title')
+// // //         .lean();
+// // //     } catch (e) {
+// // //       console.error(`⚠️ Gagal fetch Certificates user ${id}`);
+// // //     }
+
+// // //     return res.json({
 // // //       success: true,
 // // //       user,
-// // //       history: history || [],
-// // //       certificates: certificates || []
+// // //       history,
+// // //       certificates
 // // //     });
 
 // // //   } catch (error: any) {
-// // //     console.error("🔥 Detail Admin Error:", error);
-// // //     res.status(500).json({ error: 'Gagal mengambil detail user', message: error.message });
+// // //     console.error("🔥 Critical Admin Detail Error:", error.message);
+// // //     return res.status(500).json({ 
+// // //       success: false, 
+// // //       error: 'Gagal memproses detail pengguna', 
+// // //       message: error.message 
+// // //     });
 // // //   }
 // // // });
 
-// // // /**
-// // //  * 3. POST CREATE USER
-// // //  * Admin membuat user baru secara manual
-// // //  */
+// // // // 3. POST CREATE USER
 // // // router.post('/', requireAuth, requireSuperAdmin, async (req, res) => {
 // // //   try {
 // // //     const data = createUserSchema.parse(req.body);
-    
 // // //     const existing = await User.findOne({ email: data.email });
-// // //     if (existing) return res.status(400).json({ error: 'Email sudah terdaftar' });
+// // //     if (existing) return res.status(400).json({ success: false, error: 'Email sudah terdaftar' });
 
-// // //     // Hash password sebelum simpan
 // // //     const hashedPassword = await bcrypt.hash(data.password, 10);
     
+// // //     // Create user dengan field lengkap
 // // //     const user = await User.create({
 // // //       email: data.email,
 // // //       name: data.name,
 // // //       role: data.role,
-// // //       password: hashedPassword // Pastikan field di Model User adalah 'password' atau 'passwordHash'
+// // //       password: hashedPassword,
+// // //       regionScope: data.regionScope,
+// // //       managedProvinces: data.managedProvinces,
+// // //       managedRegencies: data.managedRegencies,
+// // //       permissions: data.permissions
 // // //     });
 
-// // //     res.status(201).json({ message: 'User berhasil dibuat', userId: user._id });
+// // //     res.status(201).json({ success: true, message: 'User berhasil dibuat', userId: user._id });
 // // //   } catch (error: any) {
-// // //     res.status(400).json({ error: error.errors?.[0]?.message || error.message });
+// // //     res.status(400).json({ success: false, error: error.errors?.[0]?.message || error.message });
 // // //   }
 // // // });
 
-// // // /**
-// // //  * 4. PATCH UPDATE USER
-// // //  * Mengupdate Role atau Nama user
-// // //  */
+// // // // 4. PATCH UPDATE USER
 // // // router.patch('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
 // // //   try {
 // // //     const validatedData = updateUserSchema.parse(req.body);
     
+// // //     // Update data di database
 // // //     const user = await User.findByIdAndUpdate(
 // // //       req.params.id, 
 // // //       { $set: validatedData }, 
 // // //       { new: true, runValidators: true }
 // // //     ).select('-password');
 
-// // //     if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
-
-// // //     res.json({ message: 'User berhasil diperbarui', user });
+// // //     if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+// // //     res.json({ success: true, message: 'User berhasil diperbarui', user });
 // // //   } catch (error: any) {
-// // //     res.status(400).json({ error: error.message || 'Gagal update user' });
+// // //     res.status(400).json({ success: false, error: error.message || 'Gagal update user' });
 // // //   }
 // // // });
 
-// // // /**
-// // //  * 5. DELETE USER
-// // //  * Menghapus user secara permanen
-// // //  */
+// // // // 5. DELETE USER
 // // // router.delete('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
 // // //   try {
 // // //     const user = await User.findByIdAndDelete(req.params.id);
-// // //     if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
+// // //     if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
 
-// // //     // Opsional: Hapus Progress & Sertifikat terkait jika ingin bersih total
 // // //     await Progress.deleteMany({ userId: req.params.id });
 // // //     await Certificate.deleteMany({ userId: req.params.id });
 
-// // //     res.json({ message: 'User dan semua data terkait berhasil dihapus' });
+// // //     res.json({ success: true, message: 'User dan data terkait berhasil dihapus' });
 // // //   } catch (error) {
-// // //     res.status(500).json({ error: 'Gagal menghapus user' });
+// // //     res.status(500).json({ success: false, error: 'Gagal menghapus user' });
 // // //   }
 // // // });
 
 // // // export default router;
+
+
 // // import express, { Response } from 'express';
 // // import bcrypt from 'bcryptjs';
 // // import { z } from 'zod';
-// // // Pastikan import model menggunakan kurung kurawal jika menggunakan Named Export
 // // import { User } from '../models/User'; 
-// // import { Course } from '../models/Course'; 
-// // import { Certificate } from '../models/Certificate';
 // // import { Progress } from '../models/Progress'; 
+// // import { Certificate } from '../models/Certificate';
 // // import { requireAuth, requireSuperAdmin, AuthedRequest } from '../middleware/auth';
 
 // // const router = express.Router();
 
 // // // --- SCHEMA VALIDASI ---
-
 // // const createUserSchema = z.object({
 // //   email: z.string().email("Format email tidak valid"),
 // //   name: z.string().min(1, "Nama harus diisi"),
-// //   role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']),
-// //   password: z.string().min(6, "Password minimal 6 karakter")
+// //   role: z.enum(['STUDENT', 'FACILITATOR', 'ADMIN', 'SUPER_ADMIN']),
+// //   password: z.string().min(6, "Password minimal 6 karakter"),
+// //   regionScope: z.enum(['national', 'province', 'regency']).optional(),
+// //   managedProvinces: z.array(z.string()).optional(),
+// //   managedRegencies: z.array(z.string()).optional(),
+// //   permissions: z.array(z.string()).optional()
 // // });
 
 // // const updateUserSchema = z.object({
 // //   name: z.string().min(1).optional(),
-// //   role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']).optional(),
-// //   email: z.string().email().optional()
+// //   role: z.enum(['STUDENT', 'FACILITATOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
+// //   email: z.string().email().optional(),
+// //   regionScope: z.enum(['national', 'province', 'regency']).optional(),
+// //   managedProvinces: z.array(z.string()).optional(),
+// //   managedRegencies: z.array(z.string()).optional(),
+// //   permissions: z.array(z.string()).optional(),
+// //   isBanned: z.boolean().optional(),
+// //   bannedReason: z.string().optional()
 // // });
 
 // // // --- ROUTES ---
 
-// // /**
-// //  * 1. GET ALL USERS
-// //  */
+// // // 1. GET ALL USERS
 // // router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
 // //   try {
 // //     const users = await User.find().select('-password').sort({ createdAt: -1 });
-// //     res.json({ users });
+// //     res.json({ success: true, users });
 // //   } catch (error) {
-// //     res.status(500).json({ error: 'Gagal mengambil data user' });
+// //     res.status(500).json({ success: false, error: 'Gagal mengambil daftar pengguna' });
 // //   }
 // // });
 
-// // /**
-// //  * 2. GET USER DETAILS
-// //  * Memperbaiki masalah "Gagal mengambil detail user" (Error 500)
-// //  */
+// // // 2. GET USER DETAILS
 // // router.get('/:id/details', requireAuth, requireSuperAdmin, async (req: AuthedRequest, res: Response) => {
 // //   try {
 // //     const { id } = req.params;
-    
-// //     // A. Ambil Data User
+
 // //     const user = await User.findById(id).select('-password');
-// //     if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
+// //     if (!user) {
+// //       return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+// //     }
 
-// //     // B. Ambil Progress (Sejarah Pelatihan)
-// //     // Pastikan field di Progress adalah 'userId' (camelCase)
-// //     const history = await Progress.find({ userId: id })
-// //       .populate('courseId', 'title thumbnailUrl')
-// //       .lean(); // Menggunakan lean agar lebih ringan karena hanya read-only
-    
-// //     // C. Ambil Sertifikat
-// //     const certificates = await Certificate.find({ userId: id })
-// //       .populate('courseId', 'title')
-// //       .lean();
+// //     let history: any[] = []; 
+// //     let certificates: any[] = [];
 
-// //     res.json({
+// //     try {
+// //       history = await Progress.find({ userId: id })
+// //         .populate('courseId', 'title thumbnailUrl')
+// //         .lean();
+// //     } catch (e) {
+// //       console.error(`⚠️ Gagal fetch Progress user ${id}`);
+// //     }
+
+// //     try {
+// //       certificates = await Certificate.find({ userId: id })
+// //         .populate('courseId', 'title')
+// //         .lean();
+// //     } catch (e) {
+// //       console.error(`⚠️ Gagal fetch Certificates user ${id}`);
+// //     }
+
+// //     return res.json({
 // //       success: true,
 // //       user,
-// //       history: history || [],
-// //       certificates: certificates || []
+// //       history,
+// //       certificates
 // //     });
 
 // //   } catch (error: any) {
-// //     // Logging error di terminal untuk memudahkan debugging
-// //     console.error(`🔥 Detail Admin Error [User ID: ${req.params.id}]:`, error.message);
-// //     res.status(500).json({ 
-// //       error: 'Gagal mengambil detail user dari database', 
+// //     console.error("🔥 Critical Admin Detail Error:", error.message);
+// //     return res.status(500).json({ 
+// //       success: false, 
+// //       error: 'Gagal memproses detail pengguna', 
 // //       message: error.message 
 // //     });
 // //   }
 // // });
 
-// // /**
-// //  * 3. POST CREATE USER
-// //  */
+// // // 3. POST CREATE USER
 // // router.post('/', requireAuth, requireSuperAdmin, async (req, res) => {
 // //   try {
 // //     const data = createUserSchema.parse(req.body);
-    
 // //     const existing = await User.findOne({ email: data.email });
-// //     if (existing) return res.status(400).json({ error: 'Email sudah terdaftar' });
+// //     if (existing) return res.status(400).json({ success: false, error: 'Email sudah terdaftar' });
 
 // //     const hashedPassword = await bcrypt.hash(data.password, 10);
     
@@ -502,18 +577,20 @@
 // //       email: data.email,
 // //       name: data.name,
 // //       role: data.role,
-// //       password: hashedPassword 
+// //       password: hashedPassword,
+// //       regionScope: data.regionScope,
+// //       managedProvinces: data.managedProvinces,
+// //       managedRegencies: data.managedRegencies,
+// //       permissions: data.permissions
 // //     });
 
-// //     res.status(201).json({ message: 'User berhasil dibuat', userId: user._id });
+// //     res.status(201).json({ success: true, message: 'User berhasil dibuat', userId: user._id });
 // //   } catch (error: any) {
-// //     res.status(400).json({ error: error.errors?.[0]?.message || error.message });
+// //     res.status(400).json({ success: false, error: error.errors?.[0]?.message || error.message });
 // //   }
 // // });
 
-// // /**
-// //  * 4. PATCH UPDATE USER
-// //  */
+// // // 4. PATCH UPDATE USER
 // // router.patch('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
 // //   try {
 // //     const validatedData = updateUserSchema.parse(req.body);
@@ -524,29 +601,31 @@
 // //       { new: true, runValidators: true }
 // //     ).select('-password');
 
-// //     if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
-
-// //     res.json({ message: 'User berhasil diperbarui', user });
+// //     if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+// //     res.json({ success: true, message: 'User berhasil diperbarui', user });
 // //   } catch (error: any) {
-// //     res.status(400).json({ error: error.message || 'Gagal update user' });
+// //     res.status(400).json({ success: false, error: error.message || 'Gagal update user' });
 // //   }
 // // });
 
-// // /**
-// //  * 5. DELETE USER
-// //  */
-// // router.delete('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
+// // // 5. DELETE USER (With Super Admin Safety Check)
+// // router.delete('/:id', requireAuth, requireSuperAdmin, async (req: AuthedRequest, res) => {
 // //   try {
-// //     const user = await User.findByIdAndDelete(req.params.id);
-// //     if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
+// //     const targetUser = await User.findById(req.params.id);
+// //     if (!targetUser) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
 
-// //     // Hapus data terkait agar database tetap bersih
+// //     // [SAFETY] Jangan biarkan Super Admin menghapus dirinya sendiri
+// //     if (targetUser._id.toString() === req.user!.id) {
+// //         return res.status(400).json({ success: false, error: 'Anda tidak bisa menghapus akun sendiri.' });
+// //     }
+
+// //     await User.findByIdAndDelete(req.params.id);
 // //     await Progress.deleteMany({ userId: req.params.id });
 // //     await Certificate.deleteMany({ userId: req.params.id });
 
-// //     res.json({ message: 'User dan semua data terkait berhasil dihapus' });
+// //     res.json({ success: true, message: 'User dan data terkait berhasil dihapus' });
 // //   } catch (error) {
-// //     res.status(500).json({ error: 'Gagal menghapus user' });
+// //     res.status(500).json({ success: false, error: 'Gagal menghapus user' });
 // //   }
 // // });
 
@@ -555,7 +634,6 @@
 // import express, { Response } from 'express';
 // import bcrypt from 'bcryptjs';
 // import { z } from 'zod';
-// // Menggunakan Named Import { } untuk memastikan kompatibilitas dengan model
 // import { User } from '../models/User'; 
 // import { Progress } from '../models/Progress'; 
 // import { Certificate } from '../models/Certificate';
@@ -563,83 +641,85 @@
 
 // const router = express.Router();
 
-// // --- 1. SCHEMA VALIDASI (ZOD) ---
-
+// // --- SCHEMA VALIDASI (SAMA PERSIS DENGAN KODE LAMA ANDA) ---
 // const createUserSchema = z.object({
 //   email: z.string().email("Format email tidak valid"),
 //   name: z.string().min(1, "Nama harus diisi"),
-//   role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']),
-//   password: z.string().min(6, "Password minimal 6 karakter")
+//   role: z.enum(['STUDENT', 'FACILITATOR', 'ADMIN', 'SUPER_ADMIN']),
+//   password: z.string().min(6, "Password minimal 6 karakter"),
+//   regionScope: z.enum(['national', 'province', 'regency']).optional(),
+//   managedProvinces: z.array(z.string()).optional(),
+//   managedRegencies: z.array(z.string()).optional(),
+//   permissions: z.array(z.string()).optional()
 // });
 
 // const updateUserSchema = z.object({
 //   name: z.string().min(1).optional(),
-//   role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']).optional(),
-//   email: z.string().email().optional()
+//   role: z.enum(['STUDENT', 'FACILITATOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
+//   email: z.string().email().optional(),
+//   regionScope: z.enum(['national', 'province', 'regency']).optional(),
+//   managedProvinces: z.array(z.string()).optional(),
+//   managedRegencies: z.array(z.string()).optional(),
+//   permissions: z.array(z.string()).optional(),
+//   isBanned: z.boolean().optional(),
+//   bannedReason: z.string().optional()
 // });
 
-// // --- 2. ROUTES ---
+// // --- ROUTES ---
 
-// /**
-//  * GET ALL USERS
-//  * Menampilkan daftar semua pengguna di tabel Manajemen Pengguna
-//  */
+// // 1. GET ALL USERS (ORIGINAL)
 // router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
 //   try {
 //     const users = await User.find().select('-password').sort({ createdAt: -1 });
 //     res.json({ success: true, users });
 //   } catch (error) {
-//     console.error("🔥 Error Get All Users:", error);
 //     res.status(500).json({ success: false, error: 'Gagal mengambil daftar pengguna' });
 //   }
 // });
 
-// /**
-//  * GET USER DETAILS (Penyebab Utama Stuck Loading Jika Error)
-//  * Mengambil profil, riwayat progres kursus, dan sertifikat dalam satu request
-//  */
+// // 2. GET USER DETAILS (ORIGINAL + ERROR HANDLING)
 // router.get('/:id/details', requireAuth, requireSuperAdmin, async (req: AuthedRequest, res: Response) => {
 //   try {
 //     const { id } = req.params;
 
-//     // A. Cari User Dasar
 //     const user = await User.findById(id).select('-password');
 //     if (!user) {
 //       return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
 //     }
 
-//     // B. Cari Progres Belajar (Sejarah Pelatihan)
-//     // Menggunakan try-catch lokal agar jika satu koleksi bermasalah, sisa data tetap terkirim
-//     let history = [];
+//     let history: any[] = []; 
+//     let certificates: any[] = [];
+
+//     // Gunakan try-catch per query agar jika Progress/Certificate error, User tetap tampil
 //     try {
-//       history = await Progress.find({ userId: id })
-//         .populate('courseId', 'title thumbnailUrl')
-//         .lean();
+//       if (Progress) {
+//           history = await Progress.find({ userId: id })
+//             .populate('courseId', 'title thumbnailUrl')
+//             .lean();
+//       }
 //     } catch (e) {
-//       console.error(`⚠️ Gagal populate Progress untuk user ${id}:`, e);
+//       console.error(`⚠️ Gagal fetch Progress user ${id}`);
 //     }
 
-//     // C. Cari Sertifikat Terbit
-//     let certificates = [];
 //     try {
-//       certificates = await Certificate.find({ userId: id })
-//         .populate('courseId', 'title')
-//         .lean();
+//       if (Certificate) {
+//           certificates = await Certificate.find({ userId: id })
+//             .populate('courseId', 'title')
+//             .lean();
+//       }
 //     } catch (e) {
-//       console.error(`⚠️ Gagal populate Certificates untuk user ${id}:`, e);
+//       console.error(`⚠️ Gagal fetch Certificates user ${id}`);
 //     }
 
-//     // Selalu kirim success: true agar frontend berhenti loading
 //     return res.json({
 //       success: true,
 //       user,
-//       history: history || [],
-//       certificates: certificates || []
+//       history,
+//       certificates
 //     });
 
 //   } catch (error: any) {
 //     console.error("🔥 Critical Admin Detail Error:", error.message);
-//     // Pastikan tetap mengirim response agar frontend tidak "gantung"
 //     return res.status(500).json({ 
 //       success: false, 
 //       error: 'Gagal memproses detail pengguna', 
@@ -648,14 +728,10 @@
 //   }
 // });
 
-// /**
-//  * POST CREATE USER
-//  * Admin menambahkan user baru secara manual
-//  */
+// // 3. POST CREATE USER (ORIGINAL)
 // router.post('/', requireAuth, requireSuperAdmin, async (req, res) => {
 //   try {
 //     const data = createUserSchema.parse(req.body);
-    
 //     const existing = await User.findOne({ email: data.email });
 //     if (existing) return res.status(400).json({ success: false, error: 'Email sudah terdaftar' });
 
@@ -665,7 +741,11 @@
 //       email: data.email,
 //       name: data.name,
 //       role: data.role,
-//       password: hashedPassword 
+//       password: hashedPassword,
+//       regionScope: data.regionScope,
+//       managedProvinces: data.managedProvinces,
+//       managedRegencies: data.managedRegencies,
+//       permissions: data.permissions
 //     });
 
 //     res.status(201).json({ success: true, message: 'User berhasil dibuat', userId: user._id });
@@ -674,10 +754,7 @@
 //   }
 // });
 
-// /**
-//  * PATCH UPDATE USER
-//  * Mengubah nama atau peran (role) pengguna
-//  */
+// // 4. PATCH UPDATE USER (ORIGINAL)
 // router.patch('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
 //   try {
 //     const validatedData = updateUserSchema.parse(req.body);
@@ -689,41 +766,73 @@
 //     ).select('-password');
 
 //     if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
-
 //     res.json({ success: true, message: 'User berhasil diperbarui', user });
 //   } catch (error: any) {
 //     res.status(400).json({ success: false, error: error.message || 'Gagal update user' });
 //   }
 // });
 
-// /**
-//  * DELETE USER
-//  * Menghapus user beserta data terkait (Clean Up)
-//  */
-// router.delete('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
-//   try {
-//     const user = await User.findByIdAndDelete(req.params.id);
-//     if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+// // --- [TAMBAHAN BARU] RESET PASSWORD (MANDIRI) ---
+// // Saya tambahkan ini di sini agar tidak perlu import dari controller luar
+// router.patch('/:id/reset-password', requireAuth, requireSuperAdmin, async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const DEFAULT_PASS = '123456'; 
 
-//     // Hapus data progres dan sertifikat agar tidak menjadi sampah di DB
-//     await Progress.deleteMany({ userId: req.params.id });
-//     await Certificate.deleteMany({ userId: req.params.id });
+//         // Hash password
+//         const salt = await bcrypt.genSalt(10);
+//         const hashedPassword = await bcrypt.hash(DEFAULT_PASS, salt);
+
+//         const user = await User.findByIdAndUpdate(
+//             id, 
+//             { password: hashedPassword },
+//             { new: true }
+//         );
+
+//         if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+
+//         res.json({ 
+//             success: true,
+//             message: `Password user ${user.name} berhasil direset ke: ${DEFAULT_PASS}` 
+//         });
+//     } catch (error: any) {
+//         console.error("Reset Pass Error:", error);
+//         res.status(500).json({ success: false, error: error.message });
+//     }
+// });
+
+// // 5. DELETE USER (ORIGINAL WITH SAFETY)
+// router.delete('/:id', requireAuth, requireSuperAdmin, async (req: AuthedRequest, res) => {
+//   try {
+//     const targetUser = await User.findById(req.params.id);
+//     if (!targetUser) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+
+//     // [SAFETY] Jangan biarkan Super Admin menghapus dirinya sendiri
+//     if (targetUser._id.toString() === req.user!.id) {
+//         return res.status(400).json({ success: false, error: 'Anda tidak bisa menghapus akun sendiri.' });
+//     }
+
+//     await User.findByIdAndDelete(req.params.id);
+//     try {
+//         if (Progress) await Progress.deleteMany({ userId: req.params.id });
+//         if (Certificate) await Certificate.deleteMany({ userId: req.params.id });
+//     } catch(e) {}
 
 //     res.json({ success: true, message: 'User dan data terkait berhasil dihapus' });
 //   } catch (error) {
-//     console.error("🔥 Error Delete User:", error);
 //     res.status(500).json({ success: false, error: 'Gagal menghapus user' });
 //   }
 // });
 
 // export default router;
+
+
 import express, { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-// Import Model dan Interface-nya (IProgress, ICertificate)
 import { User } from '../models/User'; 
-import { Progress, IProgress } from '../models/Progress'; 
-import { Certificate, ICertificate } from '../models/Certificate';
+import { Progress } from '../models/Progress'; 
+import { Certificate } from '../models/Certificate';
 import { requireAuth, requireSuperAdmin, AuthedRequest } from '../middleware/auth';
 
 const router = express.Router();
@@ -732,14 +841,24 @@ const router = express.Router();
 const createUserSchema = z.object({
   email: z.string().email("Format email tidak valid"),
   name: z.string().min(1, "Nama harus diisi"),
-  role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']),
-  password: z.string().min(6, "Password minimal 6 karakter")
+  role: z.enum(['STUDENT', 'FACILITATOR', 'ADMIN', 'SUPER_ADMIN']),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+  regionScope: z.enum(['national', 'province', 'regency']).optional(),
+  managedProvinces: z.array(z.string()).optional(),
+  managedRegencies: z.array(z.string()).optional(),
+  permissions: z.array(z.string()).optional() // Permission Wajib Ada
 });
 
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
-  role: z.enum(['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']).optional(),
-  email: z.string().email().optional()
+  role: z.enum(['STUDENT', 'FACILITATOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
+  email: z.string().email().optional(),
+  regionScope: z.enum(['national', 'province', 'regency']).optional(),
+  managedProvinces: z.array(z.string()).optional(),
+  managedRegencies: z.array(z.string()).optional(),
+  permissions: z.array(z.string()).optional(), // Permission Wajib Ada
+  isBanned: z.boolean().optional(),
+  bannedReason: z.string().optional()
 });
 
 // --- ROUTES ---
@@ -754,56 +873,23 @@ router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
   }
 });
 
-/**
- * 2. GET USER DETAILS
- * PERBAIKAN: Memberikan tipe data eksplisit pada variabel history dan certificates
- */
+// 2. GET USER DETAILS
 router.get('/:id/details', requireAuth, requireSuperAdmin, async (req: AuthedRequest, res: Response) => {
   try {
     const { id } = req.params;
-
+    // Pastikan permissions tidak di-exclude
     const user = await User.findById(id).select('-password');
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
-    }
+    if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
 
-    // SOLUSI ERROR 7034 & 7005: Deklarasikan tipe array secara eksplisit
     let history: any[] = []; 
     let certificates: any[] = [];
 
-    // Ambil Sejarah Pelatihan
-    try {
-      // Menggunakan .lean<IProgress[]>() untuk memberi tahu TS hasil dari query ini
-      history = await Progress.find({ userId: id })
-        .populate('courseId', 'title thumbnailUrl')
-        .lean();
-    } catch (e) {
-      console.error(`⚠️ Gagal fetch Progress user ${id}`);
-    }
+    try { if (Progress) history = await Progress.find({ userId: id }).populate('courseId', 'title thumbnailUrl').lean(); } catch (e) {}
+    try { if (Certificate) certificates = await Certificate.find({ userId: id }).populate('courseId', 'title').lean(); } catch (e) {}
 
-    // Ambil Sertifikat
-    try {
-      certificates = await Certificate.find({ userId: id })
-        .populate('courseId', 'title')
-        .lean();
-    } catch (e) {
-      console.error(`⚠️ Gagal fetch Certificates user ${id}`);
-    }
-
-    return res.json({
-      success: true,
-      user,
-      history,
-      certificates
-    });
-
+    return res.json({ success: true, user, history, certificates });
   } catch (error: any) {
-    console.error("🔥 Critical Admin Detail Error:", error.message);
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Gagal memproses detail pengguna', 
-      message: error.message 
-    });
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -819,7 +905,11 @@ router.post('/', requireAuth, requireSuperAdmin, async (req, res) => {
       email: data.email,
       name: data.name,
       role: data.role,
-      password: hashedPassword 
+      password: hashedPassword,
+      regionScope: data.regionScope,
+      managedProvinces: data.managedProvinces,
+      managedRegencies: data.managedRegencies,
+      permissions: data.permissions
     });
 
     res.status(201).json({ success: true, message: 'User berhasil dibuat', userId: user._id });
@@ -828,35 +918,50 @@ router.post('/', requireAuth, requireSuperAdmin, async (req, res) => {
   }
 });
 
-// 4. PATCH UPDATE USER
+// 4. PATCH UPDATE USER (Termasuk Permission)
 router.patch('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
   try {
     const validatedData = updateUserSchema.parse(req.body);
-    const user = await User.findByIdAndUpdate(
-      req.params.id, 
-      { $set: validatedData }, 
-      { new: true, runValidators: true }
-    ).select('-password');
-
+    // $set akan mengupdate field apapun yang dikirim, termasuk 'permissions'
+    const user = await User.findByIdAndUpdate(req.params.id, { $set: validatedData }, { new: true }).select('-password');
     if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
     res.json({ success: true, message: 'User berhasil diperbarui', user });
   } catch (error: any) {
-    res.status(400).json({ success: false, error: error.message || 'Gagal update user' });
+    res.status(400).json({ success: false, error: error.message });
   }
 });
 
-// 5. DELETE USER
-router.delete('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
+// 5. RESET PASSWORD
+router.patch('/:id/reset-password', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const DEFAULT_PASS = '123456'; 
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(DEFAULT_PASS, salt);
+        const user = await User.findByIdAndUpdate(id, { password: hashedPassword }, { new: true });
+        if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+        res.json({ success: true, message: `Password reset ke: ${DEFAULT_PASS}` });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 6. DELETE USER
+router.delete('/:id', requireAuth, requireSuperAdmin, async (req: AuthedRequest, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+    if (targetUser._id.toString() === req.user!.id) return res.status(400).json({ success: false, error: 'Tidak bisa hapus akun sendiri.' });
 
-    await Progress.deleteMany({ userId: req.params.id });
-    await Certificate.deleteMany({ userId: req.params.id });
+    await User.findByIdAndDelete(req.params.id);
+    try {
+        if (Progress) await Progress.deleteMany({ userId: req.params.id });
+        if (Certificate) await Certificate.deleteMany({ userId: req.params.id });
+    } catch(e) {}
 
-    res.json({ success: true, message: 'User dan data terkait berhasil dihapus' });
+    res.json({ success: true, message: 'User dihapus' });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Gagal menghapus user' });
+    res.status(500).json({ success: false, error: 'Gagal hapus' });
   }
 });
 

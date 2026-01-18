@@ -1,55 +1,99 @@
+// // // // // import mongoose, { Schema, Document } from 'mongoose';
+
+// // // // // export interface IMessage extends Document {
+// // // // //   sender: mongoose.Types.ObjectId;
+// // // // //   recipient: mongoose.Types.ObjectId;
+// // // // //   message: string;
+// // // // //   isRead: boolean;
+// // // // //   createdAt: Date;
+// // // // // }
+
+// // // // // const MessageSchema: Schema = new Schema({
+// // // // //   sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+// // // // //   recipient: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+// // // // //   message: { type: String, required: true },
+// // // // //   isRead: { type: Boolean, default: false },
+// // // // // }, { timestamps: true });
+
+// // // // // export const Message = mongoose.model<IMessage>('Message', MessageSchema);
 // // // // import mongoose, { Schema, Document } from 'mongoose';
 
 // // // // export interface IMessage extends Document {
 // // // //   sender: mongoose.Types.ObjectId;
-// // // //   recipient: mongoose.Types.ObjectId;
+// // // //   recipient?: mongoose.Types.ObjectId; // Opsional untuk Global Chat
 // // // //   message: string;
 // // // //   isRead: boolean;
+// // // //   isGlobal: boolean; // Flag Chat Global
 // // // //   createdAt: Date;
 // // // // }
 
 // // // // const MessageSchema: Schema = new Schema({
 // // // //   sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-// // // //   recipient: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+// // // //   recipient: { type: Schema.Types.ObjectId, ref: 'User', required: false },
 // // // //   message: { type: String, required: true },
 // // // //   isRead: { type: Boolean, default: false },
+// // // //   isGlobal: { type: Boolean, default: false },
 // // // // }, { timestamps: true });
 
+// // // // // Indexing untuk performa pencarian chat
+// // // // MessageSchema.index({ createdAt: -1 });
+// // // // MessageSchema.index({ isGlobal: 1 });
+
+
 // // // // export const Message = mongoose.model<IMessage>('Message', MessageSchema);
+
+
 // // // import mongoose, { Schema, Document } from 'mongoose';
 
 // // // export interface IMessage extends Document {
 // // //   sender: mongoose.Types.ObjectId;
-// // //   recipient?: mongoose.Types.ObjectId; // Opsional untuk Global Chat
+// // //   recipient?: mongoose.Types.ObjectId; // Tetap ada (Legacy/Global Chat)
+  
+// // //   // [NEW] Fields untuk Group Chat LMS
+// // //   course?: mongoose.Types.ObjectId; 
+// // //   type: 'internal' | 'public'; 
+// // //   attachment?: {
+// // //     url: string;
+// // //     type: 'image' | 'file';
+// // //     name: string;
+// // //   };
+
 // // //   message: string;
 // // //   isRead: boolean;
-// // //   isGlobal: boolean; // Flag Chat Global
+// // //   isGlobal: boolean; 
 // // //   createdAt: Date;
 // // // }
 
 // // // const MessageSchema: Schema = new Schema({
 // // //   sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-// // //   recipient: { type: Schema.Types.ObjectId, ref: 'User', required: false },
-// // //   message: { type: String, required: true },
+// // //   recipient: { type: Schema.Types.ObjectId, ref: 'User', required: false }, // Opsional
+  
+// // //   // [NEW] Field Tambahan
+// // //   course: { type: Schema.Types.ObjectId, ref: 'Course', required: false }, // Opsional agar tidak merusak chat global lama
+// // //   type: { type: String, enum: ['internal', 'public'], default: 'public' },
+// // //   attachment: {
+// // //     url: { type: String },
+// // //     type: { type: String, enum: ['image', 'file'] },
+// // //     name: { type: String }
+// // //   },
+
+// // //   message: { type: String, required: false }, // Ubah required false karena bisa kirim attachment saja
 // // //   isRead: { type: Boolean, default: false },
 // // //   isGlobal: { type: Boolean, default: false },
 // // // }, { timestamps: true });
 
-// // // // Indexing untuk performa pencarian chat
+// // // // Indexing
 // // // MessageSchema.index({ createdAt: -1 });
 // // // MessageSchema.index({ isGlobal: 1 });
-
+// // // MessageSchema.index({ course: 1, type: 1 }); // Index baru untuk performa group chat
 
 // // // export const Message = mongoose.model<IMessage>('Message', MessageSchema);
-
-
+// // // export default Message; // Export default juga agar kompatibel dengan import di controller lain
 // // import mongoose, { Schema, Document } from 'mongoose';
 
 // // export interface IMessage extends Document {
 // //   sender: mongoose.Types.ObjectId;
-// //   recipient?: mongoose.Types.ObjectId; // Tetap ada (Legacy/Global Chat)
-  
-// //   // [NEW] Fields untuk Group Chat LMS
+// //   recipient?: mongoose.Types.ObjectId; 
 // //   course?: mongoose.Types.ObjectId; 
 // //   type: 'internal' | 'public'; 
 // //   attachment?: {
@@ -57,38 +101,41 @@
 // //     type: 'image' | 'file';
 // //     name: string;
 // //   };
-
 // //   message: string;
 // //   isRead: boolean;
 // //   isGlobal: boolean; 
+// //   mentions: mongoose.Types.ObjectId[]; // [NEW] Array User ID yang di-mention
 // //   createdAt: Date;
 // // }
 
 // // const MessageSchema: Schema = new Schema({
 // //   sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-// //   recipient: { type: Schema.Types.ObjectId, ref: 'User', required: false }, // Opsional
+// //   recipient: { type: Schema.Types.ObjectId, ref: 'User', required: false },
   
-// //   // [NEW] Field Tambahan
-// //   course: { type: Schema.Types.ObjectId, ref: 'Course', required: false }, // Opsional agar tidak merusak chat global lama
+// //   course: { type: Schema.Types.ObjectId, ref: 'Course', required: false },
 // //   type: { type: String, enum: ['internal', 'public'], default: 'public' },
+  
 // //   attachment: {
 // //     url: { type: String },
 // //     type: { type: String, enum: ['image', 'file'] },
 // //     name: { type: String }
 // //   },
 
-// //   message: { type: String, required: false }, // Ubah required false karena bisa kirim attachment saja
+// //   message: { type: String, required: false },
 // //   isRead: { type: Boolean, default: false },
 // //   isGlobal: { type: Boolean, default: false },
+  
+// //   // [NEW] Field Mentions
+// //   mentions: [{ type: Schema.Types.ObjectId, ref: 'User' }] 
 // // }, { timestamps: true });
 
 // // // Indexing
 // // MessageSchema.index({ createdAt: -1 });
 // // MessageSchema.index({ isGlobal: 1 });
-// // MessageSchema.index({ course: 1, type: 1 }); // Index baru untuk performa group chat
+// // MessageSchema.index({ course: 1, type: 1 });
 
 // // export const Message = mongoose.model<IMessage>('Message', MessageSchema);
-// // export default Message; // Export default juga agar kompatibel dengan import di controller lain
+// // export default Message;
 // import mongoose, { Schema, Document } from 'mongoose';
 
 // export interface IMessage extends Document {
@@ -136,13 +183,16 @@
 
 // export const Message = mongoose.model<IMessage>('Message', MessageSchema);
 // export default Message;
+
+
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IMessage extends Document {
   sender: mongoose.Types.ObjectId;
-  recipient?: mongoose.Types.ObjectId; 
+  recipient?: mongoose.Types.ObjectId | null; 
   course?: mongoose.Types.ObjectId; 
-  type: 'internal' | 'public'; 
+  type: 'personal' | 'global' | 'public' | 'internal'; 
+  topic?: string | null; 
   attachment?: {
     url: string;
     type: 'image' | 'file';
@@ -151,17 +201,26 @@ export interface IMessage extends Document {
   message: string;
   isRead: boolean;
   isGlobal: boolean; 
-  mentions: mongoose.Types.ObjectId[]; // [NEW] Array User ID yang di-mention
+  mentions: mongoose.Types.ObjectId[];
   createdAt: Date;
 }
 
 const MessageSchema: Schema = new Schema({
   sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  recipient: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+  
+  // [FIX] Recipient TIDAK REQUIRED dan default null
+  recipient: { type: Schema.Types.ObjectId, ref: 'User', required: false, default: undefined },
   
   course: { type: Schema.Types.ObjectId, ref: 'Course', required: false },
-  type: { type: String, enum: ['internal', 'public'], default: 'public' },
   
+  type: { 
+      type: String, 
+      enum: ['personal', 'global', 'public', 'internal'], 
+      default: 'personal' 
+  },
+
+  topic: { type: String, required: false, default: null },
+
   attachment: {
     url: { type: String },
     type: { type: String, enum: ['image', 'file'] },
@@ -172,14 +231,11 @@ const MessageSchema: Schema = new Schema({
   isRead: { type: Boolean, default: false },
   isGlobal: { type: Boolean, default: false },
   
-  // [NEW] Field Mentions
   mentions: [{ type: Schema.Types.ObjectId, ref: 'User' }] 
 }, { timestamps: true });
 
-// Indexing
 MessageSchema.index({ createdAt: -1 });
-MessageSchema.index({ isGlobal: 1 });
-MessageSchema.index({ course: 1, type: 1 });
+MessageSchema.index({ type: 1 });
 
 export const Message = mongoose.model<IMessage>('Message', MessageSchema);
 export default Message;

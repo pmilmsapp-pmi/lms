@@ -114,7 +114,7 @@ export default function StudentWorkspaceDraft() {
                             className={`h-full rounded-full transition-all duration-1000 ${
                               item.progressPercent === 100 ? 'bg-green-500' : 'bg-red-600'
                             }`}
-                            style={{ width: `${item.progressPercent}%` }}
+                            style={{ width: `${item.progressPercent}%` } as React.CSSProperties}
                           ></div>
                         </div>
                       </div>

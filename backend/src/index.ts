@@ -1,3 +1,716 @@
+// // // // import 'dotenv/config'; 
+// // // // import express from 'express';
+// // // // import cors from 'cors';
+// // // // import helmet from 'helmet';
+// // // // import compression from 'compression';
+// // // // import morgan from 'morgan';
+// // // // import cookieParser from 'cookie-parser';
+// // // // import path from 'path';
+// // // // import fs from 'fs';
+// // // // import mongoose from 'mongoose';
+
+// // // // // --- IMPORT ROUTES ---
+// // // // // [FIX] Now pointing to the FRESH file 'authentication.ts'
+// // // // import authRoutes from './routes/authentication'; 
+// // // // import courseRoutes from './routes/courses';
+// // // // import userRoutes from './routes/users';
+// // // // import progressRoutes from './routes/progress';
+// // // // import certificateRoutes from './routes/certificates';
+// // // // import uploadRoutes from './routes/upload';
+// // // // import adminUserRoutes from './routes/admin-user'; 
+// // // // import forumRoutes from './routes/forum';
+// // // // import libraryRoutes from './routes/library';
+// // // // import contentRoutes from './routes/content';
+// // // // import quizRoutes from './routes/quiz';
+// // // // import chatRoutes from './routes/chat';
+// // // // import notificationRoutes from './routes/notification';
+// // // // import blogRoutes from './routes/blog';
+// // // // import classroomRoutes from './routes/classroom';
+// // // // import enrollmentRoutes from './routes/enrollments';
+// // // // import statsRoutes from './routes/stats';
+// // // // import commentRoutes from './routes/comment'; 
+
+// // // // const app = express();
+
+// // // // // --- DATABASE CONNECTION ---
+// // // // const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://misdbpmi:misdbpmi@cluster0.l4lq1.mongodb.net/lms_db';
+
+// // // // mongoose.set('strictQuery', true);
+
+// // // // const connectDB = async () => {
+// // // //   try {
+// // // //     if (mongoose.connection.readyState === 0) {
+// // // //       await mongoose.connect(MONGO_URI);
+// // // //       console.log(`✅ [db] Connected to MongoDB`);
+// // // //     }
+// // // //   } catch (err) {
+// // // //     console.error('❌ [db] Connection error:', err);
+// // // //   }
+// // // // };
+// // // // connectDB();
+
+// // // // // --- CORS CONFIGURATION ---
+// // // // const corsConfig: cors.CorsOptions = {
+// // // //   origin: true, 
+// // // //   credentials: true,
+// // // //   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin', 'x-google-token'],
+// // // //   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+// // // // };
+
+// // // // app.use(cors(corsConfig));
+// // // // app.options('*', cors(corsConfig)); 
+
+// // // // // --- MIDDLEWARE ---
+// // // // app.use(helmet({ 
+// // // //   crossOriginResourcePolicy: false,
+// // // //   contentSecurityPolicy: false 
+// // // // })); 
+// // // // app.use(compression());
+// // // // app.use(morgan('dev'));
+
+// // // // app.use(express.json({ limit: '50mb' }));
+// // // // app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// // // // app.use(cookieParser(process.env.COOKIE_SECRET || 'pmi-secret'));
+
+// // // // // --- STATIC FILES ---
+// // // // const UPLOADS_PATH = path.join(process.cwd(), 'public', 'uploads'); 
+// // // // if (!fs.existsSync(UPLOADS_PATH)) {
+// // // //     try { fs.mkdirSync(UPLOADS_PATH, { recursive: true }); } catch(e) {} 
+// // // // }
+// // // // app.use('/uploads', express.static(UPLOADS_PATH));
+
+// // // // // --- ROUTES REGISTRATION ---
+// // // // app.get('/', (req, res) => res.send('LMS PMI Backend is Running!'));
+// // // // app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
+// // // // app.use('/api/courses/certificate', certificateRoutes);
+// // // // // [FIX] Using the new route import
+// // // // app.use('/api/auth', authRoutes);
+// // // // app.use('/api/users', userRoutes);
+// // // // app.use('/api/admin/users', adminUserRoutes);
+// // // // app.use('/api/courses', courseRoutes);
+// // // // app.use('/api/content', contentRoutes);
+// // // // app.use('/api/progress', progressRoutes);
+// // // // app.use('/api/certificates', certificateRoutes);
+// // // // app.use('/api/quiz', quizRoutes);
+// // // // app.use('/api/classroom', classroomRoutes);
+// // // // app.use('/api/forum', forumRoutes);
+// // // // app.use('/api/chat', chatRoutes);
+// // // // app.use('/api/notifications', notificationRoutes);
+// // // // app.use('/api/blog', blogRoutes);
+// // // // app.use('/api/library', libraryRoutes);
+// // // // app.use('/api/stats', statsRoutes);
+// // // // app.use('/api/upload', uploadRoutes); 
+// // // // app.use('/upload', uploadRoutes);
+// // // // app.use('/api/enrollments', enrollmentRoutes);
+// // // // app.use('/api/comment', commentRoutes);
+
+// // // // // --- ERROR HANDLERS ---
+// // // // app.use((req, res, next) => {
+// // // //     if (req.url.includes('/uploads/')) return next();
+// // // //     res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
+// // // // });
+
+// // // // app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+// // // //   console.error("❌ Global Error:", err.message);
+// // // //   if (err.name === 'ZodError') {
+// // // //     return res.status(400).json({ error: 'Validation error', issues: err.issues });
+// // // //   }
+// // // //   if (err instanceof SyntaxError && 'body' in err) {
+// // // //       return res.status(400).json({ error: 'Invalid JSON payload' });
+// // // //   }
+// // // //   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+// // // // });
+
+// // // // // --- SERVER LISTEN ---
+// // // // const PORT = process.env.PORT || 4000;
+// // // // if (process.env.NODE_ENV !== 'production') {
+// // // //   app.listen(PORT, () => {
+// // // //     console.log(`🚀 [server] Server running on port ${PORT}`);
+// // // //   });
+// // // // }
+
+// // // // export default app;
+
+// // // import 'dotenv/config'; 
+// // // import express from 'express';
+// // // import cors from 'cors';
+// // // import helmet from 'helmet';
+// // // import compression from 'compression';
+// // // import morgan from 'morgan';
+// // // import cookieParser from 'cookie-parser';
+// // // import path from 'path';
+// // // import fs from 'fs';
+// // // import mongoose from 'mongoose';
+
+// // // // Import Library untuk cek koneksi
+// // // import { v2 as cloudinary } from 'cloudinary';
+// // // import { createClient } from '@supabase/supabase-js';
+
+// // // // --- IMPORT ROUTES ---
+// // // import authRoutes from './routes/authentication'; 
+// // // import courseRoutes from './routes/courses';
+// // // import userRoutes from './routes/users';
+// // // import progressRoutes from './routes/progress';
+// // // import certificateRoutes from './routes/certificates';
+// // // import uploadRoutes from './routes/upload';
+// // // import adminUserRoutes from './routes/admin-user'; 
+// // // import forumRoutes from './routes/forum';
+// // // import libraryRoutes from './routes/library';
+// // // import contentRoutes from './routes/content';
+// // // import quizRoutes from './routes/quiz';
+// // // import chatRoutes from './routes/chat';
+// // // import notificationRoutes from './routes/notification';
+// // // import blogRoutes from './routes/blog';
+// // // import classroomRoutes from './routes/classroom';
+// // // import enrollmentRoutes from './routes/enrollments';
+// // // import statsRoutes from './routes/stats';
+// // // import commentRoutes from './routes/comment'; 
+
+
+// // // const app = express();
+
+
+// // // // --- 1. DATABASE CONNECTION (MONGODB) ---
+// // // const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://misdbpmi:misdbpmi@cluster0.l4lq1.mongodb.net/lms_db';
+
+// // // mongoose.set('strictQuery', true);
+
+// // // const connectDB = async () => {
+// // //   try {
+// // //     if (mongoose.connection.readyState === 0) {
+// // //       await mongoose.connect(MONGO_URI);
+// // //       console.log(`✅ [db]         Connected to MongoDB`);
+// // //     }
+// // //   } catch (err) {
+// // //     console.error('❌ [db]         Connection error:', err);
+// // //   }
+// // // };
+// // // connectDB();
+
+// // // // --- 2. INTEGRATION CHECK (SUPABASE & CLOUDINARY) ---
+// // // const checkIntegrations = async () => {
+// // //   // A. Cek Supabase
+// // //   if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+// // //     try {
+// // //       const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+// // //       const { data, error } = await supabase.storage.listBuckets();
+// // //       if (!error) {
+// // //         console.log(`✅ [supabase]   Connected`);
+// // //       } else {
+// // //         console.log(`❌ [supabase]   Error: ${error.message}`);
+// // //       }
+// // //     } catch (err) {
+// // //       console.log(`❌ [supabase]   Connection Failed`);
+// // //     }
+// // //   } else {
+// // //     console.log(`⚠️ [supabase]   Skipped (Missing .env variables)`);
+// // //   }
+
+// // //   // B. Cek Cloudinary (Logika Lebih Detail)
+// // //   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+// // //   const apiKey = process.env.CLOUDINARY_API_KEY;
+// // //   const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+// // //   if (cloudName && apiKey && apiSecret) {
+// // //     try {
+// // //       cloudinary.config({
+// // //         cloud_name: cloudName,
+// // //         api_key: apiKey,
+// // //         api_secret: apiSecret,
+// // //       });
+// // //       // Ping server Cloudinary untuk memastikan kunci benar
+// // //       await cloudinary.api.ping();
+// // //       console.log(`✅ [cloudinary] Connected (Cloud: ${cloudName})`);
+// // //     } catch (err: any) {
+// // //       console.log(`❌ [cloudinary] Connection Failed: ${err.message}`);
+// // //     }
+// // //   } else {
+// // //     // Beritahu user variabel mana yang belum terbaca
+// // //     console.log(`⚠️ [cloudinary] Skipped. Variabel .env belum lengkap:`);
+// // //     if (!cloudName) console.log(`   - CLOUDINARY_CLOUD_NAME tidak terbaca`);
+// // //     if (!apiKey) console.log(`   - CLOUDINARY_API_KEY tidak terbaca`);
+// // //     if (!apiSecret) console.log(`   - CLOUDINARY_API_SECRET tidak terbaca`);
+// // //   }
+// // // };
+
+// // // // --- CORS CONFIGURATION ---
+// // // const corsConfig: cors.CorsOptions = {
+// // //   origin: true, 
+// // //   credentials: true,
+// // //   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin', 'x-google-token'],
+// // //   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+// // // };
+
+// // // app.use(cors(corsConfig));
+// // // app.options('*', cors(corsConfig)); 
+
+// // // // --- MIDDLEWARE ---
+// // // app.use(helmet({ 
+// // //   crossOriginResourcePolicy: false,
+// // //   contentSecurityPolicy: false 
+// // // })); 
+// // // app.use(compression());
+// // // app.use(morgan('dev'));
+
+// // // app.use(express.json({ limit: '50mb' }));
+// // // app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// // // app.use(cookieParser(process.env.COOKIE_SECRET || 'pmi-secret'));
+
+// // // // --- STATIC FILES ---
+// // // const UPLOADS_PATH = path.join(process.cwd(), 'public', 'uploads'); 
+// // // if (!fs.existsSync(UPLOADS_PATH)) {
+// // //     try { fs.mkdirSync(UPLOADS_PATH, { recursive: true }); } catch(e) {} 
+// // // }
+// // // app.use('/uploads', express.static(UPLOADS_PATH));
+
+// // // // --- ROUTES REGISTRATION ---
+// // // app.get('/', (req, res) => res.send('LMS PMI Backend is Running!'));
+// // // app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
+// // // app.use('/api/courses/certificate', certificateRoutes);
+// // // app.use('/api/auth', authRoutes);
+// // // app.use('/api/users', userRoutes);
+// // // app.use('/api/admin/users', adminUserRoutes);
+// // // app.use('/api/courses', courseRoutes);
+// // // app.use('/api/content', contentRoutes);
+// // // app.use('/api/progress', progressRoutes);
+// // // app.use('/api/certificates', certificateRoutes);
+// // // app.use('/api/quiz', quizRoutes);
+// // // app.use('/api/classroom', classroomRoutes);
+// // // app.use('/api/forum', forumRoutes);
+// // // app.use('/api/chat', chatRoutes);
+// // // app.use('/api/notifications', notificationRoutes);
+// // // app.use('/api/blog', blogRoutes);
+// // // app.use('/api/library', libraryRoutes);
+// // // app.use('/api/stats', statsRoutes);
+// // // app.use('/api/upload', uploadRoutes); 
+// // // app.use('/upload', uploadRoutes);
+// // // app.use('/api/enrollments', enrollmentRoutes);
+// // // app.use('/api/comment', commentRoutes);
+
+// // // // --- ERROR HANDLERS ---
+// // // app.use((req, res, next) => {
+// // //     if (req.url.includes('/uploads/')) return next();
+// // //     res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
+// // // });
+
+// // // app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+// // //   console.error("❌ Global Error:", err.message);
+// // //   if (err.name === 'ZodError') {
+// // //     return res.status(400).json({ error: 'Validation error', issues: err.issues });
+// // //   }
+// // //   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+// // // });
+
+// // // // --- SERVER LISTEN ---
+// // // const PORT = process.env.PORT || 4000;
+
+// // // app.listen(PORT, async () => {
+// // //   console.log(`🚀 [server]     Server running on port ${PORT}`);
+// // //   // Jalankan cek integrasi
+// // //   await checkIntegrations();
+// // // });
+
+// // // export default app;
+
+
+// // import 'dotenv/config'; 
+// // import express from 'express';
+// // import cors from 'cors';
+// // import helmet from 'helmet';
+// // import compression from 'compression';
+// // import morgan from 'morgan';
+// // import cookieParser from 'cookie-parser';
+// // import path from 'path';
+// // import fs from 'fs';
+// // import mongoose from 'mongoose';
+
+// // // Import Library untuk cek koneksi
+// // import { v2 as cloudinary } from 'cloudinary';
+// // import { createClient } from '@supabase/supabase-js';
+
+// // // --- IMPORT ROUTES ---
+// // import authRoutes from './routes/authentication'; 
+// // import courseRoutes from './routes/courses';
+// // import userRoutes from './routes/users';
+// // import progressRoutes from './routes/progress';
+// // import certificateRoutes from './routes/certificates';
+// // import uploadRoutes from './routes/upload';
+// // import adminUserRoutes from './routes/admin-user'; 
+// // import forumRoutes from './routes/forum';
+// // import libraryRoutes from './routes/library';
+// // import contentRoutes from './routes/content';
+// // import quizRoutes from './routes/quiz';
+// // import chatRoutes from './routes/chat';
+// // import notificationRoutes from './routes/notification';
+// // import blogRoutes from './routes/blog';
+// // import classroomRoutes from './routes/classroom';
+// // import enrollmentRoutes from './routes/enrollments';
+// // import statsRoutes from './routes/stats';
+// // import commentRoutes from './routes/comment';
+// // // --- TAMBAHAN BARU (Import route material) ---
+// // import materialRoutes from './routes/materialRoutes'; 
+
+
+// // const app = express();
+
+
+// // // --- 1. DATABASE CONNECTION (MONGODB) ---
+// // const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://misdbpmi:misdbpmi@cluster0.l4lq1.mongodb.net/lms_db';
+
+// // mongoose.set('strictQuery', true);
+
+// // const connectDB = async () => {
+// //   try {
+// //     if (mongoose.connection.readyState === 0) {
+// //       await mongoose.connect(MONGO_URI);
+// //       console.log(`✅ [db]         Connected to MongoDB`);
+// //     }
+// //   } catch (err) {
+// //     console.error('❌ [db]         Connection error:', err);
+// //   }
+// // };
+// // connectDB();
+
+// // // --- 2. INTEGRATION CHECK (SUPABASE & CLOUDINARY) ---
+// // const checkIntegrations = async () => {
+// //   // A. Cek Supabase
+// //   if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+// //     try {
+// //       const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+// //       const { data, error } = await supabase.storage.listBuckets();
+// //       if (!error) {
+// //         console.log(`✅ [supabase]   Connected`);
+// //       } else {
+// //         console.log(`❌ [supabase]   Error: ${error.message}`);
+// //       }
+// //     } catch (err) {
+// //       console.log(`❌ [supabase]   Connection Failed`);
+// //     }
+// //   } else {
+// //     console.log(`⚠️ [supabase]   Skipped (Missing .env variables)`);
+// //   }
+
+// //   // B. Cek Cloudinary (Logika Lebih Detail)
+// //   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+// //   const apiKey = process.env.CLOUDINARY_API_KEY;
+// //   const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+// //   if (cloudName && apiKey && apiSecret) {
+// //     try {
+// //       cloudinary.config({
+// //         cloud_name: cloudName,
+// //         api_key: apiKey,
+// //         api_secret: apiSecret,
+// //       });
+// //       // Ping server Cloudinary untuk memastikan kunci benar
+// //       await cloudinary.api.ping();
+// //       console.log(`✅ [cloudinary] Connected (Cloud: ${cloudName})`);
+// //     } catch (err: any) {
+// //       console.log(`❌ [cloudinary] Connection Failed: ${err.message}`);
+// //     }
+// //   } else {
+// //     // Beritahu user variabel mana yang belum terbaca
+// //     console.log(`⚠️ [cloudinary] Skipped. Variabel .env belum lengkap:`);
+// //     if (!cloudName) console.log(`   - CLOUDINARY_CLOUD_NAME tidak terbaca`);
+// //     if (!apiKey) console.log(`   - CLOUDINARY_API_KEY tidak terbaca`);
+// //     if (!apiSecret) console.log(`   - CLOUDINARY_API_SECRET tidak terbaca`);
+// //   }
+// // };
+
+// // // --- CORS CONFIGURATION ---
+// // const corsConfig: cors.CorsOptions = {
+// //   origin: true, 
+// //   credentials: true,
+// //   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin', 'x-google-token'],
+// //   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+// // };
+
+// // app.use(cors(corsConfig));
+// // app.options('*', cors(corsConfig)); 
+
+// // // --- MIDDLEWARE ---
+// // app.use(helmet({ 
+// //   crossOriginResourcePolicy: false,
+// //   contentSecurityPolicy: false 
+// // })); 
+// // app.use(compression());
+// // app.use(morgan('dev'));
+
+// // app.use(express.json({ limit: '50mb' }));
+// // app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// // app.use(cookieParser(process.env.COOKIE_SECRET || 'pmi-secret'));
+
+// // // --- STATIC FILES ---
+// // const UPLOADS_PATH = path.join(process.cwd(), 'public', 'uploads'); 
+// // if (!fs.existsSync(UPLOADS_PATH)) {
+// //     try { fs.mkdirSync(UPLOADS_PATH, { recursive: true }); } catch(e) {} 
+// // }
+// // app.use('/uploads', express.static(UPLOADS_PATH));
+
+// // // --- ROUTES REGISTRATION ---
+// // app.get('/', (req, res) => res.send('LMS PMI Backend is Running!'));
+// // app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
+// // app.use('/api/courses/certificate', certificateRoutes);
+// // app.use('/api/auth', authRoutes);
+// // app.use('/api/users', userRoutes);
+// // app.use('/api/admin/users', adminUserRoutes);
+// // app.use('/api/courses', courseRoutes);
+// // app.use('/api/content', contentRoutes);
+// // app.use('/api/progress', progressRoutes);
+// // app.use('/api/certificates', certificateRoutes);
+// // app.use('/api/quiz', quizRoutes);
+// // app.use('/api/classroom', classroomRoutes);
+// // app.use('/api/forum', forumRoutes);
+// // app.use('/api/chat', chatRoutes);
+// // app.use('/api/notifications', notificationRoutes);
+// // app.use('/api/blog', blogRoutes);
+// // app.use('/api/library', libraryRoutes);
+// // app.use('/api/stats', statsRoutes);
+// // app.use('/api/upload', uploadRoutes); 
+// // app.use('/upload', uploadRoutes);
+// // app.use('/api/enrollments', enrollmentRoutes);
+// // app.use('/api/comment', commentRoutes);
+
+// // // --- TAMBAHAN BARU (Registrasi route material) ---
+// // app.use('/api/materials', materialRoutes);
+
+// // // --- ERROR HANDLERS ---
+// // app.use((req, res, next) => {
+// //     if (req.url.includes('/uploads/')) return next();
+// //     res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
+// // });
+
+// // app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+// //   console.error("❌ Global Error:", err.message);
+// //   if (err.name === 'ZodError') {
+// //     return res.status(400).json({ error: 'Validation error', issues: err.issues });
+// //   }
+// //   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+// // });
+
+// // // --- SERVER LISTEN ---
+// // const PORT = process.env.PORT || 4000;
+
+// // app.listen(PORT, async () => {
+// //   console.log(`🚀 [server]     Server running on port ${PORT}`);
+// //   // Jalankan cek integrasi
+// //   await checkIntegrations();
+// // });
+
+// // export default app;
+
+
+// import 'dotenv/config'; 
+// import express from 'express';
+// import cors from 'cors';
+// import helmet from 'helmet';
+// import compression from 'compression';
+// import morgan from 'morgan';
+// import cookieParser from 'cookie-parser';
+// import path from 'path';
+// import fs from 'fs';
+// import mongoose from 'mongoose';
+
+// // Import Library untuk cek koneksi
+// import { v2 as cloudinary } from 'cloudinary';
+// import { createClient } from '@supabase/supabase-js';
+
+// // --- IMPORT ROUTES ---
+// import authRoutes from './routes/authentication'; 
+// import courseRoutes from './routes/courses';
+// import userRoutes from './routes/users';
+// import progressRoutes from './routes/progress';
+// import certificateRoutes from './routes/certificates';
+// import uploadRoutes from './routes/upload';
+// import adminUserRoutes from './routes/admin-user'; 
+// import forumRoutes from './routes/forum';
+// import libraryRoutes from './routes/library';
+// import contentRoutes from './routes/content';
+// import quizRoutes from './routes/quiz';
+// import chatRoutes from './routes/chat';
+// import notificationRoutes from './routes/notification';
+// import blogRoutes from './routes/blog';
+// import classroomRoutes from './routes/classroom';
+// import enrollmentRoutes from './routes/enrollments';
+// import statsRoutes from './routes/stats';
+// import commentRoutes from './routes/comment';
+// import materialRoutes from './routes/materialRoutes'; 
+
+
+
+
+// const app = express();
+
+
+// // --- 1. DATABASE CONNECTION (MONGODB) ---
+// const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://misdbpmi:misdbpmi@cluster0.l4lq1.mongodb.net/lms_db';
+
+// mongoose.set('strictQuery', true);
+
+// const connectDB = async () => {
+//   try {
+//     if (mongoose.connection.readyState === 0) {
+//       await mongoose.connect(MONGO_URI);
+//       console.log(`✅ [db]         Connected to MongoDB`);
+//     }
+//   } catch (err) {
+//     console.error('❌ [db]         Connection error:', err);
+//   }
+// };
+// connectDB();
+
+// // --- 2. INTEGRATION CHECK (SUPABASE & CLOUDINARY) ---
+// const checkIntegrations = async () => {
+//   // A. Cek Supabase
+//   if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+//     try {
+//       const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+//       const { data, error } = await supabase.storage.listBuckets();
+//       if (!error) {
+//         console.log(`✅ [supabase]   Connected`);
+//       } else {
+//         console.log(`❌ [supabase]   Error: ${error.message}`);
+//       }
+//     } catch (err) {
+//       console.log(`❌ [supabase]   Connection Failed`);
+//     }
+//   } else {
+//     console.log(`⚠️ [supabase]   Skipped (Missing .env variables)`);
+//   }
+
+//   // B. Cek Cloudinary
+//   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+//   const apiKey = process.env.CLOUDINARY_API_KEY;
+//   const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+//   if (cloudName && apiKey && apiSecret) {
+//     try {
+//       cloudinary.config({
+//         cloud_name: cloudName,
+//         api_key: apiKey,
+//         api_secret: apiSecret,
+//       });
+//       await cloudinary.api.ping();
+//       console.log(`✅ [cloudinary] Connected (Cloud: ${cloudName})`);
+//     } catch (err: any) {
+//       console.log(`❌ [cloudinary] Connection Failed: ${err.message}`);
+//     }
+//   } else {
+//     console.log(`⚠️ [cloudinary] Skipped. Variabel .env belum lengkap`);
+//   }
+// };
+
+// // --- CORS CONFIGURATION ---
+// const corsConfig: cors.CorsOptions = {
+//   origin: true, 
+//   credentials: true,
+//   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin', 'x-google-token'],
+//   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+// };
+
+// app.use(cors(corsConfig));
+// app.options('*', cors(corsConfig)); 
+
+// // --- MIDDLEWARE ---
+// app.use(helmet({ 
+//   crossOriginResourcePolicy: false,
+//   contentSecurityPolicy: false 
+// })); 
+// app.use(compression());
+// app.use(morgan('dev'));
+
+// app.use(express.json({ limit: '50mb' }));
+// app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// app.use(cookieParser(process.env.COOKIE_SECRET || 'pmi-secret'));
+
+// // --- 3. STATIC FILES (PERBAIKAN) ---
+// // Gunakan path absolut untuk folder public dan uploads
+// const PUBLIC_PATH = path.join(process.cwd(), 'public');
+// const UPLOADS_PATH = path.join(PUBLIC_PATH, 'uploads');
+
+// // Buat folder uploads secara otomatis jika belum ada
+// if (!fs.existsSync(UPLOADS_PATH)) {
+//   try { 
+//     fs.mkdirSync(UPLOADS_PATH, { recursive: true }); 
+//     console.log(`📁 [fs]         Folder uploads created at ${UPLOADS_PATH}`);
+//   } catch(e) {
+//     console.error(`❌ [fs]         Failed to create folder:`, e);
+//   } 
+// }
+
+// // Melayani folder uploads pada route /uploads
+// // PENTING: Tambahkan setHeaders untuk mengatasi masalah karakter khusus/spasi
+// app.use('/uploads', express.static(UPLOADS_PATH, {
+//   setHeaders: (res) => {
+//     res.set('Access-Control-Allow-Origin', '*');
+//     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+//   }
+// }));
+
+// // Melayani folder public secara umum
+// app.use(express.static(PUBLIC_PATH));
+
+
+// // --- ROUTES REGISTRATION ---
+// app.get('/', (req, res) => res.send('LMS PMI Backend is Running!'));
+// app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
+// app.use('/api/courses/certificate', certificateRoutes);
+// app.use('/api/auth', authRoutes);
+// app.use('/api/users', userRoutes);
+// app.use('/api/admin/users', adminUserRoutes);
+// app.use('/api/courses', courseRoutes);
+// app.use('/api/content', contentRoutes);
+// app.use('/api/progress', progressRoutes);
+// app.use('/api/certificates', certificateRoutes);
+// app.use('/api/quiz', quizRoutes);
+// app.use('/api/classroom', classroomRoutes);
+// app.use('/api/forum', forumRoutes);
+// app.use('/api/chat', chatRoutes);
+// app.use('/api/notifications', notificationRoutes);
+// app.use('/api/blog', blogRoutes);
+// app.use('/api/library', libraryRoutes);
+// app.use('/api/stats', statsRoutes);
+// app.use('/api/upload', uploadRoutes); 
+// app.use('/upload', uploadRoutes);
+// app.use('/api/enrollments', enrollmentRoutes);
+// app.use('/api/comment', commentRoutes);
+// app.use('/api/materials', materialRoutes);
+
+// // --- 4. ERROR HANDLERS (PERBAIKAN) ---
+// // Handler 404 - Pastikan tidak memotong request file yang valid
+// app.use((req, res, next) => {
+//     // Jika request mengarah ke /uploads tapi sampai ke sini, berarti file memang tidak ada
+//     if (req.url.startsWith('/uploads/')) {
+//         return res.status(404).json({ error: 'File not found' });
+//     }
+//     res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
+// });
+
+// // Global Error Handler
+// app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+//   console.error("❌ Global Error:", err.message);
+//   if (err.name === 'ZodError') {
+//     return res.status(400).json({ error: 'Validation error', issues: err.issues });
+//   }
+//   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+// });
+
+// // --- SERVER LISTEN ---
+// const PORT = process.env.PORT || 4000;
+
+// app.listen(PORT, async () => {
+//   console.log(`🚀 [server]     Server running on port ${PORT}`);
+//   await checkIntegrations();
+// });
+
+// export default app;
+
+
+
 import 'dotenv/config'; 
 import express from 'express';
 import cors from 'cors';
@@ -9,8 +722,12 @@ import path from 'path';
 import fs from 'fs';
 import mongoose from 'mongoose';
 
+// Import Library untuk cek koneksi
+import { v2 as cloudinary } from 'cloudinary';
+import { createClient } from '@supabase/supabase-js';
+
 // --- IMPORT ROUTES ---
-// [FIX] Now pointing to the FRESH file 'authentication.ts'
+// [PENTING] Ini memuat file authentication.ts yang berisi perbaikan Login & endpoint /me
 import authRoutes from './routes/authentication'; 
 import courseRoutes from './routes/courses';
 import userRoutes from './routes/users';
@@ -28,11 +745,12 @@ import blogRoutes from './routes/blog';
 import classroomRoutes from './routes/classroom';
 import enrollmentRoutes from './routes/enrollments';
 import statsRoutes from './routes/stats';
-import commentRoutes from './routes/comment'; 
+import commentRoutes from './routes/comment';
+import materialRoutes from './routes/materialRoutes'; 
 
 const app = express();
 
-// --- DATABASE CONNECTION ---
+// --- 1. DATABASE CONNECTION (MONGODB) ---
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://misdbpmi:misdbpmi@cluster0.l4lq1.mongodb.net/lms_db';
 
 mongoose.set('strictQuery', true);
@@ -41,13 +759,54 @@ const connectDB = async () => {
   try {
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(MONGO_URI);
-      console.log(`✅ [db] Connected to MongoDB`);
+      console.log(`✅ [db]         Connected to MongoDB`);
     }
   } catch (err) {
-    console.error('❌ [db] Connection error:', err);
+    console.error('❌ [db]         Connection error:', err);
   }
 };
 connectDB();
+
+// --- 2. INTEGRATION CHECK (SUPABASE & CLOUDINARY) ---
+const checkIntegrations = async () => {
+  // A. Cek Supabase
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+    try {
+      const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      const { data, error } = await supabase.storage.listBuckets();
+      if (!error) {
+        console.log(`✅ [supabase]   Connected`);
+      } else {
+        console.log(`❌ [supabase]   Error: ${error.message}`);
+      }
+    } catch (err) {
+      console.log(`❌ [supabase]   Connection Failed`);
+    }
+  } else {
+    console.log(`⚠️ [supabase]   Skipped (Missing .env variables)`);
+  }
+
+  // B. Cek Cloudinary
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (cloudName && apiKey && apiSecret) {
+    try {
+      cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+      });
+      await cloudinary.api.ping();
+      console.log(`✅ [cloudinary] Connected (Cloud: ${cloudName})`);
+    } catch (err: any) {
+      console.log(`❌ [cloudinary] Connection Failed: ${err.message}`);
+    }
+  } else {
+    console.log(`⚠️ [cloudinary] Skipped. Variabel .env belum lengkap`);
+  }
+};
 
 // --- CORS CONFIGURATION ---
 const corsConfig: cors.CorsOptions = {
@@ -72,20 +831,36 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser(process.env.COOKIE_SECRET || 'pmi-secret'));
 
-// --- STATIC FILES ---
-const UPLOADS_PATH = path.join(process.cwd(), 'public', 'uploads'); 
+// --- 3. STATIC FILES ---
+const PUBLIC_PATH = path.join(process.cwd(), 'public');
+const UPLOADS_PATH = path.join(PUBLIC_PATH, 'uploads');
+
 if (!fs.existsSync(UPLOADS_PATH)) {
-    try { fs.mkdirSync(UPLOADS_PATH, { recursive: true }); } catch(e) {} 
+  try { 
+    fs.mkdirSync(UPLOADS_PATH, { recursive: true }); 
+    console.log(`📁 [fs]         Folder uploads created at ${UPLOADS_PATH}`);
+  } catch(e) {
+    console.error(`❌ [fs]         Failed to create folder:`, e);
+  } 
 }
-app.use('/uploads', express.static(UPLOADS_PATH));
+
+app.use('/uploads', express.static(UPLOADS_PATH, {
+  setHeaders: (res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
+
+app.use(express.static(PUBLIC_PATH));
 
 // --- ROUTES REGISTRATION ---
 app.get('/', (req, res) => res.send('LMS PMI Backend is Running!'));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
-app.use('/api/courses/certificate', certificateRoutes);
-// [FIX] Using the new route import
+// [ROUTE AUTHENTICATION] - Kunci perbaikan login
 app.use('/api/auth', authRoutes);
+
+app.use('/api/courses/certificate', certificateRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/courses', courseRoutes);
@@ -104,10 +879,13 @@ app.use('/api/upload', uploadRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/comment', commentRoutes);
+app.use('/api/materials', materialRoutes);
 
-// --- ERROR HANDLERS ---
+// --- 4. ERROR HANDLERS ---
 app.use((req, res, next) => {
-    if (req.url.includes('/uploads/')) return next();
+    if (req.url.startsWith('/uploads/')) {
+        return res.status(404).json({ error: 'File not found' });
+    }
     res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 
@@ -116,18 +894,15 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   if (err.name === 'ZodError') {
     return res.status(400).json({ error: 'Validation error', issues: err.issues });
   }
-  if (err instanceof SyntaxError && 'body' in err) {
-      return res.status(400).json({ error: 'Invalid JSON payload' });
-  }
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
 // --- SERVER LISTEN ---
 const PORT = process.env.PORT || 4000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`🚀 [server] Server running on port ${PORT}`);
-  });
-}
+
+app.listen(PORT, async () => {
+  console.log(`🚀 [server]     Server running on port ${PORT}`);
+  await checkIntegrations();
+});
 
 export default app;

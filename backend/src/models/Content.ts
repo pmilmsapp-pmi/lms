@@ -1,204 +1,118 @@
-// // // // // // // // // import mongoose, { Schema, Document } from 'mongoose';
 
-// // // // // // // // // export interface IContent extends Document {
-// // // // // // // // //   heroTitle: string;
-// // // // // // // // //   heroDescription: string;
-// // // // // // // // //   features: { title: string; description: string }[];
-// // // // // // // // // }
-
-// // // // // // // // // const ContentSchema = new Schema({
-// // // // // // // // //   heroTitle: { type: String, default: "LMS Manajemen - Palang Merah Indonesia" },
-// // // // // // // // //   heroDescription: { type: String, default: "Platform pembelajaran..." },
-// // // // // // // // //   features: [{
-// // // // // // // // //     title: { type: String },
-// // // // // // // // //     description: { type: String }
-// // // // // // // // //   }]
-// // // // // // // // // });
-
-// // // // // // // // // export const Content = mongoose.model<IContent>('Content', ContentSchema);
-// // // // // // // // import mongoose, { Schema, Document } from 'mongoose';
-
-// // // // // // // // export interface IContent extends Document {
-// // // // // // // //   heroTitle: string;
-// // // // // // // //   heroDescription: string;
-// // // // // // // //   // Tambahkan slides untuk menyimpan array URL gambar
-// // // // // // // //   slides: string[]; 
-// // // // // // // //   features: { title: string; description: string }[];
-// // // // // // // // }
-
-// // // // // // // // const ContentSchema = new Schema({
-// // // // // // // //   heroTitle: { type: String, default: "LMS Manajemen - Palang Merah Indonesia" },
-// // // // // // // //   heroDescription: { type: String, default: "Platform pembelajaran..." },
-// // // // // // // //   slides: { type: [String], default: [] }, // Default array kosong
-// // // // // // // //   features: [{
-// // // // // // // //     title: { type: String },
-// // // // // // // //     description: { type: String }
-// // // // // // // //   }]
-// // // // // // // // });
-
-// // // // // // // // export const Content = mongoose.model<IContent>('Content', ContentSchema);
-// // // // // // // import mongoose, { Schema, Document } from 'mongoose';
-
-// // // // // // // export interface IContent extends Document {
-// // // // // // //   heroTitle: string;
-// // // // // // //   heroDescription: string;
-// // // // // // //   heroBgUrl: string; // <--- TAMBAHAN BARU
-// // // // // // //   // Menambahkan slides untuk menyimpan array URL gambar
-// // // // // // //   slides: string[]; 
-// // // // // // //   features: { title: string; description: string }[];
-// // // // // // // }
-
-// // // // // // // const ContentSchema = new Schema({
-// // // // // // //   heroTitle: { type: String, default: "LMS Manajemen - Palang Merah Indonesia" },
-// // // // // // //   heroDescription: { type: String, default: "Platform pembelajaran..." },
-// // // // // // //   heroBgUrl: { type: String, default: "" }, // <--- TAMBAHAN BARU
-// // // // // // //   // Default array kosong untuk slides
-// // // // // // //   slides: { type: [String], default: [] }, 
-// // // // // // //   features: [{
-// // // // // // //     title: { type: String },
-// // // // // // //     description: { type: String }
-// // // // // // //   }]
-// // // // // // // });
-
-// // // // // // // export const Content = mongoose.model<IContent>('Content', ContentSchema);
-// // // // // // import mongoose, { Schema, Document } from 'mongoose';
-
-// // // // // // export interface IContent extends Document {
-// // // // // //   heroTitle: string;
-// // // // // //   heroDescription: string;
-// // // // // //   heroBgUrl: string; // <--- FIELD BARU UNTUK BACKGROUND
-// // // // // //   slides: string[]; 
-// // // // // //   features: { title: string; description: string }[];
-// // // // // // }
-
-// // // // // // const ContentSchema = new Schema({
-// // // // // //   heroTitle: { type: String, default: "LMS Manajemen - Palang Merah Indonesia" },
-// // // // // //   heroDescription: { type: String, default: "Platform pembelajaran..." },
-// // // // // //   heroBgUrl: { type: String, default: "" }, // <--- FIELD BARU
-// // // // // //   slides: { type: [String], default: [] }, 
-// // // // // //   features: [{
-// // // // // //     title: { type: String },
-// // // // // //     description: { type: String }
-// // // // // //   }]
-// // // // // // });
-
-// // // // // // export const Content = mongoose.model<IContent>('Content', ContentSchema);
-// // // // // import mongoose, { Schema, Document } from 'mongoose';
-
-// // // // // export interface IContent extends Document {
-// // // // //   heroTitle: string;
-// // // // //   heroDescription: string;
-// // // // //   heroBgUrl: string;
-// // // // //   slides: string[]; 
-// // // // //   features: { title: string; description: string }[];
-// // // // //   // Data Footer
-// // // // //   footer: {
-// // // // //     about: string;
-// // // // //     address: string;
-// // // // //     phone: string;
-// // // // //     email: string;
-// // // // //     copyright: string;
-// // // // //     socials: {
-// // // // //         facebook: string;
-// // // // //         instagram: string;
-// // // // //         twitter: string;
-// // // // //         youtube: string;
-// // // // //     };
-// // // // //   };
-// // // // // }
-
-// // // // // const ContentSchema = new Schema({
-// // // // //   heroTitle: { type: String, default: "LMS Manajemen - Palang Merah Indonesia" },
-// // // // //   heroDescription: { type: String, default: "Platform pembelajaran..." },
-// // // // //   heroBgUrl: { type: String, default: "" },
-// // // // //   slides: { type: [String], default: [] }, 
-// // // // //   features: [{ title: String, description: String }],
-  
-// // // // //   // Default Value untuk Footer
-// // // // //   footer: {
-// // // // //     about: { type: String, default: "Humanis adalah platform pembelajaran digital resmi Palang Merah Indonesia." },
-// // // // //     address: { type: String, default: "Jl. Jendral Gatot Subroto Kav. 96, Jakarta Selatan 12790" },
-// // // // //     phone: { type: String, default: "(021) 7992325" },
-// // // // //     email: { type: String, default: "pmi@pmi.or.id" },
-// // // // //     copyright: { type: String, default: "© 2025 Palang Merah Indonesia. All rights reserved." },
-// // // // //     socials: {
-// // // // //         facebook: { type: String, default: "" },
-// // // // //         instagram: { type: String, default: "" },
-// // // // //         twitter: { type: String, default: "" },
-// // // // //         youtube: { type: String, default: "" }
-// // // // //     }
-// // // // //   }
-// // // // // });
-
-// // // // // export const Content = mongoose.model<IContent>('Content', ContentSchema);
 // // // // import mongoose, { Schema, Document } from 'mongoose';
 
-// // // // export interface IContent extends Document {
+// // // // // Interface
+// // // // export interface IContent {
+// // // //   _id: string;
 // // // //   heroTitle: string;
 // // // //   heroDescription: string;
 // // // //   heroBgUrl: string;
-// // // //   slides: string[]; 
+// // // //   faviconUrl: string; // <--- TAMBAHAN BARU
+// // // //   slides: string[];
 // // // //   features: { title: string; description: string }[];
 // // // //   footer: {
 // // // //     about: string;
 // // // //     address: string;
 // // // //     phone: string;
 // // // //     email: string;
+// // // //     website: string; 
 // // // //     copyright: string;
-// // // //     socials: { facebook: string; instagram: string; twitter: string; youtube: string; };
+// // // //     logoUrl: string; 
+// // // //     socials: {
+// // // //       facebook: string;
+// // // //       instagram: string;
+// // // //       twitter: string;
+// // // //       youtube: string;
+// // // //       [key: string]: string;
+// // // //     };
 // // // //   };
-// // // //   // --- TAMBAHAN BARU: KATEGORI ---
 // // // //   forumCategories: { name: string; iconUrl: string }[];
 // // // //   courseCategories: string[];
 // // // //   libraryCategories: string[];
 // // // // }
 
-// // // // const ContentSchema = new Schema({
-// // // //   heroTitle: { type: String, default: "LMS Manajemen - Palang Merah Indonesia" },
-// // // //   heroDescription: { type: String, default: "Platform pembelajaran..." },
-// // // //   heroBgUrl: { type: String, default: "" },
+// // // // const ContentSchema: Schema = new Schema({
+// // // //   _id: { type: String, default: 'site_content' },
+
+// // // //   // HERO
+// // // //   heroTitle: { type: String, default: '' },
+// // // //   heroDescription: { type: String, default: '' },
+// // // //   heroBgUrl: { type: String, default: '' },
+// // // //   faviconUrl: { type: String, default: '' }, // <--- TAMBAHAN BARU DI SCHEMA
+
+// // // //   // SLIDES & FEATURES
 // // // //   slides: { type: [String], default: [] }, 
-// // // //   features: [{ title: String, description: String }],
-  
+// // // //   features: [{
+// // // //     title: { type: String, default: '' },
+// // // //     description: { type: String, default: '' }
+// // // //   }],
+
+// // // //   // FOOTER
 // // // //   footer: {
-// // // //     about: { type: String, default: "Humanis adalah platform pembelajaran digital resmi Palang Merah Indonesia." },
-// // // //     address: { type: String, default: "Jl. Jendral Gatot Subroto Kav. 96, Jakarta Selatan 12790" },
-// // // //     phone: { type: String, default: "(021) 7992325" },
-// // // //     email: { type: String, default: "pmi@pmi.or.id" },
-// // // //     copyright: { type: String, default: "© 2025 Palang Merah Indonesia. All rights reserved." },
-// // // //     socials: { facebook: String, instagram: String, twitter: String, youtube: String }
+// // // //     about: { type: String, default: '' },
+// // // //     address: { type: String, default: '' },
+// // // //     phone: { type: String, default: '' },
+// // // //     email: { type: String, default: '' },
+// // // //     website: { type: String, default: '' },
+// // // //     copyright: { type: String, default: '' },
+// // // //     logoUrl: { type: String, default: '' },
+// // // //     socials: {
+// // // //       facebook: { type: String, default: '' },
+// // // //       instagram: { type: String, default: '' },
+// // // //       twitter: { type: String, default: '' },
+// // // //       youtube: { type: String, default: '' }
+// // // //     }
 // // // //   },
 
-// // // //   // --- DEFINISI KATEGORI ---
-// // // //   forumCategories: [{ 
-// // // //     name: { type: String }, 
-// // // //     iconUrl: { type: String } 
+// // // //   // CATEGORIES
+// // // //   forumCategories: [{
+// // // //     name: { type: String, required: true },
+// // // //     iconUrl: { type: String, default: '' }
 // // // //   }],
-// // // //   courseCategories: { type: [String], default: ["Health", "Safety", "Disaster Management", "General"] },
-// // // //   libraryCategories: { type: [String], default: ["Flyer", "Booklet", "Kebijakan", "Panduan Pelatihan", "Modul"] }
-// // // // });
+// // // //   courseCategories: { type: [String], default: [] },
+// // // //   libraryCategories: { type: [String], default: [] }
 
-// // // // export const Content = mongoose.model<IContent>('Content', ContentSchema);
+// // // // }, { timestamps: true });
+
+// // // // // Gabungkan Interface & Document
+// // // // export const Content = mongoose.model<IContent & Document>('Content', ContentSchema);
 // // // import mongoose, { Schema, Document } from 'mongoose';
 
-// // // export interface IContent extends Document {
-// // //   _id: string;
-// // //   // Hero Section (Flat Structure sesuai frontend)
+// // // // [FIX] Menggunakan Omit<Document, '_id'> untuk menghindari konflik tipe ObjectId vs String
+// // // export interface IContent extends Omit<Document, '_id'> {
+// // //   _id: string; // Kita override _id menjadi string
+  
+// // //   // --- HALAMAN DEPAN (HOME) ---
 // // //   heroTitle: string;
 // // //   heroDescription: string;
 // // //   heroBgUrl: string;
-  
-// // //   // Slides & Features
-// // //   slides: string[];
+// // //   faviconUrl: string;
+// // //   slides: string[]; 
 // // //   features: { title: string; description: string }[];
+  
+// // //   // --- HALAMAN KATALOG KELAS ---
+// // //   coursesPage: {
+// // //     title: string;
+// // //     description: string;
+// // //     slides: string[];
+// // //   };
 
-// // //   // Footer (Nested Structure)
+// // //   // --- HALAMAN BLOG / CERITA RELAWAN ---
+// // //   blogPage: {
+// // //     title: string;
+// // //     description: string;
+// // //     slides: string[];
+// // //   };
+
+// // //   // --- FOOTER & KATEGORI ---
 // // //   footer: {
 // // //     about: string;
 // // //     address: string;
 // // //     phone: string;
 // // //     email: string;
+// // //     website: string; 
 // // //     copyright: string;
+// // //     logoUrl: string; 
 // // //     socials: {
 // // //       facebook: string;
 // // //       instagram: string;
@@ -207,36 +121,48 @@
 // // //       [key: string]: string;
 // // //     };
 // // //   };
-
-// // //   // Categories
 // // //   forumCategories: { name: string; iconUrl: string }[];
 // // //   courseCategories: string[];
 // // //   libraryCategories: string[];
 // // // }
 
 // // // const ContentSchema: Schema = new Schema({
-// // //   // Gunakan ID statis agar hanya ada satu pengaturan di database (Singleton)
-// // //   _id: { type: String, default: 'site_content' },
+// // //   _id: { type: String, default: 'site_content' }, // ID manual string
 
-// // //   // --- 1. HERO SECTION ---
+// // //   // --- HOME (DEFAULT) ---
 // // //   heroTitle: { type: String, default: '' },
 // // //   heroDescription: { type: String, default: '' },
 // // //   heroBgUrl: { type: String, default: '' },
-
-// // //   // --- 2. SLIDES & FEATURES ---
-// // //   slides: { type: [String], default: [] }, // Array of Image URLs
+// // //   faviconUrl: { type: String, default: '' },
+// // //   slides: { type: [String], default: [] }, 
 // // //   features: [{
 // // //     title: { type: String, default: '' },
 // // //     description: { type: String, default: '' }
 // // //   }],
 
-// // //   // --- 3. FOOTER ---
+// // //   // --- CONFIG KATALOG KELAS ---
+// // //   coursesPage: {
+// // //     title: { type: String, default: 'Katalog Pelatihan & Kursus' },
+// // //     description: { type: String, default: 'Tingkatkan kompetensi Anda dengan materi berkualitas dari PMI.' },
+// // //     slides: { type: [String], default: [] }
+// // //   },
+
+// // //   // --- CONFIG BLOG ---
+// // //   blogPage: {
+// // //     title: { type: String, default: 'Cerita Relawan' },
+// // //     description: { type: String, default: 'Berita terbaru, kisah inspiratif, dan wawasan dari lapangan.' },
+// // //     slides: { type: [String], default: [] }
+// // //   },
+
+// // //   // --- FOOTER ---
 // // //   footer: {
 // // //     about: { type: String, default: '' },
 // // //     address: { type: String, default: '' },
 // // //     phone: { type: String, default: '' },
 // // //     email: { type: String, default: '' },
+// // //     website: { type: String, default: '' },
 // // //     copyright: { type: String, default: '' },
+// // //     logoUrl: { type: String, default: '' },
 // // //     socials: {
 // // //       facebook: { type: String, default: '' },
 // // //       instagram: { type: String, default: '' },
@@ -245,7 +171,7 @@
 // // //     }
 // // //   },
 
-// // //   // --- 4. CATEGORIES ---
+// // //   // --- CATEGORIES ---
 // // //   forumCategories: [{
 // // //     name: { type: String, required: true },
 // // //     iconUrl: { type: String, default: '' }
@@ -256,27 +182,52 @@
 // // // }, { timestamps: true });
 
 // // // export const Content = mongoose.model<IContent>('Content', ContentSchema);
+// // // export default Content;
+
 // // import mongoose, { Schema, Document } from 'mongoose';
 
-// // // PERBAIKAN: Hapus 'extends Document' di sini agar tidak konflik tipe _id
-// // export interface IContent {
-// //   _id: string;
-// //   // Hero Section
+// // // [FIX] Menggunakan Omit<Document, '_id'> untuk menghindari konflik tipe ObjectId vs String
+// // export interface IContent extends Omit<Document, '_id'> {
+// //   _id: string; // Kita override _id menjadi string
+  
+// //   // --- HALAMAN DEPAN (HOME) ---
 // //   heroTitle: string;
 // //   heroDescription: string;
 // //   heroBgUrl: string;
-  
-// //   // Slides & Features
-// //   slides: string[];
+// //   faviconUrl: string;
+// //   slides: string[]; 
 // //   features: { title: string; description: string }[];
+  
+// //   // --- HALAMAN KATALOG KELAS ---
+// //   coursesPage: {
+// //     title: string;
+// //     description: string;
+// //     slides: string[];
+// //   };
 
-// //   // Footer
+// //   // --- HALAMAN BLOG / CERITA RELAWAN ---
+// //   blogPage: {
+// //     title: string;
+// //     description: string;
+// //     slides: string[];
+// //   };
+
+// //   // --- HALAMAN FORUM (BARU) ---
+// //   forumPage: {
+// //     title: string;
+// //     description: string;
+// //     slides: string[];
+// //   };
+
+// //   // --- FOOTER & KATEGORI ---
 // //   footer: {
 // //     about: string;
 // //     address: string;
 // //     phone: string;
 // //     email: string;
+// //     website: string; 
 // //     copyright: string;
+// //     logoUrl: string; 
 // //     socials: {
 // //       facebook: string;
 // //       instagram: string;
@@ -285,36 +236,55 @@
 // //       [key: string]: string;
 // //     };
 // //   };
-
-// //   // Categories
 // //   forumCategories: { name: string; iconUrl: string }[];
 // //   courseCategories: string[];
 // //   libraryCategories: string[];
 // // }
 
 // // const ContentSchema: Schema = new Schema({
-// //   // Kita gunakan ID statis string agar hanya ada satu pengaturan
-// //   _id: { type: String, default: 'site_content' },
+// //   _id: { type: String, default: 'site_content' }, // ID manual string
 
-// //   // --- 1. HERO SECTION ---
+// //   // --- HOME (DEFAULT) ---
 // //   heroTitle: { type: String, default: '' },
 // //   heroDescription: { type: String, default: '' },
 // //   heroBgUrl: { type: String, default: '' },
-
-// //   // --- 2. SLIDES & FEATURES ---
+// //   faviconUrl: { type: String, default: '' },
 // //   slides: { type: [String], default: [] }, 
 // //   features: [{
 // //     title: { type: String, default: '' },
 // //     description: { type: String, default: '' }
 // //   }],
 
-// //   // --- 3. FOOTER ---
+// //   // --- CONFIG KATALOG KELAS ---
+// //   coursesPage: {
+// //     title: { type: String, default: 'Katalog Pelatihan & Kursus' },
+// //     description: { type: String, default: 'Tingkatkan kompetensi Anda dengan materi berkualitas dari PMI.' },
+// //     slides: { type: [String], default: [] }
+// //   },
+
+// //   // --- CONFIG BLOG ---
+// //   blogPage: {
+// //     title: { type: String, default: 'Cerita Relawan' },
+// //     description: { type: String, default: 'Berita terbaru, kisah inspiratif, dan wawasan dari lapangan.' },
+// //     slides: { type: [String], default: [] }
+// //   },
+
+// //   // --- CONFIG FORUM (BARU) ---
+// //   forumPage: {
+// //     title: { type: String, default: 'Forum Diskusi Komunitas' },
+// //     description: { type: String, default: 'Tempat berbagi ilmu, bertanya, dan berkolaborasi dengan relawan PMI lainnya.' },
+// //     slides: { type: [String], default: [] }
+// //   },
+
+// //   // --- FOOTER ---
 // //   footer: {
 // //     about: { type: String, default: '' },
 // //     address: { type: String, default: '' },
 // //     phone: { type: String, default: '' },
 // //     email: { type: String, default: '' },
+// //     website: { type: String, default: '' },
 // //     copyright: { type: String, default: '' },
+// //     logoUrl: { type: String, default: '' },
 // //     socials: {
 // //       facebook: { type: String, default: '' },
 // //       instagram: { type: String, default: '' },
@@ -323,7 +293,7 @@
 // //     }
 // //   },
 
-// //   // --- 4. CATEGORIES ---
+// //   // --- CATEGORIES ---
 // //   forumCategories: [{
 // //     name: { type: String, required: true },
 // //     iconUrl: { type: String, default: '' }
@@ -333,26 +303,59 @@
 
 // // }, { timestamps: true });
 
-// // // PERBAIKAN: Gabungkan IContent & Document di sini
-// // export const Content = mongoose.model<IContent & Document>('Content', ContentSchema);
+// // export const Content = mongoose.model<IContent>('Content', ContentSchema);
+// // export default Content;
 // import mongoose, { Schema, Document } from 'mongoose';
 
-// // Interface
-// export interface IContent {
-//   _id: string;
+// // [FIX] Menggunakan Omit<Document, '_id'> untuk menghindari konflik tipe ObjectId vs String
+// export interface IContent extends Omit<Document, '_id'> {
+//   _id: string; // Kita override _id menjadi string
+  
+//   // --- HALAMAN DEPAN (HOME) ---
 //   heroTitle: string;
 //   heroDescription: string;
 //   heroBgUrl: string;
-//   slides: string[];
+//   faviconUrl: string;
+//   slides: string[]; 
 //   features: { title: string; description: string }[];
+  
+//   // --- HALAMAN KATALOG KELAS ---
+//   coursesPage: {
+//     title: string;
+//     description: string;
+//     slides: string[];
+//   };
+
+//   // --- HALAMAN BLOG / CERITA RELAWAN ---
+//   blogPage: {
+//     title: string;
+//     description: string;
+//     slides: string[];
+//   };
+
+//   // --- HALAMAN FORUM ---
+//   forumPage: {
+//     title: string;
+//     description: string;
+//     slides: string[];
+//   };
+
+//   // --- HALAMAN PERPUSTAKAAN (BARU) ---
+//   libraryPage: {
+//     title: string;
+//     description: string;
+//     slides: string[];
+//   };
+
+//   // --- FOOTER & KATEGORI ---
 //   footer: {
 //     about: string;
 //     address: string;
 //     phone: string;
 //     email: string;
-//     website: string; // Tambahan field website
+//     website: string; 
 //     copyright: string;
-//     logoUrl: string; // <--- FIELD BARU UNTUK LOGO FOOTER
+//     logoUrl: string; 
 //     socials: {
 //       facebook: string;
 //       instagram: string;
@@ -367,21 +370,48 @@
 // }
 
 // const ContentSchema: Schema = new Schema({
-//   _id: { type: String, default: 'site_content' },
+//   _id: { type: String, default: 'site_content' }, // ID manual string
 
-//   // HERO
+//   // --- HOME (DEFAULT) ---
 //   heroTitle: { type: String, default: '' },
 //   heroDescription: { type: String, default: '' },
 //   heroBgUrl: { type: String, default: '' },
-
-//   // SLIDES & FEATURES
+//   faviconUrl: { type: String, default: '' },
 //   slides: { type: [String], default: [] }, 
 //   features: [{
 //     title: { type: String, default: '' },
 //     description: { type: String, default: '' }
 //   }],
 
-//   // FOOTER
+//   // --- CONFIG KATALOG KELAS ---
+//   coursesPage: {
+//     title: { type: String, default: 'Katalog Pelatihan & Kursus' },
+//     description: { type: String, default: 'Tingkatkan kompetensi Anda dengan materi berkualitas dari PMI.' },
+//     slides: { type: [String], default: [] }
+//   },
+
+//   // --- CONFIG BLOG ---
+//   blogPage: {
+//     title: { type: String, default: 'Cerita Relawan' },
+//     description: { type: String, default: 'Berita terbaru, kisah inspiratif, dan wawasan dari lapangan.' },
+//     slides: { type: [String], default: [] }
+//   },
+
+//   // --- CONFIG FORUM ---
+//   forumPage: {
+//     title: { type: String, default: 'Forum Diskusi Komunitas' },
+//     description: { type: String, default: 'Tempat berbagi ilmu, bertanya, dan berkolaborasi dengan relawan PMI lainnya.' },
+//     slides: { type: [String], default: [] }
+//   },
+
+//   // --- CONFIG LIBRARY (BARU) ---
+//   libraryPage: {
+//     title: { type: String, default: 'Perpustakaan Digital' },
+//     description: { type: String, default: 'Kumpulan modul, referensi, dan panduan resmi PMI.' },
+//     slides: { type: [String], default: [] }
+//   },
+
+//   // --- FOOTER ---
 //   footer: {
 //     about: { type: String, default: '' },
 //     address: { type: String, default: '' },
@@ -389,7 +419,7 @@
 //     email: { type: String, default: '' },
 //     website: { type: String, default: '' },
 //     copyright: { type: String, default: '' },
-//     logoUrl: { type: String, default: '' }, // <--- DI SINI
+//     logoUrl: { type: String, default: '' },
 //     socials: {
 //       facebook: { type: String, default: '' },
 //       instagram: { type: String, default: '' },
@@ -398,7 +428,7 @@
 //     }
 //   },
 
-//   // CATEGORIES
+//   // --- CATEGORIES ---
 //   forumCategories: [{
 //     name: { type: String, required: true },
 //     iconUrl: { type: String, default: '' }
@@ -408,84 +438,68 @@
 
 // }, { timestamps: true });
 
-// // Gabungkan Interface & Document
-// export const Content = mongoose.model<IContent & Document>('Content', ContentSchema);
+// export const Content = mongoose.model<IContent>('Content', ContentSchema);
+// export default Content;
 
 
 import mongoose, { Schema, Document } from 'mongoose';
 
-// Interface
-export interface IContent {
+export interface IContent extends Omit<Document, '_id'> {
   _id: string;
+  
+  // ... (Field Home, Courses, Blog, Forum, Library, Footer tetap sama) ...
   heroTitle: string;
   heroDescription: string;
   heroBgUrl: string;
-  faviconUrl: string; // <--- TAMBAHAN BARU
-  slides: string[];
+  faviconUrl: string;
+  slides: string[]; 
   features: { title: string; description: string }[];
+  coursesPage: { title: string; description: string; slides: string[]; };
+  blogPage: { title: string; description: string; slides: string[]; };
+  forumPage: { title: string; description: string; slides: string[]; };
+  libraryPage: { title: string; description: string; slides: string[]; };
   footer: {
-    about: string;
-    address: string;
-    phone: string;
-    email: string;
-    website: string; 
-    copyright: string;
-    logoUrl: string; 
-    socials: {
-      facebook: string;
-      instagram: string;
-      twitter: string;
-      youtube: string;
-      [key: string]: string;
-    };
+    about: string; address: string; phone: string; email: string; website: string; copyright: string; logoUrl: string; 
+    socials: { facebook: string; instagram: string; twitter: string; youtube: string; [key: string]: string; };
   };
   forumCategories: { name: string; iconUrl: string }[];
   courseCategories: string[];
   libraryCategories: string[];
+
+  // --- KONFIGURASI PELATIHAN ---
+  organizerCategories: string[]; 
+  trainingRequirements: string[]; // Syarat Diklat Resmi
+  courseRequirements: string[];   // [BARU] Syarat Kursus Mandiri
 }
 
 const ContentSchema: Schema = new Schema({
   _id: { type: String, default: 'site_content' },
 
-  // HERO
+  // ... (Schema lain tetap sama) ...
   heroTitle: { type: String, default: '' },
   heroDescription: { type: String, default: '' },
   heroBgUrl: { type: String, default: '' },
-  faviconUrl: { type: String, default: '' }, // <--- TAMBAHAN BARU DI SCHEMA
-
-  // SLIDES & FEATURES
+  faviconUrl: { type: String, default: '' },
   slides: { type: [String], default: [] }, 
-  features: [{
-    title: { type: String, default: '' },
-    description: { type: String, default: '' }
-  }],
-
-  // FOOTER
+  features: [{ title: { type: String, default: '' }, description: { type: String, default: '' } }],
+  coursesPage: { title: { type: String, default: 'Katalog Pelatihan & Kursus' }, description: { type: String, default: '...' }, slides: { type: [String], default: [] } },
+  blogPage: { title: { type: String, default: 'Cerita Relawan' }, description: { type: String, default: '...' }, slides: { type: [String], default: [] } },
+  forumPage: { title: { type: String, default: 'Forum Diskusi Komunitas' }, description: { type: String, default: '...' }, slides: { type: [String], default: [] } },
+  libraryPage: { title: { type: String, default: 'Perpustakaan Digital' }, description: { type: String, default: '...' }, slides: { type: [String], default: [] } },
   footer: {
-    about: { type: String, default: '' },
-    address: { type: String, default: '' },
-    phone: { type: String, default: '' },
-    email: { type: String, default: '' },
-    website: { type: String, default: '' },
-    copyright: { type: String, default: '' },
-    logoUrl: { type: String, default: '' },
-    socials: {
-      facebook: { type: String, default: '' },
-      instagram: { type: String, default: '' },
-      twitter: { type: String, default: '' },
-      youtube: { type: String, default: '' }
-    }
+    about: { type: String, default: '' }, address: { type: String, default: '' }, phone: { type: String, default: '' }, email: { type: String, default: '' }, website: { type: String, default: '' }, copyright: { type: String, default: '' }, logoUrl: { type: String, default: '' },
+    socials: { facebook: { type: String, default: '' }, instagram: { type: String, default: '' }, twitter: { type: String, default: '' }, youtube: { type: String, default: '' } }
   },
-
-  // CATEGORIES
-  forumCategories: [{
-    name: { type: String, required: true },
-    iconUrl: { type: String, default: '' }
-  }],
+  forumCategories: [{ name: { type: String, required: true }, iconUrl: { type: String, default: '' } }],
   courseCategories: { type: [String], default: [] },
-  libraryCategories: { type: [String], default: [] }
+  libraryCategories: { type: [String], default: [] },
+
+  // --- [BARU] PELATIHAN CONFIG ---
+  organizerCategories: { type: [String], default: ['PMI Pusat', 'PMI Provinsi', 'PMI Kabupaten/Kota'] },
+  trainingRequirements: { type: [String], default: ['Kerangka Acuan Kerja (KAK)', 'Rencana Anggaran Biaya (RAB)', 'Jadwal Kegiatan'] },
+  courseRequirements: { type: [String], default: ['Outline Materi', 'Profil Pengajar'] } // [BARU]
 
 }, { timestamps: true });
 
-// Gabungkan Interface & Document
-export const Content = mongoose.model<IContent & Document>('Content', ContentSchema);
+export const Content = mongoose.model<IContent>('Content', ContentSchema);
+export default Content;

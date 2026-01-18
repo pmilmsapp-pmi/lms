@@ -54,7 +54,9 @@
       ], // <-- alias untuk lib
       "@/components/*": [
         "components/*"
-      ]
+              ],
+      "@/*": ["./*"],          // Pastikan alias ini mengarah ke root frontend
+      "@/data/*": ["./data/*"] // Tambahkan ini agar lebih spesifik (opsional
     },
     "jsx": "preserve",
     "incremental": true,
