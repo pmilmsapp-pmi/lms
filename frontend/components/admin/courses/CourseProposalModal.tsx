@@ -237,7 +237,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Send, Loader2, FileText, HelpCircle, Upload, CheckCircle, Trash2, AlertCircle } from 'lucide-react';
+import { X, Send, Loader2, FileText, Upload, CheckCircle, Trash2, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import axios from 'axios'; 
 
@@ -253,22 +253,17 @@ export default function CourseProposalModal({ onClose, onSuccess, currentUser }:
     const [loading, setLoading] = useState(false);
     const [configLoading, setConfigLoading] = useState(true);
     
-    // Data Form
     const [formData, setFormData] = useState({
         title: '',
-        programType: 'training', // Default: Diklat Resmi
+        programType: 'training',
         reason: '',
     });
 
-    // Config dari CMS
     const [requiredDocs, setRequiredDocs] = useState<string[]>([]);
     const [courseDocs, setCourseDocs] = useState<string[]>([]);
-    
-    // State File
     const [uploadedFiles, setUploadedFiles] = useState<Record<string, { url: string, originalName: string }>>({});
     const [uploadingItem, setUploadingItem] = useState<string | null>(null);
 
-    // --- 1. LOAD CONFIG DARI CMS ---
     useEffect(() => {
         const fetchConfig = async () => {
             try {
@@ -277,19 +272,16 @@ export default function CourseProposalModal({ onClose, onSuccess, currentUser }:
                 setCourseDocs(res.courseRequirements || []);
             } catch (e) {
                 console.error("Gagal load config", e);
-            } finally {
-                setConfigLoading(false);
-            }
+            } finally { setConfigLoading(false); }
         };
         fetchConfig();
     }, []);
 
-    // --- 2. LOGIC UPLOAD ---
     const handleFileUpload = async (docName: string, e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         setUploadingItem(docName);
+        
         const fd = new FormData();
         fd.append('file', file);
 
@@ -298,28 +290,22 @@ export default function CourseProposalModal({ onClose, onSuccess, currentUser }:
             const token = userStr ? JSON.parse(userStr).token : '';
 
             const response = await axios.post(`${API_BASE_URL}/api/materials/upload`, fd, {
-                headers: { 
-                    'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}` 
-                },
+                headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` },
                 withCredentials: true 
             });
 
             const result = response.data;
+            // Support struktur respon yang berbeda (data.url atau url langsung)
             const fileUrl = result.data?.url || result.url;
-            const fileName = result.data?.originalName || file.name;
+            const fileName = result.data?.originalName || result.originalName || file.name;
 
             if (fileUrl) {
                 setUploadedFiles(prev => ({
                     ...prev,
                     [docName]: { url: fileUrl, originalName: fileName }
                 }));
-            } else {
-                throw new Error("URL file tidak ditemukan.");
             }
-
         } catch (err: any) {
-            console.error(err);
             alert("Gagal Upload: " + (err.response?.data?.message || err.message));
         } finally {
             setUploadingItem(null);
@@ -334,43 +320,30 @@ export default function CourseProposalModal({ onClose, onSuccess, currentUser }:
         setUploadedFiles(newFiles);
     };
 
-    const handleChange = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
-    // [FIX] Helper Buat Slug Unik
     const createSlug = (title: string) => {
-        return title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-') // Ganti karakter aneh dengan -
-            .replace(/^-+|-+$/g, '')     // Hapus - di awal/akhir
-            + '-' + Date.now();          // Tambah timestamp agar pasti unik
+        return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + '-' + Date.now();
     };
 
-    // --- 3. SUBMIT PROPOSAL ---
     const handleSubmit = async () => {
         if (!formData.title || !formData.reason) return alert("Judul dan Alasan Pengajuan wajib diisi.");
         
         const currentRequirements = formData.programType === 'training' ? requiredDocs : courseDocs;
         const missingDocs = currentRequirements.filter(doc => !uploadedFiles[doc]);
         
-        if (missingDocs.length > 0) {
-            return alert(`Mohon lengkapi dokumen wajib berikut:\n- ${missingDocs.join('\n- ')}`);
-        }
+        if (missingDocs.length > 0) return alert(`Mohon lengkapi dokumen wajib berikut:\n- ${missingDocs.join('\n- ')}`);
         
         setLoading(true);
         try {
+            // [FIX] Map object ke array sesuai Schema Backend baru
             const proposalDocuments = Object.entries(uploadedFiles).map(([name, data]) => ({
-                name: name,
+                name: name, // Jenis Dokumen (misal: KAK)
+                originalName: data.originalName, // Nama File Asli (misal: file.pdf)
                 url: data.url
             }));
 
-            // [FIX] Tambahkan Slug di sini
-            const generatedSlug = createSlug(formData.title);
-
             const payload = {
                 ...formData,
-                slug: generatedSlug, // Solusi Error Duplicate Key
+                slug: createSlug(formData.title),
                 status: 'proposed', 
                 description: `<p><strong>Alasan Pengajuan:</strong> ${formData.reason}</p>`, 
                 proposalDocuments: proposalDocuments, 
@@ -378,14 +351,11 @@ export default function CourseProposalModal({ onClose, onSuccess, currentUser }:
             };
 
             await api('/api/courses', { method: 'POST', body: payload });
-            alert("✅ Pengajuan berhasil dikirim! Menunggu persetujuan Admin.");
+            alert("✅ Pengajuan berhasil dikirim!");
             onSuccess();
         } catch (err: any) {
-            console.error(err);
-            alert("Gagal mengajukan: " + (err.response?.data?.error || err.message));
-        } finally {
-            setLoading(false);
-        }
+            alert("Gagal mengajukan: " + err.message);
+        } finally { setLoading(false); }
     };
 
     const activeRequirements = formData.programType === 'training' ? requiredDocs : courseDocs;
@@ -393,103 +363,51 @@ export default function CourseProposalModal({ onClose, onSuccess, currentUser }:
     return (
         <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95" role="dialog" aria-modal="true">
             <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                
-                {/* Header Merah */}
                 <div className="bg-[#990000] text-white p-5 flex justify-between items-center shrink-0">
                     <div>
                         <h2 className="text-lg font-bold">Form Pengajuan Pelatihan</h2>
                         <p className="text-xs text-red-100">Lengkapi data & dokumen pendukung.</p>
                     </div>
-                    <button onClick={onClose} className="hover:bg-white/20 p-2 rounded-full transition-colors" aria-label="Tutup"><X size={20}/></button>
+                    <button onClick={onClose} className="hover:bg-white/20 p-2 rounded-full transition-colors" title="Tutup"><X size={20}/></button>
                 </div>
-
-                {/* Body Scrollable */}
                 <div className="p-6 space-y-6 overflow-y-auto">
-                    
-                    {/* Input Judul */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1">Judul Usulan Pelatihan <span className="text-red-500">*</span></label>
-                        <input 
-                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm"
-                            placeholder="Contoh: Pelatihan Dasar KSR 2026"
-                            value={formData.title}
-                            onChange={(e) => handleChange('title', e.target.value)}
-                            aria-label="Judul Pelatihan"
-                        />
+                        <input className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="Contoh: Pelatihan Dasar KSR 2026" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} aria-label="Judul Pelatihan"/>
                     </div>
-
-                    {/* Pilihan Tipe Program */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Jenis Program</label>
                         <div className="flex gap-4">
                             <label className={`flex-1 flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${formData.programType === 'training' ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                                <input type="radio" name="ptype" className="hidden" checked={formData.programType === 'training'} onChange={() => handleChange('programType', 'training')}/>
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${formData.programType === 'training' ? 'border-red-600' : 'border-gray-400'}`}>{formData.programType === 'training' && <div className="w-2 h-2 bg-red-600 rounded-full"/>}</div>
+                                <input type="radio" name="ptype" className="hidden" checked={formData.programType === 'training'} onChange={() => setFormData({...formData, programType: 'training'})}/>
                                 <span className="text-sm font-bold text-gray-800">Diklat Resmi</span>
                             </label>
                             <label className={`flex-1 flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${formData.programType === 'course' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                                <input type="radio" name="ptype" className="hidden" checked={formData.programType === 'course'} onChange={() => handleChange('programType', 'course')}/>
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${formData.programType === 'course' ? 'border-blue-600' : 'border-gray-400'}`}>{formData.programType === 'course' && <div className="w-2 h-2 bg-blue-600 rounded-full"/>}</div>
+                                <input type="radio" name="ptype" className="hidden" checked={formData.programType === 'course'} onChange={() => setFormData({...formData, programType: 'course'})}/>
                                 <span className="text-sm font-bold text-gray-800">Kursus Mandiri</span>
                             </label>
                         </div>
                     </div>
-
-                    {/* SECTION DINAMIS: UPLOAD DOKUMEN WAJIB */}
                     {activeRequirements.length > 0 && (
                         <div className={`p-4 rounded-xl border ${formData.programType === 'training' ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'} animate-in fade-in slide-in-from-top-2`}>
-                            <h3 className={`font-bold mb-3 flex items-center gap-2 text-sm ${formData.programType === 'training' ? 'text-orange-800' : 'text-blue-800'}`}>
-                                <FileText size={16}/> Dokumen Wajib Dilampirkan
-                            </h3>
-                            
-                            {configLoading ? (
-                                <div className="text-xs text-gray-500 flex items-center gap-2"><Loader2 className="animate-spin" size={12}/> Memuat daftar syarat...</div>
-                            ) : (
+                            <h3 className={`font-bold mb-3 flex items-center gap-2 text-sm ${formData.programType === 'training' ? 'text-orange-800' : 'text-blue-800'}`}><FileText size={16}/> Dokumen Wajib</h3>
+                            {configLoading ? <div className="text-xs"><Loader2 className="animate-spin" size={12}/> Loading...</div> : (
                                 <div className="space-y-3">
                                     {activeRequirements.map((docName, idx) => (
-                                        <div key={idx} className="bg-white p-3 rounded-lg border shadow-sm transition-all hover:shadow-md">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <span className="text-xs font-bold text-gray-700 uppercase tracking-wide flex-1 mr-2">{docName} <span className="text-red-500">*</span></span>
-                                                {uploadedFiles[docName] ? (
-                                                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><CheckCircle size={10}/> Terupload</span>
-                                                ) : (
-                                                    <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold border">Wajib</span>
-                                                )}
-                                            </div>
-
+                                        <div key={idx} className="bg-white p-3 rounded-lg border shadow-sm">
+                                            <div className="flex justify-between mb-2"><span className="text-xs font-bold text-gray-700">{docName} <span className="text-red-500">*</span></span>{uploadedFiles[docName] ? <CheckCircle size={14} className="text-green-600"/> : <span className="text-[10px] bg-gray-100 px-2 rounded font-bold">Wajib</span>}</div>
                                             {uploadedFiles[docName] ? (
                                                 <div className="flex items-center gap-2 bg-green-50 p-2 rounded border border-green-200">
-                                                    <div className="bg-white p-1 rounded text-green-600"><FileText size={14}/></div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-xs font-bold text-green-800 truncate" title={uploadedFiles[docName].originalName}>
-                                                            {uploadedFiles[docName].originalName}
-                                                        </p>
-                                                        <a href={uploadedFiles[docName].url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-green-600 hover:underline">Lihat File</a>
-                                                    </div>
-                                                    <button onClick={() => removeFile(docName)} className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-colors" title="Hapus File" aria-label={`Hapus ${docName}`}><Trash2 size={14}/></button>
+                                                    <FileText size={14} className="text-green-600"/>
+                                                    <span className="text-xs font-bold text-green-800 flex-1 truncate">{uploadedFiles[docName].originalName}</span>
+                                                    <button onClick={() => removeFile(docName)} className="text-red-500 hover:text-red-700 p-1" title={`Hapus ${docName}`}><Trash2 size={14}/></button>
                                                 </div>
                                             ) : (
                                                 <div className="relative group">
-                                                    <input 
-                                                        type="file" 
-                                                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
-                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                        onChange={(e) => handleFileUpload(docName, e)}
-                                                        disabled={uploadingItem === docName}
-                                                        title={`Upload ${docName}`}
-                                                    />
-                                                    <div className={`flex items-center gap-2 p-2 rounded border border-dashed transition-colors ${uploadingItem === docName ? 'bg-gray-100 border-gray-300' : 'bg-gray-50 border-gray-300 group-hover:border-blue-400 group-hover:bg-blue-50'}`}>
-                                                        {uploadingItem === docName ? (
-                                                            <>
-                                                                <Loader2 className="animate-spin text-blue-600" size={16}/>
-                                                                <span className="text-xs text-blue-600 font-medium">Sedang mengupload...</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Upload size={16} className="text-gray-400 group-hover:text-blue-500"/>
-                                                                <span className="text-xs text-gray-500 group-hover:text-blue-600 font-medium">Klik untuk upload file...</span>
-                                                            </>
-                                                        )}
+                                                    <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(docName, e)} disabled={uploadingItem === docName} title={`Upload ${docName}`}/>
+                                                    <div className="flex items-center gap-2 p-2 rounded border border-dashed bg-gray-50 hover:bg-gray-100 transition-colors">
+                                                        {uploadingItem === docName ? <Loader2 className="animate-spin text-blue-600" size={16}/> : <Upload size={16} className="text-gray-400"/>}
+                                                        <span className="text-xs text-gray-500">Klik untuk upload...</span>
                                                     </div>
                                                 </div>
                                             )}
@@ -499,39 +417,15 @@ export default function CourseProposalModal({ onClose, onSuccess, currentUser }:
                             )}
                         </div>
                     )}
-
-                    {/* Input Alasan */}
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Tujuan / Alasan Pengajuan <span className="text-red-500">*</span></label>
-                        <textarea 
-                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none h-24 resize-none text-sm"
-                            placeholder="Jelaskan secara singkat latar belakang dan tujuan pelatihan ini..."
-                            value={formData.reason}
-                            onChange={(e) => handleChange('reason', e.target.value)}
-                            aria-label="Alasan Pengajuan"
-                        ></textarea>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Alasan Pengajuan <span className="text-red-500">*</span></label>
+                        <textarea className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none h-24 text-sm" placeholder="Jelaskan alasan..." value={formData.reason} onChange={(e) => setFormData({...formData, reason: e.target.value})} aria-label="Alasan Pengajuan"></textarea>
                     </div>
-
-                    {/* Info Box */}
-                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 flex gap-3 items-start">
-                        <AlertCircle className="text-blue-600 shrink-0 mt-0.5" size={18}/>
-                        <p className="text-xs text-blue-700 leading-relaxed">
-                            Pastikan seluruh dokumen wajib telah terupload. Admin akan memverifikasi dokumen Anda sebelum menyetujui pembukaan kelas.
-                        </p>
-                    </div>
+                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 flex gap-3 items-start"><AlertCircle className="text-blue-600 shrink-0 mt-0.5" size={18}/><p className="text-xs text-blue-700">Pastikan semua dokumen wajib telah terupload.</p></div>
                 </div>
-
-                {/* Footer */}
                 <div className="p-4 border-t bg-gray-50 flex justify-end gap-3 shrink-0">
-                    <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-gray-300 font-bold text-sm text-gray-600 hover:bg-white transition-colors" aria-label="Batal">Batal</button>
-                    <button 
-                        onClick={handleSubmit} 
-                        disabled={loading || activeRequirements.some(doc => !uploadedFiles[doc])} 
-                        className="px-6 py-2.5 rounded-xl bg-[#990000] text-white font-bold text-sm shadow-lg hover:bg-[#7f0000] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all" 
-                        aria-label="Ajukan Sekarang"
-                    >
-                        {loading ? <Loader2 className="animate-spin" size={18}/> : <Send size={18}/>} Ajukan Sekarang
-                    </button>
+                    <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-gray-300 font-bold text-sm text-gray-600 hover:bg-white" aria-label="Batal">Batal</button>
+                    <button onClick={handleSubmit} disabled={loading || activeRequirements.some(doc => !uploadedFiles[doc])} className="px-6 py-2.5 rounded-xl bg-[#990000] text-white font-bold text-sm hover:bg-[#7f0000] flex items-center gap-2 disabled:opacity-50" aria-label="Ajukan Sekarang">{loading ? <Loader2 className="animate-spin" size={18}/> : <Send size={18}/>} Ajukan Sekarang</button>
                 </div>
             </div>
         </div>
