@@ -7,3 +7,83 @@ NEXT_PUBLIC_API_URL
 git add .
 git commit -m "fix: menambahkan rute PATCH pada blog agar tombol simpan berfungsi"
 git push origin main
+
+
+
+
+/* --- GLOBAL MODAL FIX (V4 Final - Anti Scroll Chaining) --- */
+
+/* 1. CONTAINER / WRAPPER (Layer Gelap) */
+.fixed.inset-0.z-50, 
+.fixed.inset-0.z-\[110\], 
+[role="dialog"], 
+[data-state="open"] {
+    display: flex !important;
+    align-items: flex-start !important; 
+    justify-content: center !important;
+    padding-top: 6vh !important; 
+    padding-bottom: 50px !important;
+    overflow-y: auto !important; 
+    
+    /* [BARU] KUNCI SCROLL: Mencegah scroll tembus ke body belakang */
+    overscroll-behavior: contain !important; 
+    
+    /* Pastikan backdrop merespon pointer */
+    pointer-events: auto !important;
+}
+
+/* 2. KONTEN MODAL (Kotak Putih) */
+.fixed.z-50 > div, 
+.fixed.z-\[110\] > div, 
+[role="dialog"] > div,
+[role="dialog"] > form,
+div[class*="dialog-content"] {
+    
+    /* RESET POSISI */
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin: 0 auto !important; 
+    
+    /* UKURAN */
+    width: 95% !important; 
+    max-height: 85vh !important; 
+    
+    /* INTERIOR */
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important; 
+    
+    /* [BARU] KUNCI SCROLL: Mencegah scroll 'mental' saat mentok atas/bawah */
+    overscroll-behavior: contain !important; 
+    
+    /* KOSMETIK */
+    border-radius: 12px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* 3. Perbaikan Scrollbar */
+.fixed.z-50 > div::-webkit-scrollbar,
+.fixed.z-\[110\] > div::-webkit-scrollbar {
+    width: 6px;
+}
+.fixed.z-50 > div::-webkit-scrollbar-thumb,
+.fixed.z-\[110\] > div::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+
+
+/* --- GLOBAL SCROLL LOCK (AUTO) --- */
+/* Fitur ini otomatis mendeteksi jika ada elemen Modal (z-50 atau z-110) yang muncul */
+/* Syarat: Browser modern (Chrome 105+, Safari 15.4+, Firefox 121+) */
+
+body:has(.fixed.z-\[110\]), /* Menangkap Modal Pengajuan (Layer 110) */
+body:has(.fixed.z-50),      /* Menangkap Modal Edit/Biasa (Layer 50) */
+body:has([role="dialog"]) {
+    overflow: hidden !important; /* Bekukan scroll body */
+    padding-right: 15px; /* (Opsional) Mencegah layar bergeser saat scrollbar hilang */
+}

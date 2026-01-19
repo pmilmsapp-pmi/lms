@@ -1,0 +1,1 @@
+SKEMA/ALUR PENGAJUAN PELATIHAN : Dengan konfigurasi ini, alurnya akan sempurna: Proposed -> (Review 1) -> Draft -> (Isi Konten) -> (Review 2/Edit) -> Ready -> (User Click Publish) -> Published.

@@ -1,0 +1,78 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+* { font-family: "Trebuchet MS", sans-serif; }
+body { @apply bg-gray-50 text-gray-900; }
+.container { @apply max-w-6xl mx-auto px-4; }
+.btn { @apply inline-flex items-center justify-center rounded-md bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 disabled:opacity-50; }
+.card { @apply rounded-lg border bg-white shadow-sm p-4; }
+input, select, textarea { @apply w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500; }
+
+@layer base {
+  html {
+    /* Pastikan dasar html mengambil seluruh tinggi layar */
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa; /* Sesuaikan dengan warna background lms Anda */
+  }
+
+  body {
+    /* 1. Zoom untuk Chrome, Safari, Edge */
+    zoom: 0.97; 
+
+    /* 2. Transform untuk Firefox */
+    transform: scale(0.97);
+    transform-origin: top left;
+    
+    /* 3. Kompensasi Lebar (Kanan Tertutup) */
+    /* Rumus: 100 / 0.97 = 103.09 */
+    width: 103.09%; 
+    
+    /* 4. Kompensasi Tinggi (Bawah Tertutup) */
+    /* Menggunakan min-height agar footer tetap di bawah jika konten sedikit */
+    min-height: 103.09vh; 
+    
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Mencegah geser kanan-kiri */
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* Theme colors */
+:root { --pmi: #d00000; --pmi-dark: #990000; }
+
+.header { @apply bg-white border-b shadow-sm; }
+.hero {
+  background: linear-gradient(135deg, rgba(208,0,0,0.85), rgba(153,0,0,0.85)), url('/pmi-logo.svg') no-repeat right 2rem top 2rem;
+  background-size: 180px;
+  @apply text-white rounded-xl p-10;
+}
+.btn-primary { @apply inline-flex items-center justify-center rounded-md bg-[var(--pmi)] text-white px-4 py-2 hover:bg-[var(--pmi-dark)] transition disabled:opacity-50; }
+.btn-outline { @apply inline-flex items-center justify-center rounded-md border border-[var(--pmi)] text-[var(--pmi)] px-4 py-2 hover:bg-[var(--pmi)] hover:text-white transition disabled:opacity-50; }
+.badge { @apply inline-flex items-center rounded-full bg-gray-100 text-gray-700 px-3 py-1 text-xs; }
+.card-hover { @apply transition hover:shadow-md hover:-translate-y-0.5; }
+.skeleton { @apply animate-pulse bg-gray-200 rounded; }
+
+/* Opsional: Tambahan di globals.css untuk animasi dropdown */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.group:hover .group-hover\:block {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Pastikan Tailwind mengizinkan pembacaan variabel ini */
+.progress-fill {
+  width: var(--progress, 0%);
+}
+/* src/app/globals.css */
+
+

@@ -1728,6 +1728,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/comment', commentRoutes);
 app.use('/api/materials', materialRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // --- 8. CRON JOB (AUTO SYNC JAM 12 MALAM) ---
 cron.schedule('0 0 * * *', async () => {
