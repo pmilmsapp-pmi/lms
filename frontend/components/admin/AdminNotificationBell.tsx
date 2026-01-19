@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Trash2 } from 'lucide-react';
+import { Bell, Trash2 } from 'lucide-react'; // Import Icon Sampah
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
@@ -18,6 +18,7 @@ export default function AdminNotificationBell() {
 
         try {
             const res = await api('/api/notifications?limit=10');
+            // Handle response format (array vs object)
             const data = Array.isArray(res) ? res : (res.notifications || []);
             setNotifications(data);
             
@@ -51,14 +52,13 @@ export default function AdminNotificationBell() {
 
         setIsOpen(false);
 
-        // --- [INTERCEPTOR LINK KUAT] ---
+        // --- [FIX] INTERCEPTOR LINK (Mencegah ke /forum) ---
         let finalUrl = notif.targetUrl;
 
-        // Cek apakah link mengandung '/forum/'
         if (finalUrl && finalUrl.includes('/forum/')) {
             const parts = finalUrl.split('/');
             const potentialId = parts[parts.length - 1]; 
-            // Jika ID valid, belokkan ke Admin Course
+            // Jika ID valid, belokkan ke Admin Course Modal
             if (potentialId && potentialId.length > 15) {
                 finalUrl = `/admin/courses?highlight=${potentialId}`;
             }
@@ -67,23 +67,24 @@ export default function AdminNotificationBell() {
         if (finalUrl) router.push(finalUrl);
     };
 
-    // [FITUR] Reset Bug (Hapus Semua Notifikasi)
-    const handleNuke = async () => {
-        if(!confirm("⚠️ PERINGATAN: Ini akan menghapus SELURUH notifikasi di sistem untuk SEMUA USER. Gunakan untuk membersihkan bug data lama. Lanjutkan?")) return;
+    // [FITUR BARU] BERSIHKAN BUG NOTIFIKASI
+    const handleClearAll = async () => {
+        if(!confirm("Bersihkan semua notifikasi? Ini akan menghapus notifikasi yang nyangkut.")) return;
         
         try {
-            // Hapus Notifikasi
-            await api('/api/notifications/nuke', { method: 'DELETE' });
+            // Panggil endpoint clear-all yang baru dibuat
+            await api('/api/notifications/clear-all', { method: 'DELETE' });
             
-            // Opsional: Hapus Chat juga jika mau (uncomment jika perlu)
+            // Opsional: Jika ingin reset Chat juga, uncomment baris bawah ini
             // await api('/api/chat/nuke', { method: 'DELETE' }); 
-            
-            alert("Sistem berhasil dibersihkan! Silakan refresh.");
+
             setNotifications([]);
             setUnreadCount(0);
-            window.location.reload();
+            setIsOpen(false);
+            alert("Notifikasi bersih!");
+            window.location.reload(); // Refresh halaman agar bersih total
         } catch (e) {
-            alert("Gagal reset (Pastikan Anda Admin).");
+            alert("Gagal membersihkan.");
         }
     };
 
@@ -100,21 +101,29 @@ export default function AdminNotificationBell() {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in duration-200">
                     <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
                         <h3 className="font-bold text-gray-800 text-sm">Notifikasi</h3>
                         <div className="flex items-center gap-2">
-                            {/* Tombol Pembersih Bug */}
-                            <button onClick={handleNuke} className="text-gray-400 hover:text-red-600 transition-colors p-1" title="BERSIHKAN SEMUA DATA ERROR">
-                                <Trash2 size={16}/>
-                            </button>
+                            {/* TOMBOL SAMPAH (CLEAR BUG) */}
+                            {notifications.length > 0 && (
+                                <button 
+                                    onClick={handleClearAll} 
+                                    className="text-gray-400 hover:text-red-600 transition-colors p-1" 
+                                    title="Hapus Semua Notifikasi"
+                                >
+                                    <Trash2 size={16}/>
+                                </button>
+                            )}
                             <span className="text-[10px] text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">{unreadCount} baru</span>
                         </div>
                     </div>
                     
                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                         {notifications.length === 0 ? (
-                            <div className="p-6 text-center text-gray-400 text-xs italic">Tidak ada notifikasi.</div>
+                            <div className="p-6 text-center text-gray-400 text-xs italic">
+                                Tidak ada notifikasi.
+                            </div>
                         ) : (
                             <div className="divide-y divide-gray-50">
                                 {notifications.map((notif) => (
@@ -125,10 +134,15 @@ export default function AdminNotificationBell() {
                                     >
                                         <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!notif.isRead ? 'bg-blue-600' : 'bg-transparent'}`}></div>
                                         <div className="flex-1 overflow-hidden">
+                                            {/* Nama Pengirim dengan Fallback */}
                                             <p className="text-[10px] text-gray-500 font-bold mb-0.5 uppercase">
                                                 {notif.sender?.name || 'Sistem'}
                                             </p>
-                                            <p className="text-xs text-gray-800 line-clamp-2 leading-relaxed">{notif.message}</p>
+                                            
+                                            <p className="text-xs text-gray-800 line-clamp-2 leading-relaxed">
+                                                {notif.message}
+                                            </p>
+                                            
                                             <p className="text-[10px] text-gray-400 mt-1">
                                                 {new Date(notif.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                                             </p>
@@ -140,7 +154,9 @@ export default function AdminNotificationBell() {
                     </div>
                     
                     <div className="p-2 border-t border-gray-50 bg-gray-50 text-center">
-                        <button className="text-xs font-bold text-gray-500 hover:text-gray-800 w-full" onClick={() => router.push('/admin/notifications')}>Lihat Semua</button>
+                        <button className="text-xs font-bold text-gray-500 hover:text-gray-800 w-full" onClick={() => router.push('/admin/notifications')}>
+                            Lihat Semua
+                        </button>
                     </div>
                 </div>
             )}
