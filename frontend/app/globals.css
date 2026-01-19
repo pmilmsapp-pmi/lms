@@ -11,27 +11,36 @@ body { @apply bg-gray-50 text-gray-900; }
 .card { @apply rounded-lg border bg-white shadow-sm p-4; }
 input, select, textarea { @apply w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500; }
 
-
-
 @layer base {
-  html, body {
-    /* 1. Untuk Chrome, Safari, dan Edge */
-    /* Memberikan tampilan 98% yang paling halus */
-    zoom: 0.98; 
+  html {
+    /* Pastikan dasar html mengambil seluruh tinggi layar */
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa; /* Sesuaikan dengan warna background lms Anda */
+  }
 
-    /* 2. Untuk Firefox dan Browser Modern Lainnya */
-    transform: scale(0.98);
+  body {
+    /* 1. Zoom untuk Chrome, Safari, Edge */
+    zoom: 0.97; 
+
+    /* 2. Transform untuk Firefox */
+    transform: scale(0.97);
     transform-origin: top left;
     
-    /* 3. Kompensasi Lebar agar tidak ada jeda di kanan */
-    /* Rumus: 100 / 0.98 = 102.04 */
-    width: 102.04%; 
+    /* 3. Kompensasi Lebar (Kanan Tertutup) */
+    /* Rumus: 100 / 0.97 = 103.09 */
+    width: 103.09%; 
     
-    /* Mencegah munculnya scrollbar horizontal */
-    overflow-x: hidden;
+    /* 4. Kompensasi Tinggi (Bawah Tertutup) */
+    /* Menggunakan min-height agar footer tetap di bawah jika konten sedikit */
+    min-height: 103.09vh; 
     
-    /* Memastikan background tetap penuh secara vertikal */
-    min-height: 102.04vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Mencegah geser kanan-kiri */
+    display: flex;
+    flex-direction: column;
   }
 }
 

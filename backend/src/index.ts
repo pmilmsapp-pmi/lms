@@ -1388,26 +1388,34 @@ const app = express();
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://misdbpmi:misdbpmi@cluster0.l4lq1.mongodb.net/lms_db';
 
 // Singleton Connection untuk Vercel
-let isConnected = false;
-mongoose.set('strictQuery', true);
-mongoose.set('bufferCommands', false); // Matikan buffering agar tidak timeout di Vercel
+let isConnected = false; // Cache status koneksi
 
 const connectDB = async () => {
-  if (isConnected && mongoose.connection.readyState === 1) return;
+  // Jika sudah konek, jangan buat koneksi baru
+  if (isConnected && mongoose.connection.readyState === 1) {
+    return;
+  }
+
   try {
-    const db = await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10
+    // Matikan buffering. Jika koneksi gagal, sistem langsung lapor (fail fast)
+    // daripada membuat user menunggu loading selamanya.
+    mongoose.set('bufferCommands', false);
+
+    const db = await mongoose.connect(process.env.MONGODB_URI!, {
+      serverSelectionTimeoutMS: 5000, // Tunggu maksimal 5 detik untuk konek
+      socketTimeoutMS: 45000,         // Biarkan koneksi aktif selama 45 detik
+      maxPoolSize: 10,                // Batasi jumlah koneksi agar Atlas tidak overload
     });
+
     isConnected = !!db.connections[0].readyState;
-    console.log(`✅ [db]         Connected to MongoDB Atlas`);
+    console.log("✅ [db] Re-connected to MongoDB Atlas");
   } catch (err: any) {
-    console.error('❌ [db]         Connection error:', err.message);
+    console.error("❌ [db] Connection error:", err.message);
+    isConnected = false;
   }
 };
 
-// Middleware untuk memastikan koneksi DB aktif di setiap request
+// PENTING: Gunakan middleware ini agar setiap request memastikan DB aktif
 app.use(async (req, res, next) => {
   await connectDB();
   next();
