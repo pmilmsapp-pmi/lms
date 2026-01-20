@@ -363,6 +363,7 @@ import express, { Response } from 'express';
 import { Notification } from '../models/Notification';
 import { User } from '../models/User'; 
 import { requireAuth, AuthedRequest } from '../middleware/auth';
+import { deleteAllNotifications } from '../controllers/notificationController';
 
 const router = express.Router();
 
@@ -493,5 +494,7 @@ router.delete('/clear-all', requireAuth, async (req: AuthedRequest, res: Respons
         res.json({ message: 'Notifikasi berhasil dibersihkan.' });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
+
+router.delete('/nuke', requireAuth, deleteAllNotifications);
 
 export default router;
