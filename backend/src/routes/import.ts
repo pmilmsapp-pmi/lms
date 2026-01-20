@@ -39,7 +39,7 @@ const router = Router();
 // =========================================================================
 // Di Vercel, kita hanya boleh tulis file di folder /tmp
 const tempDir = os.tmpdir(); 
-const uploadPath = path.join(tempDir, 'humanis-uploads'); // Buat subfolder biar rapi
+const uploadPath = path.join(tempDir, 'humanis-uploads'); // Buat subfolder di dalam /tmp
 
 // Buat folder temp jika belum ada (aman dilakukan di /tmp)
 if (!fs.existsSync(uploadPath)){
@@ -51,7 +51,7 @@ if (!fs.existsSync(uploadPath)){
 }
 
 const upload = multer({ 
-    dest: uploadPath, // Simpan file CSV di /tmp/humanis-uploads
+    dest: uploadPath, // Simpan file CSV di /tmp/humanis-uploads (bukan di root project)
     limits: { fileSize: 10 * 1024 * 1024 } // Limit 10MB
 });
 
