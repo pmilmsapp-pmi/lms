@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { api, getImageUrl } from '@/lib/api';
 import Protected from '@/components/Protected';
 
+// Remove unused inline style variable
+
 // --- 1. KOMPONEN TOMBOL LULUSKAN ---
 function MarkCompleteButton({ lessonId, studentId, courseId, isCompleted, onSuccess }: any) {
   const [loading, setLoading] = useState(false);
@@ -290,9 +292,12 @@ export default function CourseParticipantsPage() {
                                 <td className="p-4 text-gray-600">{new Date(user.joinDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
 
                                 <td className="p-4 text-center">
-                                    {/* Inline style needed for dynamic width */}
+                                    {/* Dynamic progress width using CSS custom property */}
                                     <div className="w-24 h-2 bg-gray-200 rounded-full mx-auto mb-1 overflow-hidden">
-                                        <div className={`h-full rounded-full transition-all duration-500 ${user.progress === 100 ? 'bg-green-500' : 'bg-blue-600'}`} style={{ width: `${user.progress || 0}%` }}></div>
+                                        <div
+                                            className={`progress-bar h-full rounded-full transition-all duration-500 ${user.progress === 100 ? 'bg-green-500' : 'bg-blue-600'}`}
+                                            data-progress={user.progress || 0}
+                                        ></div>
                                     </div>
                                     <span className={`text-xs font-bold ${user.progress === 100 ? 'text-green-600' : 'text-blue-600'}`}>{user.progress || 0}%</span>
                                 </td>
