@@ -1,0 +1,1909 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model anggota_tim {
+  id                    Int             @id @default(autoincrement())
+  id_anggota            BigInt?
+  id_team               Int?
+  status                Boolean?        @default(true)
+  id_posisi             Int?
+  tipe_pesan_email      Int?
+  tipe_pesan_sms        Int?
+  konfirmasi_sms        Int?            @default(0)
+  konfirmasi_email      Int?
+  id_bencana            BigInt?
+  tipe_pesan_email_siap Int?
+  tipe_pesan_sms_siap   Int?
+  konfirmasi_sms_siap   Int?            @default(0)
+  konfirmasi_email_siap Int?            @default(0)
+  status_siaga          Boolean?        @default(false)
+  status_siap           Boolean?        @default(false)
+  pmi_anggota           pmi_anggota?    @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_dm_bencana        pmi_dm_bencana? @relation(fields: [id_bencana], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  posisi_tim            posisi_tim?     @relation(fields: [id_posisi], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_tim               pmi_tim?        @relation(fields: [id_team], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model auth_assignment {
+  item_name  String    @db.VarChar(64)
+  user_id    String    @db.VarChar(64)
+  created_at Int?
+  auth_item  auth_item @relation(fields: [item_name], references: [name], onDelete: Cascade)
+
+  @@id([item_name, user_id])
+}
+
+model auth_item {
+  name                                              String            @id @db.VarChar(64)
+  type                                              Int
+  description                                       String?
+  rule_name                                         String?           @db.VarChar(64)
+  data                                              String?
+  created_at                                        Int?
+  updated_at                                        Int?
+  auth_assignment                                   auth_assignment[]
+  auth_rule                                         auth_rule?        @relation(fields: [rule_name], references: [name])
+  auth_item_child_auth_item_child_childToauth_item  auth_item_child[] @relation("auth_item_child_childToauth_item")
+  auth_item_child_auth_item_child_parentToauth_item auth_item_child[] @relation("auth_item_child_parentToauth_item")
+
+  @@index([type], map: "idx-auth_item-type")
+}
+
+model auth_item_child {
+  parent                                      String    @db.VarChar(64)
+  child                                       String    @db.VarChar(64)
+  auth_item_auth_item_child_childToauth_item  auth_item @relation("auth_item_child_childToauth_item", fields: [child], references: [name], onDelete: Cascade)
+  auth_item_auth_item_child_parentToauth_item auth_item @relation("auth_item_child_parentToauth_item", fields: [parent], references: [name], onDelete: Cascade)
+
+  @@id([parent, child])
+}
+
+model auth_rule {
+  name       String      @id @db.VarChar(64)
+  data       String?
+  created_at Int?
+  updated_at Int?
+  auth_item  auth_item[]
+}
+
+model auto_number {
+  group           String @id @db.VarChar(32)
+  number          Int?
+  optimistic_lock Int?
+  update_time     Int?
+}
+
+model bp_data {
+  id              BigInt   @id @default(autoincrement())
+  name            String   @db.VarChar
+  description     String?  @db.VarChar
+  extension       String   @db.VarChar
+  data_table_name String?  @db.VarChar
+  type            String?  @db.VarChar
+  bounds          String?  @db.VarChar
+  xml             String?  @db.Xml
+  id_category     BigInt
+  path            String   @db.VarChar
+  popup           String?  @db.VarChar
+  is_public       Boolean?
+  date_created    String?  @db.VarChar
+  id_user_created Int?
+  date_updated    Int?
+  id_user_updated Int?
+  count_view      Int?
+  count_share     Int?
+  download        Int?
+}
+
+model bp_data_category {
+  id       BigInt  @id @default(autoincrement())
+  category String  @db.VarChar
+  note     String? @db.VarChar
+}
+
+model bp_data_share {
+  id           BigInt @id @default(autoincrement())
+  id_data      BigInt
+  from_id_user Int
+  to_id_user   Int?
+}
+
+model bp_download {
+  id       BigInt    @id @default(autoincrement())
+  id_data  BigInt
+  id_user  Int?
+  token    String?   @db.VarChar
+  date_now DateTime? @default(now()) @db.Date
+}
+
+model bp_map {
+  id              Int      @id @default(autoincrement())
+  name            String?  @db.VarChar
+  description     String?  @db.VarChar
+  event           String?  @db.VarChar
+  licensi         String?  @db.VarChar
+  id_category     BigInt
+  is_public       Boolean?
+  date_created    String?  @db.VarChar
+  id_user_created String?  @db.VarChar
+  date_updated    String?  @db.VarChar
+  id_user_updated String?  @db.VarChar
+  count_view      Int?
+  count_share     Int?
+  bounds          String?  @db.VarChar
+}
+
+model bp_map_category {
+  id       BigInt  @id @default(autoincrement())
+  category String  @db.VarChar
+  note     String? @db.VarChar
+}
+
+model bp_map_data {
+  id      BigInt  @id @default(autoincrement())
+  id_map  Int
+  id_data BigInt
+  xml     String? @db.Xml
+}
+
+model bp_map_share {
+  id           BigInt @id @default(autoincrement())
+  id_map       Int
+  from_id_user Int?
+  to_id_user   Int?
+}
+
+model bp_options {
+  id     Int     @id(map: "options_pkey") @default(autoincrement())
+  option String  @db.VarChar
+  value  String  @db.VarChar
+  note   String? @db.VarChar
+}
+
+model bp_story {
+  id              BigInt   @id @default(autoincrement())
+  name            String   @db.VarChar
+  description     String?  @db.VarChar
+  id_category     BigInt
+  is_public       Boolean?
+  date_created    String?  @db.VarChar
+  id_user_created Int?
+  date_updated    String?  @db.VarChar
+  id_user_updated Int?
+  count_view      Int?
+  count_share     Int?
+  deskripsi       String?
+}
+
+model bp_story_category {
+  id       BigInt  @id @default(autoincrement())
+  category String? @db.VarChar
+  note     String? @db.VarChar
+}
+
+model bp_story_sequence {
+  id            BigInt  @id @default(autoincrement())
+  id_story      BigInt
+  title         String? @db.VarChar
+  description   String? @db.VarChar
+  event         String  @db.VarChar
+  media         String? @db.VarChar
+  sort_position Int?
+}
+
+model bp_story_sequence_data {
+  id                BigInt  @id @default(autoincrement())
+  id_story_sequence BigInt
+  id_data           BigInt
+  xml               String? @db.Xml
+}
+
+model bp_story_share {
+  id           BigInt @id @default(autoincrement())
+  id_story     BigInt
+  from_id_user Int?
+  to_id_user   Int?
+}
+
+model bp_versioning {
+  id       BigInt    @id @default(autoincrement())
+  id_data  BigInt
+  id_user  Int?
+  date_now DateTime? @default(now()) @db.Date
+  log      String?   @db.VarChar
+  message  String?   @db.VarChar
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model daemons {
+  start String
+  info  String
+
+  @@ignore
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model desa {
+  kode_desa                                       String        @id(map: "pk_kode_desa") @db.VarChar(14)
+  nama_desa                                       String        @db.VarChar(255)
+  is_kelurahan                                    Int           @default(0)
+  kode_kecamatan                                  String        @db.VarChar(8)
+  kecamatan                                       kecamatan     @relation(fields: [kode_kecamatan], references: [kode_kecamatan], onDelete: Cascade, map: "fk_desa_kodekecamatan")
+  pmi                                             pmi[]
+  pmi_anggota_pmi_anggota_domisili_id_desaTodesa  pmi_anggota[] @relation("pmi_anggota_domisili_id_desaTodesa")
+  pmi_anggota_pmi_anggota_identitas_id_desaTodesa pmi_anggota[] @relation("pmi_anggota_identitas_id_desaTodesa")
+
+  @@index([kode_kecamatan], map: "fki_desa_kodekecamatan")
+  @@index([is_kelurahan], map: "idx_desa_iskelurahan")
+}
+
+model django_migrations {
+  id      Int      @id @default(autoincrement())
+  app     String   @db.VarChar(255)
+  name    String   @db.VarChar(255)
+  applied DateTime @db.Timestamptz(6)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model gammu {
+  version Int @default(dbgenerated("(0)::smallint")) @db.SmallInt
+
+  @@ignore
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model inbox {
+  updatedindb       DateTime @default(dbgenerated("('now'::text)::timestamp(0) without time zone")) @db.Timestamp(0)
+  receivingdatetime DateTime @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(0)
+  text              String
+  sendernumber      String   @default("") @db.VarChar(20)
+  coding            String   @default("Default_No_Compression") @db.VarChar(255)
+  udh               String
+  smscnumber        String   @default("") @db.VarChar(20)
+  class             Int      @default(-1)
+  textdecoded       String   @default("")
+  id                Int      @id @default(autoincrement())
+  recipientid       String
+  processed         Boolean  @default(false)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model kabupaten {
+  kode_kabupaten                                            String                   @id(map: "pk_kode_kabupaten") @db.VarChar(5)
+  nama_kabupaten                                            String                   @db.VarChar(225)
+  kode_provinsi                                             String                   @db.VarChar(2)
+  is_kota                                                   Int                      @default(0)
+  provinsi                                                  provinsi                 @relation(fields: [kode_provinsi], references: [kode_provinsi], onDelete: Cascade, map: "fk_kabupaten_kodeprovinsi")
+  kecamatan                                                 kecamatan[]
+  pmi                                                       pmi[]
+  pmi_anggota_pmi_anggota_domisili_id_kabupatenTokabupaten  pmi_anggota[]            @relation("pmi_anggota_domisili_id_kabupatenTokabupaten")
+  pmi_anggota_pmi_anggota_identitas_id_kabupatenTokabupaten pmi_anggota[]            @relation("pmi_anggota_identitas_id_kabupatenTokabupaten")
+  pmi_anggota_pendidikan                                    pmi_anggota_pendidikan[]
+  pmi_pelatihan                                             pmi_pelatihan[]
+  pmi_unit                                                  pmi_unit[]
+
+  @@index([kode_provinsi], map: "fki_kabupaten_kodeprovinsi")
+  @@index([is_kota], map: "idx_kabupaten_iskota")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model kecamatan {
+  kode_kecamatan                                            String        @id(map: "pk_kode_kecamatan") @db.VarChar(8)
+  nama_kecamatan                                            String        @db.VarChar(225)
+  kode_kabupaten                                            String?       @db.VarChar(5)
+  desa                                                      desa[]
+  kabupaten                                                 kabupaten?    @relation(fields: [kode_kabupaten], references: [kode_kabupaten], onDelete: Cascade, map: "fk_kecamatan_kodekabupaten")
+  pmi                                                       pmi[]
+  pmi_anggota_pmi_anggota_domisili_id_kecamatanTokecamatan  pmi_anggota[] @relation("pmi_anggota_domisili_id_kecamatanTokecamatan")
+  pmi_anggota_pmi_anggota_identitas_id_kecamatanTokecamatan pmi_anggota[] @relation("pmi_anggota_identitas_id_kecamatanTokecamatan")
+
+  @@index([kode_kabupaten], map: "fki_kecamatan_kodekabupaten")
+}
+
+model menu {
+  id         Int     @id @default(autoincrement())
+  name       String  @db.VarChar(128)
+  parent     Int?
+  route      String? @db.VarChar(255)
+  order      Int?
+  data       Bytes?
+  menu       menu?   @relation("menuTomenu", fields: [parent], references: [id])
+  other_menu menu[]  @relation("menuTomenu")
+}
+
+model migration {
+  version    String @id @db.VarChar(180)
+  apply_time Int?
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model outbox {
+  UpdatedInDB       DateTime @default(dbgenerated("('now'::text)::timestamp(0) without time zone")) @db.Timestamp(0)
+  InsertIntoDB      DateTime @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(0)
+  SendingDateTime   DateTime @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(6)
+  Text              String?
+  DestinationNumber String   @default("") @db.VarChar(20)
+  Coding            String   @default("Default_No_Compression") @db.VarChar(255)
+  UDH               String?
+  Class             Int?     @default(-1)
+  TextDecoded       String   @default("")
+  ID                Int      @id @default(autoincrement())
+  MultiPart         Boolean  @default(false)
+  RelativeValidity  Int?     @default(-1)
+  SenderID          String?  @db.VarChar(255)
+  SendingTimeOut    DateTime @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(0)
+  DeliveryReport    String?  @default("default") @db.VarChar(10)
+  CreatorID         String
+
+  @@index([SendingDateTime, SendingTimeOut], map: "outbox_date")
+  @@index([SenderID], map: "outbox_sender")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model outbox_multipart {
+  text             String?
+  coding           String  @default("Default_No_Compression") @db.VarChar(255)
+  udh              String?
+  class            Int?    @default(-1)
+  textdecoded      String?
+  id               Int     @default(autoincrement())
+  sequenceposition Int     @default(1)
+
+  @@id([id, sequenceposition])
+}
+
+model pbk {
+  id      Int    @id @default(autoincrement())
+  groupid Int    @default(-1)
+  name    String
+  number  String
+}
+
+model pbk_groups {
+  name String
+  id   Int    @id @default(autoincrement())
+}
+
+model penugasan_ketegori {
+  oid                Int     @id
+  kategori_penugasan String? @db.VarChar(100)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model peta {
+  id     Int     @id @default(autoincrement())
+  nama   String  @db.VarChar
+  url    String  @db.VarChar
+  jenis  String  @db.VarChar
+  tampil Int?    @default(0)
+  layer  String? @db.VarChar
+}
+
+model phones {
+  id           String
+  updatedindb  DateTime @default(dbgenerated("('now'::text)::timestamp(0) without time zone")) @db.Timestamp(0)
+  insertintodb DateTime @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(0)
+  timeout      DateTime @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(0)
+  send         Boolean  @default(false)
+  receive      Boolean  @default(false)
+  imei         String   @id @db.VarChar(35)
+  client       String
+  battery      Int      @default(0)
+  signal       Int      @default(0)
+  sent         Int      @default(0)
+  received     Int      @default(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi {
+  id                                   BigInt                         @id(map: "pk_ref_mpc") @default(autoincrement())
+  id_level                             BigInt
+  id_anggota_kepala_markas             BigInt?
+  id_kode_administratif_provinsi       String                         @db.VarChar(2)
+  id_kode_administratif_kabupaten      String                         @db.VarChar(5)
+  id_kode_administratif_kecamatan      String                         @db.VarChar(8)
+  kode_pmi                             String?                        @db.VarChar(12)
+  nama                                 String?                        @db.VarChar
+  catatan                              String?
+  alamat                               String?
+  email                                String?                        @db.VarChar
+  kode_pos                             Int?
+  no_telpon                            Float?
+  fax                                  Float?
+  sk_no                                String?                        @db.VarChar(50)
+  sk_tanggal                           DateTime?                      @db.Date
+  luas_tanah                           Float?
+  luas_bangunan                        Float?
+  id_status_kepemilikan_markas         Int?
+  status_kepemilikan_sertifikat_markas String?                        @db.VarChar(25)
+  status_aktif                         Boolean?
+  id_user_created                      Int?
+  date_created                         DateTime?                      @default(now()) @db.Timestamp(6)
+  id_user_update                       Int?
+  date_update                          DateTime?                      @default(now()) @db.Timestamp(6)
+  long                                 Float?
+  lat                                  Float?
+  id_kode_administratif_desa           String                         @db.VarChar(14)
+  foto                                 String?                        @db.VarChar
+  sk                                   String?                        @db.VarChar
+  geom                                 Unsupported("geometry")?
+  nomor_pmi                            String?                        @db.VarChar(6)
+  desa                                 desa                           @relation(fields: [id_kode_administratif_desa], references: [kode_desa], onDelete: Cascade, onUpdate: NoAction)
+  kabupaten                            kabupaten                      @relation(fields: [id_kode_administratif_kabupaten], references: [kode_kabupaten], onDelete: Cascade, onUpdate: NoAction)
+  kecamatan                            kecamatan                      @relation(fields: [id_kode_administratif_kecamatan], references: [kode_kecamatan], onDelete: Cascade, onUpdate: NoAction)
+  provinsi                             provinsi                       @relation(fields: [id_kode_administratif_provinsi], references: [kode_provinsi], onDelete: Cascade, onUpdate: NoAction)
+  pmi_level                            pmi_level                      @relation(fields: [id_level], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_status_kepemilikan_markas        pmi_status_kepemilikan_markas? @relation(fields: [id_status_kepemilikan_markas], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_anggota_riwayat                  pmi_anggota_riwayat[]
+  pmi_dm_kapasitas                     pmi_dm_kapasitas[]
+  pmi_dm_posko                         pmi_dm_posko[]
+  pmi_foto                             pmi_foto[]
+  pmi_kegiatan                         pmi_kegiatan[]
+  pmi_kepengurusan                     pmi_kepengurusan[]
+  pmi_pelatihan                        pmi_pelatihan[]
+  pmi_penugasan                        pmi_penugasan[]
+  tim_validator_temporari              tim_validator_temporari[]
+}
+
+model pmi_administrasi_desa {
+  id                         BigInt                     @id @default(autoincrement())
+  kode_kecamatan             BigInt
+  nama_desa                  String?                    @db.VarChar
+  kode_desa                  String?                    @db.VarChar(4)
+  pmi_administrasi_kecamatan pmi_administrasi_kecamatan @relation(fields: [kode_kecamatan], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_administrasi_kabupaten {
+  id                         BigInt                       @id @default(autoincrement())
+  kode_provinsi              BigInt
+  nama_kabupaten             String?                      @db.VarChar
+  kode_kabupaten             String?                      @db.VarChar(2)
+  pmi_administrasi_provinsi  pmi_administrasi_provinsi    @relation(fields: [kode_provinsi], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_administrasi_kecamatan pmi_administrasi_kecamatan[]
+}
+
+model pmi_administrasi_kecamatan {
+  id                         BigInt                     @id @default(autoincrement())
+  kode_kabupaten             BigInt
+  nama_kecamatan             String?                    @db.VarChar
+  kode_kecamatan             String?                    @db.VarChar(2)
+  pmi_administrasi_desa      pmi_administrasi_desa[]
+  pmi_administrasi_kabupaten pmi_administrasi_kabupaten @relation(fields: [kode_kabupaten], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_dm_posko               pmi_dm_posko[]
+}
+
+model pmi_administrasi_provinsi {
+  id                         BigInt                       @id @default(autoincrement())
+  kode_regional              BigInt
+  nama_provinsi              String?                      @db.VarChar
+  kode_provinsi              String?                      @db.VarChar(2)
+  pmi_administrasi_kabupaten pmi_administrasi_kabupaten[]
+  pmi_administrasi_regional  pmi_administrasi_regional    @relation(fields: [kode_regional], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_administrasi_regional {
+  id                        BigInt                      @id @default(autoincrement())
+  nama_regional             String                      @db.VarChar(100)
+  kode_regional             String?                     @db.VarChar(2)
+  pmi_administrasi_provinsi pmi_administrasi_provinsi[]
+}
+
+model pmi_anggaran {
+  id                         Int                  @id @default(autoincrement())
+  jumlah_anggaran_pendapatan Float?
+  jumlah_anggaran_belanja    Float?
+  tahun                      DateTime?            @db.Date
+  pmi_sumber_anggaran        pmi_sumber_anggaran?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_anggota {
+  id                                                      BigInt                               @id(map: "pk_rel_mst_anggota") @default(autoincrement())
+  kode_anggota                                            String                               @db.VarChar(22)
+  kode_anggota_lama                                       String                               @db.VarChar(25)
+  path_foto                                               String?                              @default("no-img.png") @db.VarChar(100)
+  nama                                                    String                               @db.VarChar(50)
+  kelamin                                                 String?                              @db.Char(1)
+  agama                                                   String?                              @db.Char(1)
+  id_golongan_darah                                       BigInt?
+  tempat_lahir                                            String?                              @db.VarChar(100)
+  tanggal_lahir                                           DateTime                             @db.Timestamp(6)
+  no_hp                                                   String?                              @db.VarChar
+  email                                                   String?                              @db.VarChar(100)
+  id_jenis_identitas                                      BigInt?
+  no_identitas                                            String?                              @db.VarChar
+  domisili_id_provinsi                                    String                               @db.VarChar(2)
+  domisili_id_kabupaten                                   String                               @db.VarChar(5)
+  domisili_id_kecamatan                                   String                               @db.VarChar(8)
+  domisili_id_desa                                        String                               @db.VarChar(14)
+  domisili_alamat                                         String?                              @db.VarChar(100)
+  domisili_rt                                             Float?
+  domisili_rw                                             Float?
+  domisili_kode_pos                                       Int?
+  no_telp                                                 String?                              @db.VarChar
+  domisili_status_kepemilikan                             Boolean?                             @default(true)
+  domisili_status_tinggal                                 Int?                                 @default(1)
+  catatan                                                 String?
+  status_aktif                                            Boolean?
+  identitas_id_provinsi                                   String?                              @db.VarChar(2)
+  identitas_id_kabupaten                                  String?                              @db.VarChar(5)
+  identitas_id_kecamatan                                  String?                              @db.VarChar(8)
+  identitas_id_desa                                       String?                              @db.VarChar(14)
+  identitas_alamat                                        String?
+  identitas_rt                                            Float?
+  identitas_rw                                            Float?
+  identitas_kode_pos                                      Int?
+  identitas_status_kepemilikan                            Boolean?                             @default(true)
+  identitas_status_tinggal                                Int?                                 @default(1)
+  tsr_pengurus_pekerjaan                                  String?                              @db.VarChar(100)
+  tsr_pengurus_institusi                                  String?                              @db.VarChar(100)
+  tsr_pengurus_institusi_alamat                           String?
+  pegawai_no_asuransi                                     String?                              @db.VarChar(100)
+  pegawai_nama_asuransi                                   String?                              @db.VarChar(100)
+  pegawai_asuransi_mulai                                  DateTime?                            @db.Date
+  pegawai_asuransi_akhir                                  DateTime?                            @db.Date
+  pegawai_gelar_depan                                     String?                              @db.VarChar
+  pegawai_gelar_belakang                                  String?                              @db.VarChar
+  pegawai_status_pernikahan                               Boolean?
+  pegawai_npwp                                            String?                              @db.VarChar(25)
+  pegawai_path_kk                                         String?                              @db.VarChar
+  pegawai_path_surat_nikah                                String?                              @db.VarChar
+  id_user_created                                         Int?
+  date_created                                            DateTime?                            @default(now()) @db.Timestamp(6)
+  id_user_update                                          Int?
+  date_update                                             DateTime?                            @db.Timestamp(6)
+  pegawai_official_email                                  String?                              @db.VarChar(100)
+  id_user                                                 Int?
+  id_kategori                                             Int?                                 @default(1)
+  verifikasi                                              Boolean?                             @default(false)
+  pernyataan                                              Boolean?                             @default(false)
+  keterangan                                              String?
+  status                                                  Int?                                 @default(0)
+  lat                                                     String?                              @db.VarChar(100)
+  long                                                    String?                              @db.VarChar(100)
+  anggota_tim                                             anggota_tim[]
+  desa_pmi_anggota_domisili_id_desaTodesa                 desa                                 @relation("pmi_anggota_domisili_id_desaTodesa", fields: [domisili_id_desa], references: [kode_desa], onDelete: Cascade, onUpdate: NoAction)
+  kabupaten_pmi_anggota_domisili_id_kabupatenTokabupaten  kabupaten                            @relation("pmi_anggota_domisili_id_kabupatenTokabupaten", fields: [domisili_id_kabupaten], references: [kode_kabupaten], onDelete: Cascade, onUpdate: NoAction)
+  kecamatan_pmi_anggota_domisili_id_kecamatanTokecamatan  kecamatan                            @relation("pmi_anggota_domisili_id_kecamatanTokecamatan", fields: [domisili_id_kecamatan], references: [kode_kecamatan], onDelete: Cascade, onUpdate: NoAction)
+  provinsi_pmi_anggota_domisili_id_provinsiToprovinsi     provinsi                             @relation("pmi_anggota_domisili_id_provinsiToprovinsi", fields: [domisili_id_provinsi], references: [kode_provinsi], onDelete: Cascade, onUpdate: NoAction)
+  pmi_golongan_darah                                      pmi_golongan_darah?                  @relation(fields: [id_golongan_darah], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_ref_jenis_identitas                                 pmi_ref_jenis_identitas?             @relation(fields: [id_jenis_identitas], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  user                                                    user?                                @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  desa_pmi_anggota_identitas_id_desaTodesa                desa?                                @relation("pmi_anggota_identitas_id_desaTodesa", fields: [identitas_id_desa], references: [kode_desa], onDelete: Cascade, onUpdate: NoAction)
+  kabupaten_pmi_anggota_identitas_id_kabupatenTokabupaten kabupaten?                           @relation("pmi_anggota_identitas_id_kabupatenTokabupaten", fields: [identitas_id_kabupaten], references: [kode_kabupaten], onDelete: Cascade, onUpdate: NoAction)
+  kecamatan_pmi_anggota_identitas_id_kecamatanTokecamatan kecamatan?                           @relation("pmi_anggota_identitas_id_kecamatanTokecamatan", fields: [identitas_id_kecamatan], references: [kode_kecamatan], onDelete: Cascade, onUpdate: NoAction)
+  provinsi_pmi_anggota_identitas_id_provinsiToprovinsi    provinsi?                            @relation("pmi_anggota_identitas_id_provinsiToprovinsi", fields: [identitas_id_provinsi], references: [kode_provinsi], onDelete: Cascade, onUpdate: NoAction)
+  pmi_anggota_ikatan_dinas                                pmi_anggota_ikatan_dinas[]
+  pmi_anggota_kategori_detail_relasi                      pmi_anggota_kategori_detail_relasi[]
+  pmi_anggota_kategori_relasi                             pmi_anggota_kategori_relasi[]
+  pmi_anggota_keterampilan                                pmi_anggota_keterampilan[]
+  pmi_anggota_organisasi                                  pmi_anggota_organisasi[]
+  pmi_anggota_pelatihan_eksternal                         pmi_anggota_pelatihan_eksternal[]
+  pmi_anggota_pendidikan                                  pmi_anggota_pendidikan[]
+  pmi_anggota_penghargaan                                 pmi_anggota_penghargaan[]
+  pmi_anggota_riwayat                                     pmi_anggota_riwayat[]
+  pmi_cuti                                                pmi_cuti[]
+  pmi_kepengurusan                                        pmi_kepengurusan[]
+  pmi_kordinator_unit                                     pmi_kordinator_unit[]
+}
+
+model pmi_anggota_asuransi {
+  id             BigInt    @id @default(autoincrement())
+  id_anggota     String    @db.VarChar(20)
+  nama           String    @db.VarChar(255)
+  jenis          String?   @db.VarChar(20)
+  berlaku_sampai DateTime? @db.Date
+}
+
+model pmi_anggota_ikatan_dinas {
+  id            BigInt      @id @default(autoincrement())
+  id_anggota    BigInt
+  no_surat      String      @db.VarChar
+  tanggal_mulai DateTime    @db.Date
+  tanggal_akhir DateTime    @db.Date
+  jenis         String?     @db.VarChar
+  keterangan    String?
+  pmi_anggota   pmi_anggota @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model pmi_anggota_kategori {
+  id                          BigInt                        @id @default(autoincrement())
+  kode_kategori               Int
+  nama_kategori               String                        @db.VarChar(50)
+  id_user_created             Int?
+  date_created                DateTime?                     @default(now()) @db.Timestamp(6)
+  id_user_update              Int?
+  date_update                 DateTime?                     @db.Timestamp(6)
+  pmi_anggota_kategori_detail pmi_anggota_kategori_detail[]
+  pmi_anggota_kategori_relasi pmi_anggota_kategori_relasi[]
+}
+
+model pmi_anggota_kategori_detail {
+  id                                 BigInt                               @id @default(autoincrement())
+  kode_kategori                      Int
+  nama_kategori                      String?                              @db.VarChar(50)
+  id_user_created                    Int?
+  date_created                       DateTime?                            @default(now()) @db.Timestamp(6)
+  id_user_update                     Int?
+  date_update                        DateTime?                            @db.Timestamp(6)
+  id_anggota_kategori                BigInt?
+  pmi_anggota_kategori               pmi_anggota_kategori?                @relation(fields: [id_anggota_kategori], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_anggota_kategori_detail_relasi pmi_anggota_kategori_detail_relasi[]
+  pmi_unit                           pmi_unit[]
+}
+
+model pmi_anggota_kategori_detail_relasi {
+  id                          BigInt                      @id @default(autoincrement())
+  id_anggota                  BigInt
+  id_kategori_detail          BigInt
+  date_gabung                 DateTime?                   @db.Date
+  date_keluar                 DateTime?                   @db.Date
+  pmi_anggota                 pmi_anggota                 @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_anggota_kategori_detail pmi_anggota_kategori_detail @relation(fields: [id_kategori_detail], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_anggota_kategori_relasi {
+  id                   BigInt               @id @default(autoincrement())
+  id_kategori          BigInt
+  id_anggota           BigInt
+  date_gabung          DateTime?            @default(now()) @db.Date
+  date_keluar          DateTime?            @db.Date
+  pmi_anggota_kategori pmi_anggota_kategori @relation(fields: [id_kategori], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pmi_anggota_kategori_relasi_id_anggota_fkey")
+  pmi_anggota          pmi_anggota          @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pmi_anggota_kategori_relasi_id_anggota_fkey1")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_anggota_keterampilan {
+  id                        BigInt                     @id @default(autoincrement())
+  id_anggota                BigInt
+  id_keterampilan           BigInt
+  validasi                  Boolean                    @default(false)
+  date_validation           DateTime?                  @db.Date
+  id_kategori_keterampilan  BigInt?
+  pmi_anggota               pmi_anggota                @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_keterampilan_kategori pmi_keterampilan_kategori? @relation(fields: [id_kategori_keterampilan], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_keterampilan          pmi_keterampilan           @relation(fields: [id_keterampilan], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_anggota_organisasi {
+  id             BigInt      @id @default(autoincrement())
+  id_anggota     BigInt
+  jenis          Boolean     @default(true)
+  nama           String      @db.VarChar
+  alamat         String
+  tanggal_masuk  DateTime    @db.Date
+  tanggal_keluar DateTime    @db.Date
+  jabatan        String      @db.VarChar
+  keterangan     String?
+  pmi_anggota    pmi_anggota @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_anggota_pelatih_jenis_pelatihan {
+  id                  BigInt              @id @default(autoincrement())
+  id_anggota          BigInt
+  id_jenis_pelatihan  BigInt
+  date_mulai          DateTime            @db.Date
+  date_selesai        DateTime?           @db.Date
+  jenjang             Int
+  pmi_pelatihan_jenis pmi_pelatihan_jenis @relation(fields: [id_jenis_pelatihan], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_anggota_pelatihan_eksternal {
+  id                      BigInt                  @id @default(autoincrement())
+  id_external_kompetensi  BigInt
+  id_anggota              BigInt
+  penyelenggara           String                  @db.VarChar
+  path_upload_sertifikat  String?                 @db.VarChar
+  date_mulai              String                  @db.VarChar
+  date_selesai            DateTime                @db.Date
+  lokasi                  String                  @db.VarChar
+  id_bidang_kompetensi    Int?
+  pmi_anggota             pmi_anggota             @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_external_kompetensi pmi_external_kompetensi @relation(fields: [id_external_kompetensi], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_anggota_pelatihan_internal {
+  id                     BigInt        @id @default(autoincrement())
+  id_pelatihan           BigInt
+  nomor_registrasi       String?       @db.VarChar(15)
+  alumni                 Boolean
+  path_upload_sertifikat String?       @db.VarChar
+  validasi_sertifikasi   Boolean?
+  id_user                Int?
+  pmi_pelatihan          pmi_pelatihan @relation(fields: [id_pelatihan], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  user                   user?         @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model pmi_anggota_pendidikan {
+  id                     BigInt                 @id @default(autoincrement())
+  id_anggota             BigInt?
+  id_pendidikan          BigInt
+  id_pendidikan_bidang   BigInt
+  path_ijasah            String?                @db.VarChar
+  institusi              String?
+  id_provinsi            String?                @db.Char(2)
+  id_kabupaten           String?                @db.VarChar(5)
+  tahun_masuk            Int?
+  tahun_lulus            Int?
+  pmi_anggota            pmi_anggota?           @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  kabupaten              kabupaten?             @relation(fields: [id_kabupaten], references: [kode_kabupaten], onDelete: Cascade, onUpdate: NoAction)
+  pmi_pendidikan_bidang  pmi_pendidikan_bidang  @relation(fields: [id_pendidikan_bidang], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_pendidikan_jenjang pmi_pendidikan_jenjang @relation(fields: [id_pendidikan], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  provinsi               provinsi?              @relation(fields: [id_provinsi], references: [kode_provinsi], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model pmi_anggota_penghargaan {
+  id                  BigInt      @id @default(autoincrement())
+  id_anggota          BigInt
+  no_surat            String      @db.VarChar
+  nama                String      @db.VarChar
+  tanggal             DateTime    @db.Date
+  pemberi_penghargaan String?     @db.VarChar
+  path_piagam         String?     @db.VarChar
+  pmi_anggota         pmi_anggota @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model pmi_anggota_penugasan {
+  id           BigInt    @id @default(autoincrement())
+  id_anggota   BigInt
+  id_penugasan BigInt
+  deskripsi    String?
+  date_mulai   DateTime? @db.Date
+  date_selesai DateTime? @db.Date
+  sumber_dana  String?   @db.VarChar
+  tugas        String?   @db.VarChar
+}
+
+model pmi_anggota_penugasan_tugas {
+  id         BigInt  @id @default(autoincrement())
+  nama_tugas String? @db.VarChar
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_anggota_riwayat {
+  id                        BigInt              @id @default(autoincrement())
+  id_unit_baru              BigInt?
+  id_unit_asal              Int?
+  id_pmi_baru               BigInt?
+  id_pmi_asal               Int?
+  id_anggota                BigInt
+  date_awal                 DateTime            @db.Date
+  date_akhir                DateTime?           @db.Date
+  keterangan                String?             @db.VarChar
+  pegawai_status            String?             @db.VarChar
+  pegawai_no_sk             String?             @db.VarChar(50)
+  id_pegawai_jabatan        BigInt?
+  id_pegawai_golongan       BigInt?
+  id_pegawai_departemen     BigInt?
+  id_pegawai_sub_departemen BigInt?
+  id_pegawai_sumber_dana    BigInt?
+  status_aktif              Boolean?            @default(true)
+  pmi_anggota               pmi_anggota         @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_departemen            pmi_departemen?     @relation(fields: [id_pegawai_departemen], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_golongan              pmi_golongan?       @relation(fields: [id_pegawai_golongan], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_jabatan               pmi_jabatan?        @relation(fields: [id_pegawai_jabatan], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_sub_departemen        pmi_sub_departemen? @relation(fields: [id_pegawai_sub_departemen], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_sumber_dana           pmi_sumber_dana?    @relation(fields: [id_pegawai_sumber_dana], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi                       pmi?                @relation(fields: [id_pmi_baru], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_unit                  pmi_unit?           @relation(fields: [id_unit_baru], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_anggota_validator {
+  id                      BigInt                  @id @default(autoincrement())
+  id_anggota              BigInt
+  id_tim                  BigInt
+  tim_validator_temporari tim_validator_temporari @relation(fields: [id_tim], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_bidang_kompetensi {
+  id                     BigInt  @id @default(autoincrement())
+  nama_bidang_kompetensi String? @db.VarChar
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_cuti {
+  id                     BigInt         @id @default(autoincrement())
+  id_anggota             BigInt
+  id_jenis               BigInt
+  hak_cuti               Boolean?
+  date_cuti              DateTime       @db.Date
+  date_mulai             DateTime       @db.Date
+  date_akhir             DateTime       @db.Date
+  keperluan              String
+  validasi_departemen    Boolean        @default(false)
+  validasi_hr            Boolean        @default(false)
+  validasi_kepala_markas Boolean        @default(false)
+  pmi_anggota            pmi_anggota    @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_cuti_jenis         pmi_cuti_jenis @relation(fields: [id_jenis], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_cuti_jenis {
+  id       BigInt     @id @default(autoincrement())
+  jenis    String     @db.VarChar(100)
+  pmi_cuti pmi_cuti[]
+}
+
+model pmi_departemen {
+  id                  BigInt                @id @default(autoincrement())
+  departemen          String                @db.VarChar(100)
+  pmi_anggota_riwayat pmi_anggota_riwayat[]
+  pmi_pelatihan_jenis pmi_pelatihan_jenis[]
+  pmi_sub_departemen  pmi_sub_departemen[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_dm_assessment_cepat {
+  id                            BigInt                   @id @default(autoincrement())
+  id_bencana                    BigInt
+  id_sumber_informasi           BigInt
+  spesifikasi_sumber_informasi  String?                  @db.VarChar
+  id_anggota_pelapor            BigInt
+  long                          Float
+  lat                           Float
+  date_assessment               DateTime?                @default(now()) @db.Date
+  gambaran_umum                 String?
+  kebutuhan_mendesak            String?
+  jumlah_meninggal              Int?
+  jumlah_luka_berat             Int?
+  jumlah_luka_ringan            Int?
+  jumlah_hilang                 Int?
+  jumlah_bangunan_hancur        Int?
+  jumlah_bangunan_rusak_berat   Int?
+  jumlah_bangunan_rusak_ringan  Int?
+  pengungsi_ada_tidak           Boolean                  @default(false)
+  pengungsian_lokasi            String?
+  pengungsi_jumlah              Int?
+  transportasi_jalan_ada        Boolean?                 @default(true)
+  transportasi_jalan_fungsi     Boolean?                 @default(true)
+  transportasi_jembatan_ada     Boolean?                 @default(true)
+  transportasi_jembatan_fungsi  Boolean?                 @default(true)
+  transportasi_umum_ada         Boolean?                 @default(true)
+  transportasi_umum_fungsi      Boolean?                 @default(true)
+  catatan_transportasi          String?
+  ku_fasilitas_kesehatan_ada    Boolean?                 @default(true)
+  ku_fasilitas_kesehatan_fungsi Boolean?                 @default(true)
+  ku_listrik_ada                Boolean?                 @default(true)
+  ku_listrik_fungsi             Boolean?                 @default(true)
+  ku_sekolah_ada                Boolean?                 @default(true)
+  ku_sekolah_fungsi             Boolean?                 @default(true)
+  ku_air                        Boolean?                 @default(true)
+  ku_tempat_ibadah              Boolean?                 @default(true)
+  ku_tempat_ibadah_fungsi       Boolean?                 @default(true)
+  catatan_kebutuhan_umum        String?
+  komunikasi_telpon_ada         Boolean?
+  komunikasi_telpon_fungsi      Boolean?
+  komunikasi_seluler_ada        Boolean?
+  komunikasi_seluler_fungsi     Boolean?
+  komunikasi_kantor_pos_ada     Boolean?
+  komunikasi_kantor_pos_fungsi  Boolean?
+  komunikasi_internet_ada       Boolean?
+  komunikasi_internet_fungsi    Boolean?
+  komunikasi_keterangan         String?
+  geom                          Unsupported("geometry")?
+  tindakan_pmi                  String?
+  tindakan_lsm                  String?
+  tindakan_pemerintah           String?
+  kontak                        String?                  @db.VarChar
+  catatan                       String?
+  jumlah_luka_sedang            Int?
+  jumlah_bangunan_rusak_sedang  Int?
+  jumlah_kk                     Int?
+  jumlah_jiwa                   Int?
+  pmi_dm_bencana                pmi_dm_bencana           @relation(fields: [id_bencana], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_dm_assessment_detail {
+  id                                    BigInt         @id @default(autoincrement())
+  id_bencana                            BigInt
+  id_sumber_informasi                   BigInt
+  spesifikasi_sumber_informasi          String?        @db.VarChar
+  id_anggota                            BigInt
+  transportasi_darat_ada                Boolean?
+  transportasi_darat_ada_detail         String?
+  transportasi_air_ada                  Boolean?
+  transportasi_air_ada_detail           String?
+  transportasi_udara_ada                Boolean?
+  transportasi_udara_ada_detail         String?
+  transportasi_catatan                  String?
+  demografi_jumlah_kk                   Int?
+  demografi_jumlah_jiwa_pria            Int?
+  demografi_jumlah_jiwa_wanita          Int?
+  demografi_jumlah_jiwa_balita_pria     Int?
+  demografi_jumlah_jiwa_balita_wanita   Int?
+  demografi_sumber_data_nama            String?        @db.VarChar
+  demografi_sumber_data_institusi       String?        @db.VarChar
+  demografi_sumber_data_kontak          String?        @db.VarChar
+  demografi_jumlah_terpisah_anak        Int?
+  demografi_jumlah_lansia               Int?
+  demografi_jumlah_cacat_fisik          Int?
+  demografi_jumlah_wanita_hamil         Int?
+  demografi_jumlah_ibu_menyusui         Int?
+  demografi_jumlah_perempuan_sebagai_kk Int?
+  demografi_catatan                     String?
+  pmi_dm_bencana                        pmi_dm_bencana @relation(fields: [id_bencana], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_dm_assessment_detail_kedua {
+  id                                                  BigInt          @id @default(autoincrement())
+  pengungsian_sementara_ada                           Boolean?
+  pengungsian_sementara_alamat                        String?
+  pengungsian_sementara_jiwa                          Int?
+  pengungsian_sementara_kk                            Int?
+  pengungsian_sementara_sarana_tenda_keluarga         Boolean?
+  pengungsian_sementara_sarana_tenda_pleton           Boolean?
+  pengungsian_sementara_sarana_tenda_terpal           Boolean?
+  pengungsian_sementara_sarana_tenda_atap_daun        Boolean?
+  pengungsian_sementara_sarana_tenda_lainnya          String?
+  pengungsian_sementara_tempat_lapangan               Boolean?
+  pengungsian_sementara_tempat_sekolahan              Boolean?
+  pengungsian_sementara_tempat_tempat_ibadah          Boolean?
+  pengungsian_sementara_tempat_perkantoran            Boolean?
+  pengungsian_sementara_tempat_lainnya                String?
+  pengungsian_semi_permanen_ada                       Boolean?
+  pengungsian_semi_permanen_alamat                    String?
+  pengungsian_semi_permanen_jumlah_jiwa               Int?
+  pengungsian_semi_permanen_jumlah_kk                 Int?
+  pengungsian_semi_permanen_sarana_tenda_keluarga     Boolean?
+  pengungsian_semi_permanen_sarana_tenda_pleton       Boolean?
+  pengungsian_semi_permanen_sarana_tenda_terpal       Boolean?
+  pengungsian_semi_permanen_sarana_tenda_atap_daun    Boolean?
+  pengungsian_semi_permanen_sarana_tenda_lainnya      String?
+  pengungsian_permanen_ada                            Boolean?
+  pengungsian_permanen_alamat                         String?
+  pengungsian_permanen_jumlah_jiwa                    Int?
+  pengungsian_permanen_jumlah_kk                      Int?
+  pengungsian_permanen_sarana_tenda_keluarga          Boolean?
+  pengungsian_permanen_sarana_tenda_pleton            Boolean?
+  pengungsian_permanen_sarana_tenda_terpal            Boolean?
+  pengungsian_permanen_sarana_tenda_atap_daun         Boolean?
+  pengungsian_permanen_sarana_tenda_lainnya           String?
+  pengungsian_permanen_tempat_lapangan                Boolean?
+  pengungsian_permanen_tempat_sekolahan               Boolean?
+  pengungsian_permanen_tempat_tempat_ibadah           Boolean?
+  pengungsian_permanen_tempat_perkantoran             Boolean?
+  pengungsian_permanen_tempat_lainnya                 String?
+  pengungsian_catatan                                 String?
+  makanan_pangan_hasil_ternak                         Boolean?
+  makanan_pangan_hasil_pertanian                      Boolean?
+  makanan_pangan_hasil_perikanan                      Boolean?
+  makanan_pangan_hasil_tumbuhan_liar                  Boolean?
+  makanan_pangan_hasil_bantuan                        Boolean?
+  makanan_pangan_hasil_barter                         Boolean?
+  makanan_pangan_hasil_beli                           Boolean?
+  makanan_pangan_hasil_lainnya                        String?
+  makanan_pangan_dikonsumsi                           String?
+  makanan_pangan_masalah_akses                        String?
+  makanan_pangan_frekuensi_makan                      Int?            @default(1)
+  makanan_pangan_lainnya                              String?
+  makanan_pangan_catatan                              String?
+  makanan_non_pangan_alat_masak                       Boolean?
+  makanan_non_pangan_selimut                          Boolean?
+  makanan_non_pangan_hygine_kit                       Boolean?
+  makanan_non_pangan_terpal                           Boolean?
+  makanan_non_pangan_kebutuhan_wanita                 Boolean?
+  makanan_non_pangan_alas_tidur                       Boolean?
+  makanan_non_pangan_pakaian                          Boolean?
+  makanan_non_pangan_ember                            Boolean?
+  makanan_non_pangan_kebutuhan_bayi                   Boolean?
+  makanan_non_pangan_lainnya                          String?
+  makanan_catatan                                     String?
+  id_bencana                                          BigInt?
+  pengungsian_semi_permanen_sarana_tempat_lapangan    Boolean?
+  pengungsian_semi_permanen_sarana_tempat_sekolahan   Boolean?
+  pengungsian_semi_permanen_sarana_tempat_ibadah      Boolean?
+  pengungsian_semi_permanen_sarana_tempat_perkantoran Boolean?
+  pengungsian_semi_permanen_sarana_tempat_lainnya     String?
+  pmi_dm_bencana                                      pmi_dm_bencana? @relation(fields: [id_bencana], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_dm_assessment_detail_ketiga {
+  id                                       BigInt          @id @default(autoincrement())
+  air_untuk_minum_mata_air                 Boolean?
+  air_untuk_minum_sumur                    Boolean?
+  air_untuk_minum_air_hujan                Boolean?
+  air_untuk_minum_sungai                   Boolean?
+  air_untuk_minum_parit                    Boolean?
+  air_untuk_minum_pdam                     Boolean?
+  air_untuk_minum_lainnya                  String?
+  air_untuk_mandi_mata_air                 Boolean?
+  air_untuk_mandi_sumur                    Boolean?
+  air_untuk_mandi_air_hujan                Boolean?
+  air_untuk_mandi_sungai                   Boolean?
+  air_untuk_mandi_parit                    Boolean?
+  air_untuk_mandi_pdam                     Boolean?
+  air_untuk_mandi_lainnya                  String?
+  air_kualitas_mata_air                    Int?            @default(1)
+  air_kualitas_sumur                       Int?            @default(1)
+  air_kualitas_air_hujan                   Int?
+  air_kualitas_sungai                      Int?            @default(1)
+  air_kualitas_parit                       Int?            @default(1)
+  air_kualitas_pdam                        Int?            @default(1)
+  air_kualitas_lainnya                     String?
+  air_perlakuan_ada                        Boolean?
+  air_perlakuan_bahan_kimia                Boolean?
+  air_perlakuan_penyaringan                Boolean?
+  air_perlakuan_direbus                    Boolean?
+  air_tempat_penyimpanan_dirumah_ada       Boolean?
+  air_tempat_penyimpanan_ada               Boolean?
+  air_jarak_sumber_air                     Float?
+  air_catatan                              String?
+  sanitasi_mck_ada                         Boolean?
+  sanitasi_temporer_jumlah                 Int?
+  sanitasi_umum_jumlah                     Int?
+  sanitasi_keluarga_jumlah                 Int?
+  sanitasi_permanen_jumlah                 Int?
+  sanitasi_mck_pembagian_jenis_kelamin_ada Boolean?
+  sanitasi_pembuangan_air_limbah           Boolean?        @default(true)
+  sampah_sumber_rumah_tangga_ada           Boolean?
+  sampah_sumber_dapur_umum_ada             Boolean?
+  sampah_sumber_rumah_sakit_ada            Boolean?
+  sampah_sumber_lainnya                    String?
+  sampah_pembuangan_bak_sampah             Boolean?
+  sampah_pembuangan_drum                   Boolean?
+  sampah_pembuangan_lainnya                Boolean?
+  sampah_pembuangan_tidak_ada              Boolean?
+  sampah_pembuangan_cukup                  Boolean?
+  sampah_pembuangan_tidak_cukup            Boolean?
+  sampah_pengangkut_tidak_ada              Boolean?
+  sampah_pengangkut_gerobak                Boolean?
+  sampah_pengangkut_mobil                  Boolean?
+  sampah_pengangkut_lainnya                String?
+  sampah_perlakuan_dikubur                 Boolean?
+  sampah_perlakuan_dibakar                 Boolean?
+  sampah_perlakuan_incinerator             Boolean?
+  sampah_perlakuan_ke_tpa                  Boolean?
+  sampah_perlakuan_lainnya                 String?
+  sampah_tps                               Boolean?
+  sampah_pengendalian_pembawa_penyakit     Boolean?
+  sampah_catatan                           String?
+  id_bencana                               BigInt?
+  pmi_dm_bencana                           pmi_dm_bencana? @relation(fields: [id_bencana], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_dm_assessment_detail_pertama {
+  id                                                    BigInt          @id @default(autoincrement())
+  kesehatan_jumlah_korban_luka_berat                    Int?
+  kesehatan_jumlah_korban_luka_ringan                   Int?
+  kesehatan_jumlah_korban_meninggal                     Int?
+  kesehatan_sarana_rumah_sakit                          Boolean?
+  kesehatan_sarana_puskesmas                            Boolean?
+  kesehatan_sarana_pustu                                Boolean?
+  kesehatan_sarana_polides                              Boolean?
+  kesehatan_sarana_klinik                               Boolean?
+  kesehatan_sarana_rumah_sakit_lapangan                 Boolean?
+  kesehatan_sarana_lainnya                              String?
+  kesehatan_pasien_diare                                Int?
+  kesehatan_pasien_ispa                                 Int?
+  kesehatan_pasien_penyakit_kulit                       Int?
+  kesehatan_pasien_malaria                              Int?
+  kesehatan_pasien_campak                               Int?
+  kesehatan_pasien_malnutrisi                           Int?
+  kesehatan_pasien_demam_berdarah                       Int?
+  kesehatan_pasien_tbc                                  Int?
+  kesehatan_pasien_lainnya                              String?
+  kesehatan_tenaga_dokter                               Int?
+  kesehatan_tenaga_perawat                              Int?
+  kesehatan_tenaga_bidan                                Int?
+  kesehatan_tenaga_farmasi                              Int?
+  kesehatan_tenaga_ahli_kesling                         Int?
+  kesehatan_sarana_ambulan                              Boolean?
+  kesehatan_sarana_ambulan_jumlah                       Int?
+  kesehatan_logistik_obat_cukup                         Boolean?
+  kesehatan_jumlah_fasilitas_umum_kelahiran             Int?
+  kesehatan_jumlah_fasilitas_umum_kesakitan             Int?
+  kesehatan_jumlah_fasilitas_umum_kematian              Int?
+  kesehatan_masalah_kesehatan                           String?
+  kesehatan_kebutuhan                                   String?
+  kesehatan_sumber_informasi                            String?
+  kesehatan_catatan                                     String?
+  rfl_ada                                               Boolean?
+  rfl_orang_hilang                                      Boolean?
+  rfl_jumlah                                            Int?
+  rfl_akses_terhadap_sarana_komunikasi                  Boolean?        @default(true)
+  rfl_akses_terhadap_sarana_komunikasi_sulit_masalahnya String?
+  rfl_kelompok_rentan_anak_anak_ada                     Boolean?
+  rfl_kelompok_rentan_lansia_ada                        Boolean?
+  rfl_kelompok_rentan_orang_cacat_ada                   Boolean?
+  rfl_kelompok_rentan_wanita_hamil_ada                  Boolean?
+  rfl_jumlah_lokasi_tempat_penampungan                  Int?
+  rfl_jumlah_lokasi_panti_asuhan                        Int?
+  rfl_jumlah_lokasi_lainnya                             Int?
+  rfl_penanggung_jawab_ada                              Boolean?
+  rfl_penanggung_jawab                                  String?
+  rfl_meninggal_di_rumah_sakit                          Boolean?
+  rfl_meninggal_diambil_keluarga                        Boolean?
+  rfl_meninggal_lainnya                                 Boolean?
+  rfl_rumah_sakit_rujukan                               String?
+  logistik_pasar_fungsi                                 Boolean?
+  logistik_transportasi_fungsi                          Boolean?
+  logistik_gudang                                       Boolean?
+  logistik_catatan                                      String?
+  komunikasi_fasilitas_telpon                           Int?
+  komunikasi_fasilitas_hp                               Int?
+  komunikasi_fasilitas_radio_komunitas                  Int?
+  komunikasi_fasilitas_internet                         Int?
+  komunikasi_fasilitas_fax                              Int?
+  komunikasi_fasilitas_telex                            Int?
+  komunikasi_fasilitas_telegram                         Int?
+  komunikasi_fasilitas_pos                              Int?
+  komunikasi_fasilitas_catatan                          String?
+  tindakan_pmi                                          String?
+  tindakan_pemerintah                                   String?
+  catatan_umum                                          String?
+  id_bencana                                            BigInt?
+  pmi_dm_bencana                                        pmi_dm_bencana? @relation(fields: [id_bencana], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_dm_bencana {
+  id                               BigInt                             @id @default(autoincrement())
+  id_sumber_informasi              Int
+  spesifikasi_sumber_berita        String?                            @db.VarChar
+  kejadian_bencana                 String                             @db.VarChar(100)
+  id_jenis                         BigInt
+  lokasi                           String
+  tanggal_kejadian                 DateTime                           @db.Date
+  waktu_kejadian                   String?                            @db.VarChar(25)
+  gambaran_umum                    String?
+  dampak_bencana                   String?
+  kontak_informasi                 String?
+  long                             Float?
+  lat                              Float?
+  id_anggota_pelapor               BigInt
+  date_created                     DateTime                           @default(now()) @db.Date
+  id_status                        BigInt?
+  id_provinsi                      String?                            @db.VarChar(2)
+  id_kabupaten                     String?                            @db.VarChar
+  id_kecamatan                     String?                            @db.VarChar
+  id_desa                          String?                            @db.VarChar
+  id_level                         Int?
+  geom                             Unsupported("geometry")?
+  anggota_tim                      anggota_tim[]
+  pmi_dm_assessment_cepat          pmi_dm_assessment_cepat[]
+  pmi_dm_assessment_detail         pmi_dm_assessment_detail[]
+  pmi_dm_assessment_detail_kedua   pmi_dm_assessment_detail_kedua[]
+  pmi_dm_assessment_detail_ketiga  pmi_dm_assessment_detail_ketiga[]
+  pmi_dm_assessment_detail_pertama pmi_dm_assessment_detail_pertama[]
+  pmi_dm_ref_bencana               pmi_dm_ref_bencana                 @relation(fields: [id_jenis], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  provinsi                         provinsi?                          @relation(fields: [id_provinsi], references: [kode_provinsi], onDelete: Cascade, onUpdate: NoAction)
+  pmi_dm_sumber_berita             pmi_dm_sumber_berita               @relation(fields: [id_sumber_informasi], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_dm_bencana_foto              pmi_dm_bencana_foto[]
+  pmi_dm_layanan                   pmi_dm_layanan[]
+  pmi_penugasan                    pmi_penugasan[]
+}
+
+model pmi_dm_bencana_foto {
+  id             BigInt         @id @default(autoincrement())
+  id_bencana     BigInt
+  foto           String?        @db.VarChar
+  caption        String?        @db.VarChar
+  pmi_dm_bencana pmi_dm_bencana @relation(fields: [id_bencana], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_dm_bencana_level {
+  id        Int      @id @default(autoincrement())
+  level     String?  @db.VarChar
+  is_active Boolean? @default(true)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_dm_kapasitas {
+  id                                   BigInt                     @id(map: "pk_dm_h_kapasitas") @default(autoincrement())
+  id_pmi                               BigInt
+  id_anggota_koordinator_pb            BigInt
+  koordinator_rfl_status               Boolean                    @default(true)
+  koordinator_rfl_nama                 String?                    @db.VarChar(50)
+  koordinator_rfl_no_telp              Decimal?                   @db.Decimal(15, 0)
+  posko_24_jam                         Boolean?                   @default(true)
+  alokasi_budget_status                Boolean?                   @default(true)
+  id_alokasi_budget_jumlah             BigInt?
+  program_kesiapsiagaan_bencana_status Boolean?                   @default(true)
+  long                                 Float?
+  lat                                  Float?
+  id_user_created                      Int
+  date_created                         DateTime?                  @default(now()) @db.Timestamp(6)
+  id_user_updated                      Int?
+  date_updated                         DateTime?                  @db.Timestamp(6)
+  pmi_dm_ref_alokasi_budget            pmi_dm_ref_alokasi_budget? @relation(fields: [id_alokasi_budget_jumlah], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi                                  pmi                        @relation(fields: [id_pmi], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_kapasitas_barang                 pmi_kapasitas_barang[]
+}
+
+model pmi_dm_layanan {
+  id                             BigInt                   @id @default(autoincrement())
+  id_bencana                     BigInt
+  id_jenis_layanan               BigInt
+  id_anggota_pelapor             Int
+  tanggal_awal                   DateTime                 @db.Date
+  tanggal_akhir                  DateTime?                @db.Date
+  jumlah_layanan                 Int?                     @default(0)
+  jumlah_penerima_manfaat        Int?
+  jumlah_penerima_manfaat_satuan String?                  @db.VarChar(25)
+  user                           user                     @relation(fields: [id_anggota_pelapor], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_dm_bencana                 pmi_dm_bencana           @relation(fields: [id_bencana], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_dm_ref_jenis_layanan       pmi_dm_ref_jenis_layanan @relation(fields: [id_jenis_layanan], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_dm_materi {
+  id          BigInt   @id @default(autoincrement())
+  judul       String   @db.VarChar
+  sinopsis    String
+  id_kategori BigInt
+  path        String   @db.VarChar
+  date_upload DateTime @default(now()) @db.Date
+  id_pemateri BigInt
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_dm_posko {
+  id                         BigInt                     @id(map: "pk_dm_mst_posko") @default(autoincrement())
+  id_pmi                     BigInt
+  id_jenis                   BigInt
+  status                     Boolean?                   @default(true)
+  deskripsi                  String?
+  id_kecamatan               BigInt
+  alamat                     String?
+  kode_pos                   Decimal?                   @db.Decimal(6, 0)
+  no_telp                    Float?
+  no_fax                     Float?
+  email                      String?                    @db.VarChar
+  penanggung_jawab           String                     @db.VarChar(40)
+  jumlah_personel            Int
+  frekwensi_radio            String?                    @db.VarChar(50)
+  call_sign                  String?                    @db.VarChar(50)
+  id_user_created            Int?
+  date_created               DateTime?                  @db.Timestamp(6)
+  id_user_updated            Int?
+  date_updated               DateTime?                  @db.Timestamp(6)
+  long                       Float?
+  lat                        Float?
+  pmi_posko_jenis            pmi_posko_jenis            @relation(fields: [id_jenis], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_administrasi_kecamatan pmi_administrasi_kecamatan @relation(fields: [id_kecamatan], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi                        pmi                        @relation(fields: [id_pmi], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_posko_anggota          pmi_posko_anggota[]
+}
+
+model pmi_dm_ref_alokasi_budget {
+  id               BigInt             @id @default(autoincrement())
+  jumlah_budget    String?            @db.VarChar(50)
+  pmi_dm_kapasitas pmi_dm_kapasitas[]
+}
+
+model pmi_dm_ref_barang {
+  id                   BigInt                 @id(map: "pk_dm_ref_mst_brg_darurat") @default(autoincrement())
+  nama                 String                 @db.VarChar(50)
+  satuan               String                 @db.VarChar(20)
+  pmi_kapasitas_barang pmi_kapasitas_barang[]
+}
+
+model pmi_dm_ref_bencana {
+  id             BigInt           @id @default(autoincrement())
+  nama_bencana   String           @db.VarChar
+  pmi_dm_bencana pmi_dm_bencana[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_dm_ref_jenis_layanan {
+  id             BigInt           @id @default(autoincrement())
+  nama_layanan   String           @db.VarChar(100)
+  status         Boolean          @default(true)
+  pmi_dm_layanan pmi_dm_layanan[]
+  pmi_tim        pmi_tim[]
+}
+
+model pmi_dm_ref_status_bencana {
+  id     Int     @id @default(autoincrement())
+  status String? @db.VarChar(25)
+}
+
+model pmi_dm_sumber_berita {
+  sumber         String           @db.VarChar(100)
+  id             Int              @id @default(autoincrement())
+  pmi_dm_bencana pmi_dm_bencana[]
+}
+
+model pmi_dokumen {
+  id          Int       @id @default(autoincrement())
+  judul       String?   @db.VarChar
+  description String?
+  dokumen     String?   @db.VarChar
+  image       String?   @db.VarChar
+  date        DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model pmi_external_kompetensi {
+  id                              BigInt                            @id @default(autoincrement())
+  nama_kompetensi                 String                            @db.VarChar
+  id_bidang_kompetensi            Int?
+  pmi_anggota_pelatihan_eksternal pmi_anggota_pelatihan_eksternal[]
+  posisi_tim                      posisi_tim[]
+}
+
+model pmi_foto {
+  id        BigInt  @id @default(autoincrement())
+  id_pmi    BigInt
+  caption   String? @db.VarChar
+  path_foto String? @db.VarChar
+  pmi       pmi     @relation(fields: [id_pmi], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_golongan {
+  id                  BigInt                @id @default(autoincrement())
+  golongan            String                @db.VarChar(100)
+  pmi_anggota_riwayat pmi_anggota_riwayat[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_golongan_darah {
+  id          BigInt        @id @default(autoincrement())
+  nama        String        @db.Char(3)
+  pmi_anggota pmi_anggota[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_hubungan_keluarga_tanggungan {
+  id                     BigInt                   @id @default(autoincrement())
+  nama                   String                   @db.VarChar
+  pmi_kontak_darurat     pmi_kontak_darurat[]
+  pmi_tanggungan_anggota pmi_tanggungan_anggota[]
+}
+
+model pmi_jabatan {
+  id                  BigInt                @id @default(autoincrement())
+  jabatan             String                @db.VarChar(100)
+  pmi_anggota_riwayat pmi_anggota_riwayat[]
+}
+
+model pmi_kapasitas_barang {
+  id                BigInt            @id @default(autoincrement())
+  id_kapasitas      BigInt
+  id_ref_barang     BigInt
+  quantity          Int
+  pmi_dm_kapasitas  pmi_dm_kapasitas  @relation(fields: [id_kapasitas], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_dm_ref_barang pmi_dm_ref_barang @relation(fields: [id_ref_barang], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_kegiatan {
+  id              Int                      @id @default(autoincrement())
+  nama_kegiatan   String?                  @db.VarChar
+  deskripsi       String?
+  image           String?                  @db.VarChar
+  kontak          String?                  @db.VarChar
+  alamat          String?
+  lat             Float?
+  long            Float?
+  id_pmi          BigInt?
+  id_unit         BigInt?
+  geom            Unsupported("geometry")?
+  tanggal_mulai   DateTime?                @db.Timestamp(6)
+  tanggal_selesai DateTime?                @db.Timestamp(6)
+  pmi             pmi?                     @relation(fields: [id_pmi], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_unit        pmi_unit?                @relation(fields: [id_unit], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_kepengurusan {
+  id               BigInt      @id @default(autoincrement())
+  id_pmi           BigInt
+  jabatan          String      @db.VarChar
+  id_anggota       BigInt
+  periode_mulai    DateTime?   @db.Date
+  periode_berakhir DateTime?   @db.Date
+  status           Int?        @default(0)
+  urutan           Int?        @default(0)
+  pmi_anggota      pmi_anggota @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi              pmi         @relation(fields: [id_pmi], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model pmi_keterampilan {
+  id                        BigInt                     @id @default(autoincrement())
+  id_kategori               BigInt
+  nama                      String                     @db.VarChar
+  pmi_anggota_keterampilan  pmi_anggota_keterampilan[]
+  pmi_keterampilan_kategori pmi_keterampilan_kategori  @relation(fields: [id_kategori], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  posisi_tim                posisi_tim[]
+}
+
+model pmi_keterampilan_kategori {
+  id                       BigInt                     @id @default(autoincrement())
+  nama                     String                     @db.VarChar
+  pmi_anggota_keterampilan pmi_anggota_keterampilan[]
+  pmi_keterampilan         pmi_keterampilan[]
+}
+
+model pmi_kontak_darurat {
+  id                               BigInt                           @id @default(autoincrement())
+  id_anggota                       BigInt
+  id_hubungan_keluarga             BigInt
+  nama                             String                           @db.VarChar(100)
+  no_telpon                        String                           @db.VarChar
+  alamat                           String?
+  catatan                          String?
+  pmi_hubungan_keluarga_tanggungan pmi_hubungan_keluarga_tanggungan @relation(fields: [id_hubungan_keluarga], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_kordinator {
+  id        BigInt  @id @default(autoincrement())
+  nama      String  @db.Char(30)
+  alamat    String
+  no_telpon Float?
+  email     String? @db.VarChar(100)
+  catatan   String?
+  foto      String? @db.VarChar
+}
+
+model pmi_kordinator_unit {
+  id          BigInt       @id @default(autoincrement())
+  id_unit     BigInt
+  tahun_mulai DateTime     @db.Date
+  tahun_akhir DateTime?    @db.Date
+  id_anggota  BigInt?
+  pmi_anggota pmi_anggota? @relation(fields: [id_anggota], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_unit    pmi_unit     @relation(fields: [id_unit], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_level {
+  id          BigInt  @id @default(autoincrement())
+  akses_level String? @db.VarChar
+  kode_level  String? @db.VarChar(2)
+  pmi         pmi[]
+}
+
+model pmi_menu {
+  id     BigInt  @id @default(autoincrement())
+  name   String? @db.VarChar(18)
+  parent Int?
+  route  String? @db.VarChar
+  order  Int?
+  data   Int?
+}
+
+model pmi_odk {
+  id      Int      @id @default(autoincrement())
+  id_form String   @db.VarChar
+  value   String   @db.VarChar
+  date    DateTime @default(now()) @db.Timestamp(6)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_pelatihan {
+  id                             BigInt                           @id @default(autoincrement())
+  kode_pelatihan                 String?                          @db.VarChar
+  id_pelatihan_kategori          BigInt
+  id_pelatihan_jenis             BigInt
+  id_pelatihan_tingkat           BigInt
+  id_pmi_penyelenggara           BigInt
+  id_administrasi_provinsi       String?                          @db.VarChar(2)
+  id_administrasi_kabupaten      String?                          @db.VarChar(5)
+  date_mulai                     DateTime?                        @db.Timestamp(6)
+  date_selesai                   DateTime?                        @db.Timestamp(6)
+  lokasi                         String?                          @db.VarChar
+  sudah_ada                      Boolean                          @default(true)
+  id_user_created                Int
+  lat                            Float?
+  long                           Float?
+  geom                           Unsupported("geometry")?
+  pmi_anggota_pelatihan_internal pmi_anggota_pelatihan_internal[]
+  kabupaten                      kabupaten?                       @relation(fields: [id_administrasi_kabupaten], references: [kode_kabupaten], onDelete: Cascade, onUpdate: NoAction)
+  provinsi                       provinsi?                        @relation(fields: [id_administrasi_provinsi], references: [kode_provinsi], onDelete: Cascade, onUpdate: NoAction)
+  pmi_pelatihan_jenis            pmi_pelatihan_jenis              @relation(fields: [id_pelatihan_jenis], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_pelatihan_kategori         pmi_pelatihan_kategori           @relation(fields: [id_pelatihan_kategori], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_pelatihan_tingkat          pmi_pelatihan_tingkat            @relation(fields: [id_pelatihan_tingkat], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi                            pmi                              @relation(fields: [id_pmi_penyelenggara], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_pelatihan_jenis {
+  id                                  BigInt                                @id @default(autoincrement())
+  nama_jenis                          String                                @db.VarChar
+  status_aktif                        Boolean?                              @default(true)
+  kode                                String?                               @db.VarChar(3)
+  id_pelatihan_kategori               BigInt?
+  id_departemen                       BigInt?
+  pmi_anggota_pelatih_jenis_pelatihan pmi_anggota_pelatih_jenis_pelatihan[]
+  pmi_pelatihan                       pmi_pelatihan[]
+  pmi_departemen                      pmi_departemen?                       @relation(fields: [id_departemen], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pmi_pelatihan_jenis_id_department_fkey")
+  pmi_pelatihan_kategori              pmi_pelatihan_kategori?               @relation(fields: [id_pelatihan_kategori], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pmi_pelatihan_jenis_kategori_pelatihan_fkey")
+  pmi_pelatihan_materi                pmi_pelatihan_materi[]
+  posisi_tim                          posisi_tim[]
+}
+
+model pmi_pelatihan_kategori {
+  id                  BigInt                @id @default(autoincrement())
+  nama_kategori       String                @db.VarChar
+  kode                String?               @db.VarChar(3)
+  pmi_pelatihan       pmi_pelatihan[]
+  pmi_pelatihan_jenis pmi_pelatihan_jenis[]
+}
+
+model pmi_pelatihan_materi {
+  id                  BigInt               @id @default(autoincrement())
+  judul_materi        String?              @db.VarChar
+  path_file           String?              @db.VarChar
+  id_jenis_pelatihan  BigInt?
+  pmi_pelatihan_jenis pmi_pelatihan_jenis? @relation(fields: [id_jenis_pelatihan], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model pmi_pelatihan_tingkat {
+  id            BigInt          @id @default(autoincrement())
+  nama_tingkat  String          @db.VarChar
+  pmi_pelatihan pmi_pelatihan[]
+  pmi_penugasan pmi_penugasan[]
+}
+
+model pmi_pendidikan_bidang {
+  id                     BigInt                   @id @default(autoincrement())
+  id_jenjang             BigInt
+  nama                   String                   @db.VarChar
+  pmi_anggota_pendidikan pmi_anggota_pendidikan[]
+  pmi_pendidikan_jenjang pmi_pendidikan_jenjang   @relation(fields: [id_jenjang], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  posisi_tim             posisi_tim[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_pendidikan_jenjang {
+  id                     BigInt                   @id @default(autoincrement())
+  nama                   String                   @db.VarChar
+  pmi_anggota_pendidikan pmi_anggota_pendidikan[]
+  pmi_pendidikan_bidang  pmi_pendidikan_bidang[]
+  pmi_tanggungan_anggota pmi_tanggungan_anggota[]
+  posisi_tim             posisi_tim[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_penugasan {
+  id                     BigInt                  @id @default(autoincrement())
+  id_penugasan           BigInt?
+  id_pmi_penyelenggara   BigInt?
+  id_penugasan_tingkat   BigInt?
+  id_kategori            BigInt?
+  id_bencana             BigInt?
+  dasar_penugasan        String?                 @db.VarChar
+  nomor_penugasan        String?                 @db.VarChar
+  nama_kegiatan          String                  @db.VarChar
+  tujuan_tugas           String?                 @db.VarChar(30)
+  deskripsi              String?
+  lokasi                 String
+  sumber_dana            String?                 @db.VarChar
+  transportasi           String?                 @db.VarChar
+  date_mulai             DateTime                @db.Date
+  date_selesai           DateTime                @db.Date
+  pmi_dm_bencana         pmi_dm_bencana?         @relation(fields: [id_bencana], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_penugasan_kegiatan pmi_penugasan_kegiatan? @relation(fields: [id_kategori], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_penugasan_detail   pmi_penugasan_detail?   @relation(fields: [id_penugasan], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_pelatihan_tingkat  pmi_pelatihan_tingkat?  @relation(fields: [id_penugasan_tingkat], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi                    pmi?                    @relation(fields: [id_pmi_penyelenggara], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_penugasan_detail {
+  id            BigInt          @id @default(autoincrement())
+  penugasan     String          @db.VarChar
+  pmi_penugasan pmi_penugasan[]
+}
+
+model pmi_penugasan_kegiatan {
+  id            BigInt          @id @default(autoincrement())
+  nama_kegiatan String          @db.VarChar
+  pmi_penugasan pmi_penugasan[]
+}
+
+model pmi_posko_anggota {
+  id           BigInt       @id @default(autoincrement())
+  id_anggota   BigInt
+  id_posko     BigInt
+  tugas        String?      @db.VarChar
+  pmi_dm_posko pmi_dm_posko @relation(fields: [id_posko], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_posko_jenis {
+  id           BigInt         @id @default(autoincrement())
+  nama         String         @db.VarChar
+  pmi_dm_posko pmi_dm_posko[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_ref_jenis_identitas {
+  id              BigInt        @id @default(autoincrement())
+  jenis_identitas String        @db.VarChar
+  pmi_anggota     pmi_anggota[]
+}
+
+model pmi_roster {
+  id   BigInt  @id @default(autoincrement())
+  nama String? @db.VarChar
+}
+
+model pmi_sponsor {
+  id     Int      @id(map: "sponsor_pkey") @default(autoincrement())
+  logo   String?  @db.VarChar
+  link   String?  @db.VarChar
+  status Boolean? @default(false)
+}
+
+model pmi_status_kepemilikan_markas {
+  id     Int    @id @default(autoincrement())
+  status String @db.VarChar(25)
+  pmi    pmi[]
+}
+
+model pmi_sub_departemen {
+  id                  BigInt                @id @default(autoincrement())
+  id_departemen       BigInt
+  sub_departemen      String                @db.VarChar(100)
+  pmi_anggota_riwayat pmi_anggota_riwayat[]
+  pmi_departemen      pmi_departemen        @relation(fields: [id_departemen], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_sumber_anggaran {
+  id           Int           @id @default(autoincrement())
+  id_anggaran  Int?          @unique
+  sumber       String?       @db.VarChar(255)
+  nominal      Int           @default(autoincrement())
+  pmi_anggaran pmi_anggaran? @relation(fields: [id_anggaran], references: [id], onDelete: Cascade)
+}
+
+model pmi_sumber_dana {
+  id                  BigInt                @id @default(autoincrement())
+  kode                String                @db.VarChar(10)
+  nama_sumber_dana    String                @db.VarChar(100)
+  pmi_anggota_riwayat pmi_anggota_riwayat[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_tanggungan_anggota {
+  id                               BigInt                           @id @default(autoincrement())
+  id_anggota                       BigInt
+  nama                             String                           @db.VarChar(100)
+  id_hubungan_keluarga             BigInt
+  tempat_lahir                     String?                          @db.VarChar(100)
+  tanggal_lahir                    DateTime?                        @db.Date
+  id_pendidikan_terakhir           BigInt
+  status_tanggungan                Boolean?
+  pekerjaan                        String?                          @db.VarChar(100)
+  dokumen_pendukung                String?                          @db.VarChar
+  pmi_hubungan_keluarga_tanggungan pmi_hubungan_keluarga_tanggungan @relation(fields: [id_hubungan_keluarga], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_pendidikan_jenjang           pmi_pendidikan_jenjang           @relation(fields: [id_pendidikan_terakhir], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model pmi_tim {
+  id                            Int                      @id @default(autoincrement())
+  layanan_id                    BigInt
+  nama_tim                      String                   @db.VarChar(255)
+  komposisi_team                String?
+  id_created                    Int?
+  id_updated                    Int?
+  anggota_tim                   anggota_tim[]
+  user_pmi_tim_id_createdTouser user?                    @relation("pmi_tim_id_createdTouser", fields: [id_created], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_pmi_tim_id_updatedTouser user?                    @relation("pmi_tim_id_updatedTouser", fields: [id_updated], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_dm_ref_jenis_layanan      pmi_dm_ref_jenis_layanan @relation(fields: [layanan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  posisi_tim                    posisi_tim[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pmi_unit {
+  id                          BigInt                      @id @default(autoincrement())
+  id_provinsi                 String                      @db.VarChar(2)
+  id_kabupaten                String                      @db.VarChar(5)
+  kode_unit                   Int
+  id_jenis                    BigInt
+  nama                        String                      @db.VarChar(100)
+  alamat                      String?
+  email                       String?                     @db.VarChar(100)
+  no_telpon                   String?                     @db.VarChar(15)
+  status                      Boolean                     @default(true)
+  catatan                     String?
+  long                        Float?
+  lat                         Float?
+  id_user_created             Int
+  date_created                DateTime?                   @default(now()) @db.Timestamp(6)
+  id_user_updated             Int?
+  date_updated                DateTime?                   @db.Timestamp(6)
+  geom                        Unsupported("geometry")?
+  sk_pembentukan              String?                     @db.VarChar(100)
+  pmi_anggota_riwayat         pmi_anggota_riwayat[]
+  pmi_kegiatan                pmi_kegiatan[]
+  pmi_kordinator_unit         pmi_kordinator_unit[]
+  pmi_anggota_kategori_detail pmi_anggota_kategori_detail @relation(fields: [id_jenis], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  kabupaten                   kabupaten                   @relation(fields: [id_kabupaten], references: [kode_kabupaten], onDelete: Cascade, onUpdate: NoAction)
+  provinsi                    provinsi                    @relation(fields: [id_provinsi], references: [kode_provinsi], onDelete: Cascade, onUpdate: NoAction)
+  tim_validator_temporari     tim_validator_temporari[]
+}
+
+model pmi_unit_csv {
+  id              Int     @id @default(autoincrement())
+  kode_unit       Int?
+  tingkat         Int?
+  nama            String? @db.VarChar
+  alamat1         String? @db.VarChar
+  alamat2         String? @db.VarChar
+  nama_pembina    String? @db.VarChar
+  alamat_pembina  String? @db.VarChar
+  no_telp_pembina String? @db.VarChar
+  email_pembina   String? @db.VarChar
+  jenis_r         Int?
+  kode_regional   Int?
+  kode_pd         Int?
+  kode_pc         Int?
+  email_unit      String? @db.VarChar
+  telpon_unit     String? @db.VarChar
+  unit_id         Int?
+}
+
+model posisi_tim {
+  id                      Int                      @id @default(autoincrement())
+  posisi                  String?                  @db.VarChar(255)
+  id_team                 Int?
+  jumlah                  String?                  @db.VarChar(255)
+  id_pendidikan           BigInt?
+  jumlah_penugasan        Int?
+  id_keterampilan         BigInt?
+  id_pelatihan_jenis      BigInt?
+  id_kompetensi           BigInt?
+  id_bidang_pendidikan    BigInt?
+  id_bencana              Int?
+  anggota_tim             anggota_tim[]
+  pmi_pendidikan_bidang   pmi_pendidikan_bidang?   @relation(fields: [id_bidang_pendidikan], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_keterampilan        pmi_keterampilan?        @relation(fields: [id_keterampilan], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_external_kompetensi pmi_external_kompetensi? @relation(fields: [id_kompetensi], references: [id], onDelete: NoAction)
+  pmi_pelatihan_jenis     pmi_pelatihan_jenis?     @relation(fields: [id_pelatihan_jenis], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pmi_pendidikan_jenjang  pmi_pendidikan_jenjang?  @relation(fields: [id_pendidikan], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "posisi_tim_id_pendidikan_fkey1")
+  pmi_tim                 pmi_tim?                 @relation(fields: [id_team], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model profile {
+  user_id        Int     @id
+  name           String? @db.VarChar(255)
+  public_email   String? @db.VarChar(255)
+  gravatar_email String? @db.VarChar(255)
+  gravatar_id    String? @db.VarChar(32)
+  location       String? @db.VarChar(255)
+  website        String? @db.VarChar(255)
+  bio            String?
+  user           user    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_user_profile")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model provinsi {
+  kode_provinsi                                           String                   @id(map: "pk_kode_provinsi") @db.VarChar(2)
+  nama_provinsi                                           String                   @db.VarChar(225)
+  kabupaten                                               kabupaten[]
+  pmi                                                     pmi[]
+  pmi_anggota_pmi_anggota_domisili_id_provinsiToprovinsi  pmi_anggota[]            @relation("pmi_anggota_domisili_id_provinsiToprovinsi")
+  pmi_anggota_pmi_anggota_identitas_id_provinsiToprovinsi pmi_anggota[]            @relation("pmi_anggota_identitas_id_provinsiToprovinsi")
+  pmi_anggota_pendidikan                                  pmi_anggota_pendidikan[]
+  pmi_dm_bencana                                          pmi_dm_bencana[]
+  pmi_pelatihan                                           pmi_pelatihan[]
+  pmi_unit                                                pmi_unit[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model sentitems {
+  updatedindb       DateTime  @default(dbgenerated("('now'::text)::timestamp(0) without time zone")) @db.Timestamp(0)
+  insertintodb      DateTime  @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(0)
+  sendingdatetime   DateTime  @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(0)
+  deliverydatetime  DateTime? @db.Timestamp(0)
+  text              String
+  destinationnumber String    @default("") @db.VarChar(20)
+  coding            String    @default("Default_No_Compression") @db.VarChar(255)
+  udh               String
+  smscnumber        String    @default("") @db.VarChar(20)
+  class             Int       @default(-1)
+  textdecoded       String    @default("")
+  id                Int       @default(autoincrement())
+  senderid          String    @db.VarChar(255)
+  sequenceposition  Int       @default(1)
+  status            String    @default("SendingOK") @db.VarChar(255)
+  statuserror       Int       @default(-1)
+  tpmr              Int       @default(-1)
+  relativevalidity  Int       @default(-1)
+  creatorid         String
+
+  @@id([id, sequenceposition])
+  @@index([deliverydatetime], map: "sentitems_date")
+  @@index([destinationnumber], map: "sentitems_dest")
+  @@index([senderid], map: "sentitems_sender")
+  @@index([tpmr], map: "sentitems_tpmr")
+}
+
+model social_account {
+  id         Int     @id(map: "account_pkey") @default(autoincrement())
+  user_id    Int?
+  provider   String  @db.VarChar(255)
+  client_id  String  @db.VarChar(255)
+  data       String?
+  code       String? @unique(map: "account_unique_code") @db.VarChar(32)
+  created_at Int?
+  email      String? @db.VarChar(255)
+  username   String? @db.VarChar(255)
+  user       user?   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_user_account")
+
+  @@unique([provider, client_id], map: "account_unique")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
+model tbl_sessions {
+  user_id        Int
+  auth_key       String    @unique @db.VarChar(32)
+  datetime_start DateTime? @db.Timestamp(6)
+  datetime_last  DateTime? @db.Timestamp(6)
+  firebase_token String?
+  kode_anggota   String?   @db.VarChar(32)
+  user           user      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_id_fkey")
+}
+
+model tim_validator_temporari {
+  id                    BigInt                  @id @default(autoincrement())
+  id_unit               BigInt?
+  id_pmi                BigInt?
+  nama                  String                  @db.VarChar
+  date_mulai            DateTime                @db.Date
+  date_akhir            DateTime                @db.Date
+  pmi_anggota_validator pmi_anggota_validator[]
+  pmi                   pmi?                    @relation(fields: [id_pmi], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pmi_unit              pmi_unit?               @relation(fields: [id_unit], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model token {
+  user_id        Int
+  code           String  @db.VarChar(32)
+  created_at     Int
+  type           Int     @db.SmallInt
+  firebase_token String?
+  user           user    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_user_token")
+
+  @@unique([user_id, code, type], map: "token_unique")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user {
+  id                               Int                              @id @default(autoincrement())
+  username                         String                           @unique(map: "user_unique_username") @db.VarChar(255)
+  email                            String                           @unique(map: "user_unique_email") @db.VarChar(255)
+  password_hash                    String                           @db.VarChar(60)
+  auth_key                         String                           @db.VarChar(32)
+  confirmed_at                     Int?
+  unconfirmed_email                String?                          @db.VarChar(255)
+  blocked_at                       Int?
+  registration_ip                  String?                          @db.VarChar(45)
+  created_at                       Int
+  updated_at                       Int
+  flags                            Int                              @default(0)
+  last_login                       DateTime?                        @db.Timestamp(6)
+  last_login_at                    Int?
+  password_reset_token             String?                          @db.VarChar
+  status                           Int                              @default(10) @db.SmallInt
+  devices                          Int?                             @default(0)
+  pmi_anggota                      pmi_anggota[]
+  pmi_anggota_pelatihan_internal   pmi_anggota_pelatihan_internal[]
+  pmi_dm_layanan                   pmi_dm_layanan[]
+  pmi_tim_pmi_tim_id_createdTouser pmi_tim[]                        @relation("pmi_tim_id_createdTouser")
+  pmi_tim_pmi_tim_id_updatedTouser pmi_tim[]                        @relation("pmi_tim_id_updatedTouser")
+  profile                          profile?
+  social_account                   social_account[]
+  tbl_sessions                     tbl_sessions[]
+  token                            token[]
+}

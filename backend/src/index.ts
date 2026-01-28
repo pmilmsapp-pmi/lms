@@ -1588,6 +1588,7 @@ import commentRoutes from './routes/comment';
 import materialRoutes from './routes/materialRoutes'; 
 import systemRoutes from './routes/system'; 
 import importRoutes from './routes/import';
+import memberRoutes from './routes/member'; 
 
 const app = express();
 
@@ -1731,6 +1732,9 @@ app.use('/api/comment', commentRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/import', importRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/import', importRoutes);
+app.use('/api/member', memberRoutes);
 
 // --- 8. CRON JOB (AUTO SYNC JAM 12 MALAM) ---
 cron.schedule('0 0 * * *', async () => {

@@ -901,9 +901,11 @@ import BlogNotificationBadge from '@/components/BlogNotificationBadge';
 import AdminNotificationBell from '@/components/admin/AdminNotificationBell';
 import GlobalChatModal from '@/components/GlobalChatModal'; 
 
+// [FIX] Import Icon Tambahan untuk Menu Pengelolaan agar seragam
 import { 
   Bell, MessageCircle, Settings, User as UserIcon, LogOut, 
-  Menu, X, BookOpen, MessageSquare, FileText, LayoutDashboard, ChevronDown
+  Menu, X, BookOpen, MessageSquare, FileText, LayoutDashboard, ChevronDown,
+  FolderOpen, Building2, MonitorPlay, Newspaper, Users
 } from 'lucide-react'; 
 
 export default function Header() {
@@ -928,7 +930,7 @@ export default function Header() {
   const canManageContent = user && ['FACILITATOR', 'ADMIN', 'SUPER_ADMIN'].includes(user.role);
   const isSuperAdmin = user && user.role === 'SUPER_ADMIN';
 
-  // [FIX] DEFINISI FUNGSI LOGOUT
+  // DEFINISI FUNGSI LOGOUT
   const handleLogout = () => {
       setIsMobileMenuOpen(false);
       setIsProfileOpen(false);
@@ -1002,7 +1004,6 @@ export default function Header() {
 
   return (
     <>
-      {/* [FIX] Z-INDEX ditingkatkan ke 100 agar selalu di atas Modal */}
       <header className="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-0 z-[100] font-sans transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between relative">
           
@@ -1032,6 +1033,7 @@ export default function Header() {
                     Katalog Kelas
                 </Link>
                 
+                {/* DROPDOWN INTERAKTIF */}
                 <div className="relative group">
                   <button className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1 transition-all outline-none ${isActive('/forum') || isActive('/library') || isActive('/blog') ? 'bg-red-50 text-red-700' : 'text-gray-600 group-hover:text-red-700 group-hover:bg-gray-50'}`}>
                     Interaktif
@@ -1041,17 +1043,17 @@ export default function Header() {
                   <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 w-64 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 ease-in-out z-50">
                     <div className="bg-white border border-gray-100 shadow-xl rounded-2xl overflow-hidden p-2">
                       <Link href="/forum" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors">
-                          <div className="p-2 bg-red-100 text-red-600 rounded-lg"><MessageSquare size={16}/></div>
+                          <div className="p-2 bg-red-100 text-red-600 rounded-lg"><MessageSquare size={18}/></div>
                           <span className="flex-1">Forum Diskusi</span>
                           <div className="scale-75"><ForumNotificationBadge /></div>
                       </Link>
                       <Link href="/library" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-colors">
-                          <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><BookOpen size={16}/></div>
+                          <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><BookOpen size={18}/></div>
                           <span className="flex-1">Perpustakaan</span>
                           <div className="scale-75"><LibraryNotificationBadge /></div>
                       </Link>
                       <Link href="/blog" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-xl transition-colors">
-                          <div className="p-2 bg-green-100 text-green-600 rounded-lg"><FileText size={16}/></div>
+                          <div className="p-2 bg-green-100 text-green-600 rounded-lg"><FileText size={18}/></div>
                           <span className="flex-1">Blog Relawan</span>
                           <div className="scale-75"><BlogNotificationBadge /></div>
                       </Link>
@@ -1059,20 +1061,53 @@ export default function Header() {
                   </div>
                 </div>
 
+                {/* DROPDOWN PENGELOLAAN (DESAIN DISAMAKAN) */}
                 {canManageContent && (
                   <div className="relative group">
                     <button className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1 transition-all outline-none ${isActive('/admin') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 group-hover:text-gray-900 group-hover:bg-gray-50'}`}>
                       Pengelolaan <ChevronDown size={14} className="mt-0.5 transition-transform group-hover:rotate-180"/>
                     </button>
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 w-56 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 ease-in-out z-50">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 w-64 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 ease-in-out z-50">
                       <div className="bg-white border border-gray-100 shadow-xl rounded-2xl overflow-hidden p-2">
-                        <Link href="/admin/courses?type=all" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">📂 Semua Program</Link>
-                        <div className="my-1 border-t border-gray-100"></div>
-                        <Link href="/admin/courses?type=training" className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">🏢 Admin Pelatihan</Link>
-                        <Link href="/admin/courses?type=course" className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">💻 Admin Kursus</Link>
-                        <Link href="/admin/library" className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">📚 Kelola Pustaka</Link>
-                        <Link href="/admin/blog" className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">📰 Kelola Blog</Link>
-                        {isSuperAdmin && <Link href="/admin/users" className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">👥 Admin Users</Link>}
+                        {/* 1. Semua Program */}
+                        <Link href="/admin/courses?type=all" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition-colors">
+                            <div className="p-2 bg-orange-100 text-orange-600 rounded-lg"><FolderOpen size={18}/></div>
+                            <span className="flex-1">Semua Program</span>
+                        </Link>
+                        
+                        <div className="h-px bg-gray-50 my-1 mx-2"></div>
+
+                        {/* 2. Admin Pelatihan */}
+                        <Link href="/admin/courses?type=training" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-xl transition-colors">
+                            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><Building2 size={18}/></div>
+                            <span className="flex-1">Admin Pelatihan</span>
+                        </Link>
+
+                        {/* 3. Admin Kursus */}
+                        <Link href="/admin/courses?type=course" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-cyan-50 hover:text-cyan-700 rounded-xl transition-colors">
+                            <div className="p-2 bg-cyan-100 text-cyan-600 rounded-lg"><MonitorPlay size={18}/></div>
+                            <span className="flex-1">Admin Kursus</span>
+                        </Link>
+
+                        {/* 4. Kelola Pustaka */}
+                        <Link href="/admin/library" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 rounded-xl transition-colors">
+                            <div className="p-2 bg-yellow-100 text-yellow-600 rounded-lg"><BookOpen size={18}/></div>
+                            <span className="flex-1">Kelola Pustaka</span>
+                        </Link>
+
+                        {/* 5. Kelola Blog */}
+                        <Link href="/admin/blog" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-colors">
+                            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><Newspaper size={18}/></div>
+                            <span className="flex-1">Kelola Blog</span>
+                        </Link>
+
+                        {/* 6. Admin Users (Super Admin Only) */}
+                        {isSuperAdmin && (
+                            <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-pink-50 hover:text-pink-700 rounded-xl transition-colors border-t border-gray-50 mt-1">
+                                <div className="p-2 bg-pink-100 text-pink-600 rounded-lg"><Users size={18}/></div>
+                                <span className="flex-1">Admin Users</span>
+                            </Link>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1188,13 +1223,14 @@ export default function Header() {
           </div>
         </div>
 
-        {/* 4. [FIX] MOBILE MENU OVERLAY (Z-INDEX 90 agar di atas Modal background tapi di bawah Header) */}
+        {/* 4. MOBILE MENU OVERLAY (Z-INDEX 90 agar di atas Modal background tapi di bawah Header) */}
         {isMobileMenuOpen && (
             <div className="lg:hidden fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-white z-[90] overflow-y-auto animate-in slide-in-from-top-5 duration-200 border-t border-gray-100">
                 <div className="flex flex-col p-6 space-y-6 pb-20">
                     <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
-                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold border border-red-200">
-                            {user?.avatarUrl ? <img src={getImageUrl(user.avatarUrl)} className="w-full h-full rounded-full object-cover"/> : user?.name?.charAt(0).toUpperCase()}
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold border border-red-200 overflow-hidden">
+                            {/* [FIX ACCESSIBILITY] Tambah alt */}
+                            {user?.avatarUrl ? <img src={getImageUrl(user.avatarUrl)} className="w-full h-full object-cover" alt={user.name || 'Avatar'} /> : user?.name?.charAt(0).toUpperCase()}
                         </div>
                         <div>
                             <p className="font-bold text-gray-900">{user?.name}</p>
@@ -1224,8 +1260,23 @@ export default function Header() {
                     {canManageContent && (
                         <div className="space-y-3 pt-2 border-t border-gray-100">
                             <p className="text-xs font-black text-gray-400 uppercase tracking-widest px-2 mt-4">Pengelolaan</p>
+                            <Link href="/admin/courses?type=all" className="flex items-center gap-3 px-4 py-2 text-gray-600 font-medium hover:text-red-600" onClick={() => setIsMobileMenuOpen(false)}>
+                                <FolderOpen size={20}/> Semua Program
+                            </Link>
+                            <Link href="/admin/courses?type=training" className="flex items-center gap-3 px-4 py-2 text-gray-600 font-medium hover:text-red-600" onClick={() => setIsMobileMenuOpen(false)}>
+                                <Building2 size={20}/> Admin Pelatihan
+                            </Link>
+                            <Link href="/admin/courses?type=course" className="flex items-center gap-3 px-4 py-2 text-gray-600 font-medium hover:text-red-600" onClick={() => setIsMobileMenuOpen(false)}>
+                                <MonitorPlay size={20}/> Admin Kursus
+                            </Link>
+                            <Link href="/admin/library" className="flex items-center gap-3 px-4 py-2 text-gray-600 font-medium hover:text-red-600" onClick={() => setIsMobileMenuOpen(false)}>
+                                <BookOpen size={20}/> Kelola Pustaka
+                            </Link>
+                            <Link href="/admin/blog" className="flex items-center gap-3 px-4 py-2 text-gray-600 font-medium hover:text-red-600" onClick={() => setIsMobileMenuOpen(false)}>
+                                <Newspaper size={20}/> Kelola Blog
+                            </Link>
                             <Link href="/admin/dashboard" className="flex items-center gap-3 px-4 py-2 text-gray-600 font-medium hover:text-red-600" onClick={() => setIsMobileMenuOpen(false)}>
-                                <LayoutDashboard size={20}/> Dashboard Admin
+                                <LayoutDashboard size={20}/> Dashboard
                             </Link>
                         </div>
                     )}
