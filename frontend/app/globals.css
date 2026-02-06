@@ -16,8 +16,6 @@
     zoom: 0.92; 
 
     /* 2. Transform untuk Firefox */
-    /* Note: Transform pada body bisa mempengaruhi fixed position di Firefox */
-    /* Kita gunakan support query agar tidak bentrok jika browser support zoom */
     @supports not (zoom: 0.92) {
         transform: scale(0.92);
         transform-origin: top left;
@@ -33,4 +31,26 @@
   }
 }
 
-/* Pastikan tidak ada CSS modal lain di file ini yang mengganggu */
+/* --- [FIX] TAMBAHAN CSS UNTUK FLASHCARD (3D FLIP) --- */
+@layer utilities {
+  /* Memberikan efek kedalaman 3D */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  /* Memastikan anak elemen (depan/belakang) ikut dalam ruang 3D */
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
+  
+  /* Menyembunyikan sisi belakang elemen saat dibalik */
+  .backface-hidden {
+    -webkit-backface-visibility: hidden; /* [FIX] Prefix ini harus DI ATAS */
+    backface-visibility: hidden;         /* Standard property DI BAWAH */
+  }
+  
+  /* Memutar elemen 180 derajat (efek balik) */
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+}

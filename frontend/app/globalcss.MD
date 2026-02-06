@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- GLOBAL ZOOM SETTING (PERMINTAAN ANDA) --- */
+@layer base {
+  html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa; 
+  }
+
+  body {
+    /* 1. Zoom untuk Chrome, Safari, Edge */
+    zoom: 0.92; 
+
+    /* 2. Transform untuk Firefox */
+    /* Note: Transform pada body bisa mempengaruhi fixed position di Firefox */
+    /* Kita gunakan support query agar tidak bentrok jika browser support zoom */
+    @supports not (zoom: 0.92) {
+        transform: scale(0.92);
+        transform-origin: top left;
+        width: 108.7%; 
+        min-height: 108.7vh; 
+    }
+    
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* Pastikan tidak ada CSS modal lain di file ini yang mengganggu */

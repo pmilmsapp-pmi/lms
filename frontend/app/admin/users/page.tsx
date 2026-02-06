@@ -1,9 +1,265 @@
+// // // // // // // // // // // // // 'use client';
+
+// // // // // // // // // // // // // import { useEffect, useState } from 'react';
+// // // // // // // // // // // // // import { api } from '@/lib/api';
+// // // // // // // // // // // // // import Link from 'next/link';
+// // // // // // // // // // // // // // import { useRouter } from 'next/navigation'; // Tidak wajib jika tidak dipakai navigasi programatis
+
+// // // // // // // // // // // // // export default function AdminUsersPage() {
+// // // // // // // // // // // // //   const [users, setUsers] = useState<any[]>([]);
+// // // // // // // // // // // // //   const [loading, setLoading] = useState(true);
+  
+// // // // // // // // // // // // //   // State Modal Tambah User
+// // // // // // // // // // // // //   const [showAddModal, setShowAddModal] = useState(false);
+// // // // // // // // // // // // //   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
+// // // // // // // // // // // // //   const [isSaving, setIsSaving] = useState(false);
+
+// // // // // // // // // // // // //   // Load Users saat komponen dimuat
+// // // // // // // // // // // // //   useEffect(() => {
+// // // // // // // // // // // // //     loadUsers();
+// // // // // // // // // // // // //   }, []);
+
+// // // // // // // // // // // // //   const loadUsers = async () => {
+// // // // // // // // // // // // //     try {
+// // // // // // // // // // // // //       setLoading(true);
+// // // // // // // // // // // // //       const res = await api('/api/admin/users');
+// // // // // // // // // // // // //       setUsers(res.users || []);
+// // // // // // // // // // // // //     } catch (err: any) {
+// // // // // // // // // // // // //       console.error(err);
+// // // // // // // // // // // // //       // Jika error Forbidden, user mungkin bukan Super Admin
+// // // // // // // // // // // // //       if (err.message?.includes('Forbidden')) {
+// // // // // // // // // // // // //         alert('Akses ditolak. Halaman ini khusus Super Admin.');
+// // // // // // // // // // // // //       }
+// // // // // // // // // // // // //     } finally {
+// // // // // // // // // // // // //       setLoading(false);
+// // // // // // // // // // // // //     }
+// // // // // // // // // // // // //   };
+
+// // // // // // // // // // // // //   // Handler: Tambah User Baru
+// // // // // // // // // // // // //   const handleCreateUser = async (e: React.FormEvent) => {
+// // // // // // // // // // // // //     e.preventDefault();
+// // // // // // // // // // // // //     setIsSaving(true);
+// // // // // // // // // // // // //     try {
+// // // // // // // // // // // // //       await api('/api/admin/users', { method: 'POST', body: newUser });
+// // // // // // // // // // // // //       alert('User berhasil ditambahkan!');
+      
+// // // // // // // // // // // // //       // Reset form dan tutup modal
+// // // // // // // // // // // // //       setShowAddModal(false);
+// // // // // // // // // // // // //       setNewUser({ name: '', email: '', password: '', role: 'STUDENT' });
+      
+// // // // // // // // // // // // //       // Refresh list user
+// // // // // // // // // // // // //       loadUsers(); 
+// // // // // // // // // // // // //     } catch (err: any) {
+// // // // // // // // // // // // //       alert(err.message || 'Gagal menambah user');
+// // // // // // // // // // // // //     } finally {
+// // // // // // // // // // // // //       setIsSaving(false);
+// // // // // // // // // // // // //     }
+// // // // // // // // // // // // //   };
+
+// // // // // // // // // // // // //   // Handler: Ubah Role (Langsung dari Dropdown)
+// // // // // // // // // // // // //   const handleRoleChange = async (userId: string, newRole: string) => {
+// // // // // // // // // // // // //     try {
+// // // // // // // // // // // // //       // Optimistic update (ubah UI dulu biar cepat)
+// // // // // // // // // // // // //       setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: newRole } : u));
+
+// // // // // // // // // // // // //       // Kirim request ke backend
+// // // // // // // // // // // // //       await api(`/api/admin/users/${userId}`, {
+// // // // // // // // // // // // //         method: 'PATCH',
+// // // // // // // // // // // // //         body: { role: newRole }
+// // // // // // // // // // // // //       });
+// // // // // // // // // // // // //     } catch (err: any) {
+// // // // // // // // // // // // //       alert('Gagal update role: ' + err.message);
+// // // // // // // // // // // // //       loadUsers(); // Revert/Refresh jika gagal
+// // // // // // // // // // // // //     }
+// // // // // // // // // // // // //   };
+
+// // // // // // // // // // // // //   // Handler: Hapus User
+// // // // // // // // // // // // //   const handleDelete = async (userId: string) => {
+// // // // // // // // // // // // //     if (!confirm('Hapus user ini? Semua data progres dan sertifikat mereka akan hilang permanen.')) return;
+// // // // // // // // // // // // //     try {
+// // // // // // // // // // // // //       await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
+// // // // // // // // // // // // //       setUsers(prev => prev.filter(u => u._id !== userId));
+// // // // // // // // // // // // //     } catch (err: any) {
+// // // // // // // // // // // // //       alert('Gagal menghapus user: ' + err.message);
+// // // // // // // // // // // // //     }
+// // // // // // // // // // // // //   };
+
+// // // // // // // // // // // // //   // Helper untuk warna badge role
+// // // // // // // // // // // // //   const getRoleBadge = (role: string) => {
+// // // // // // // // // // // // //     switch (role) {
+// // // // // // // // // // // // //       case 'SUPER_ADMIN': return 'bg-purple-100 text-purple-800 border-purple-200';
+// // // // // // // // // // // // //       case 'FACILITATOR': return 'bg-blue-100 text-blue-800 border-blue-200';
+// // // // // // // // // // // // //       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+// // // // // // // // // // // // //     }
+// // // // // // // // // // // // //   };
+
+// // // // // // // // // // // // //   return (
+// // // // // // // // // // // // //     <div className="p-6 max-w-7xl mx-auto">
+// // // // // // // // // // // // //       <div className="flex justify-between items-center mb-6">
+// // // // // // // // // // // // //         <h1 className="text-2xl font-bold text-gray-800">Manajemen Pengguna</h1>
+// // // // // // // // // // // // //         <button 
+// // // // // // // // // // // // //           onClick={() => setShowAddModal(true)} 
+// // // // // // // // // // // // //           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium transition-colors shadow-sm"
+// // // // // // // // // // // // //         >
+// // // // // // // // // // // // //           + Tambah User
+// // // // // // // // // // // // //         </button>
+// // // // // // // // // // // // //       </div>
+
+// // // // // // // // // // // // //       {/* --- MODAL TAMBAH USER --- */}
+// // // // // // // // // // // // //       {showAddModal && (
+// // // // // // // // // // // // //         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+// // // // // // // // // // // // //           <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
+// // // // // // // // // // // // //             <h2 className="text-xl font-bold mb-4 text-gray-800">Tambah User Baru</h2>
+// // // // // // // // // // // // //             <form onSubmit={handleCreateUser} className="space-y-4">
+// // // // // // // // // // // // //               <div>
+// // // // // // // // // // // // //                 <label className="block text-sm font-medium mb-1">Nama Lengkap</label>
+// // // // // // // // // // // // //                 <input 
+// // // // // // // // // // // // //                   className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" 
+// // // // // // // // // // // // //                   placeholder="Contoh: Budi Santoso" 
+// // // // // // // // // // // // //                   required 
+// // // // // // // // // // // // //                   value={newUser.name}
+// // // // // // // // // // // // //                   onChange={e => setNewUser({...newUser, name: e.target.value})}
+// // // // // // // // // // // // //                 />
+// // // // // // // // // // // // //               </div>
+// // // // // // // // // // // // //               <div>
+// // // // // // // // // // // // //                 <label className="block text-sm font-medium mb-1">Email</label>
+// // // // // // // // // // // // //                 <input 
+// // // // // // // // // // // // //                   className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" 
+// // // // // // // // // // // // //                   type="email" 
+// // // // // // // // // // // // //                   placeholder="budi@example.com" 
+// // // // // // // // // // // // //                   required 
+// // // // // // // // // // // // //                   value={newUser.email}
+// // // // // // // // // // // // //                   onChange={e => setNewUser({...newUser, email: e.target.value})}
+// // // // // // // // // // // // //                 />
+// // // // // // // // // // // // //               </div>
+// // // // // // // // // // // // //               <div>
+// // // // // // // // // // // // //                 <label className="block text-sm font-medium mb-1">Password</label>
+// // // // // // // // // // // // //                 <input 
+// // // // // // // // // // // // //                   className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" 
+// // // // // // // // // // // // //                   type="password" 
+// // // // // // // // // // // // //                   placeholder="Minimal 6 karakter" 
+// // // // // // // // // // // // //                   required 
+// // // // // // // // // // // // //                   value={newUser.password}
+// // // // // // // // // // // // //                   onChange={e => setNewUser({...newUser, password: e.target.value})}
+// // // // // // // // // // // // //                 />
+// // // // // // // // // // // // //               </div>
+// // // // // // // // // // // // //               <div>
+// // // // // // // // // // // // //                 <label className="block text-sm font-medium mb-1">Role</label>
+// // // // // // // // // // // // //                 <select 
+// // // // // // // // // // // // //                   className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+// // // // // // // // // // // // //                   value={newUser.role}
+// // // // // // // // // // // // //                   onChange={e => setNewUser({...newUser, role: e.target.value})}
+// // // // // // // // // // // // //                   aria-label="Pilih Role User Baru"
+// // // // // // // // // // // // //                   title="Pilih Role User Baru"
+// // // // // // // // // // // // //                 >
+// // // // // // // // // // // // //                   <option value="STUDENT">Student (Siswa)</option>
+// // // // // // // // // // // // //                   <option value="FACILITATOR">Facilitator (Instruktur)</option>
+// // // // // // // // // // // // //                   <option value="SUPER_ADMIN">Super Admin</option>
+// // // // // // // // // // // // //                 </select>
+// // // // // // // // // // // // //               </div>
+              
+// // // // // // // // // // // // //               <div className="flex justify-end gap-2 mt-6">
+// // // // // // // // // // // // //                 <button 
+// // // // // // // // // // // // //                   type="button" 
+// // // // // // // // // // // // //                   onClick={() => setShowAddModal(false)} 
+// // // // // // // // // // // // //                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+// // // // // // // // // // // // //                 >
+// // // // // // // // // // // // //                   Batal
+// // // // // // // // // // // // //                 </button>
+// // // // // // // // // // // // //                 <button 
+// // // // // // // // // // // // //                   type="submit" 
+// // // // // // // // // // // // //                   disabled={isSaving} 
+// // // // // // // // // // // // //                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+// // // // // // // // // // // // //                 >
+// // // // // // // // // // // // //                   {isSaving ? 'Menyimpan...' : 'Simpan User'}
+// // // // // // // // // // // // //                 </button>
+// // // // // // // // // // // // //               </div>
+// // // // // // // // // // // // //             </form>
+// // // // // // // // // // // // //           </div>
+// // // // // // // // // // // // //         </div>
+// // // // // // // // // // // // //       )}
+
+// // // // // // // // // // // // //       {/* --- TABEL USER --- */}
+// // // // // // // // // // // // //       {loading ? (
+// // // // // // // // // // // // //         <div className="p-8 text-center text-gray-500">Memuat data user...</div>
+// // // // // // // // // // // // //       ) : (
+// // // // // // // // // // // // //         <div className="bg-white shadow rounded-lg border overflow-hidden">
+// // // // // // // // // // // // //           <div className="overflow-x-auto">
+// // // // // // // // // // // // //             <table className="w-full text-left border-collapse">
+// // // // // // // // // // // // //               <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+// // // // // // // // // // // // //                 <tr>
+// // // // // // // // // // // // //                   <th className="px-6 py-3 border-b">Nama</th>
+// // // // // // // // // // // // //                   <th className="px-6 py-3 border-b">Email</th>
+// // // // // // // // // // // // //                   <th className="px-6 py-3 border-b">Role</th>
+// // // // // // // // // // // // //                   <th className="px-6 py-3 border-b text-right">Aksi</th>
+// // // // // // // // // // // // //                 </tr>
+// // // // // // // // // // // // //               </thead>
+// // // // // // // // // // // // //               <tbody className="divide-y divide-gray-200">
+// // // // // // // // // // // // //                 {users.map((user) => (
+// // // // // // // // // // // // //                   <tr key={user._id} className="hover:bg-gray-50 transition-colors">
+// // // // // // // // // // // // //                     <td className="px-6 py-4 whitespace-nowrap">
+// // // // // // // // // // // // //                       <div className="font-medium text-gray-900">{user.name || 'Tanpa Nama'}</div>
+// // // // // // // // // // // // //                     </td>
+// // // // // // // // // // // // //                     <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+// // // // // // // // // // // // //                       {user.email}
+// // // // // // // // // // // // //                     </td>
+// // // // // // // // // // // // //                     <td className="px-6 py-4 whitespace-nowrap">
+// // // // // // // // // // // // //                       {/* DROPDOWN ROLE (Fixed Accessibility Error) */}
+// // // // // // // // // // // // //                       <select 
+// // // // // // // // // // // // //                         value={user.role}
+// // // // // // // // // // // // //                         onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                        
+// // // // // // // // // // // // //                         // FIX: Menambahkan accessible name
+// // // // // // // // // // // // //                         aria-label={`Ubah role untuk user ${user.name}`}
+// // // // // // // // // // // // //                         title={`Ubah role untuk user ${user.name}`}
+
+// // // // // // // // // // // // //                         className={`text-xs font-bold px-2 py-1 rounded border cursor-pointer outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${getRoleBadge(user.role)}`}
+// // // // // // // // // // // // //                       >
+// // // // // // // // // // // // //                         <option value="STUDENT">STUDENT</option>
+// // // // // // // // // // // // //                         <option value="FACILITATOR">FACILITATOR</option>
+// // // // // // // // // // // // //                         <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+// // // // // // // // // // // // //                       </select>
+// // // // // // // // // // // // //                     </td>
+// // // // // // // // // // // // //                     <td className="px-6 py-4 whitespace-nowrap text-right space-x-3">
+// // // // // // // // // // // // //                       <Link 
+// // // // // // // // // // // // //                         href={`/admin/users/${user._id}`}
+// // // // // // // // // // // // //                         className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+// // // // // // // // // // // // //                       >
+// // // // // // // // // // // // //                         Detail
+// // // // // // // // // // // // //                       </Link>
+// // // // // // // // // // // // //                       <button 
+// // // // // // // // // // // // //                         onClick={() => handleDelete(user._id)} 
+// // // // // // // // // // // // //                         className="text-red-600 hover:text-red-800 font-medium text-sm transition-colors"
+// // // // // // // // // // // // //                       >
+// // // // // // // // // // // // //                         Hapus
+// // // // // // // // // // // // //                       </button>
+// // // // // // // // // // // // //                     </td>
+// // // // // // // // // // // // //                   </tr>
+// // // // // // // // // // // // //                 ))}
+// // // // // // // // // // // // //               </tbody>
+// // // // // // // // // // // // //             </table>
+// // // // // // // // // // // // //           </div>
+
+// // // // // // // // // // // // //           {users.length === 0 && (
+// // // // // // // // // // // // //             <div className="p-10 text-center text-gray-500 flex flex-col items-center">
+// // // // // // // // // // // // //               <p className="text-lg font-medium">Belum ada user.</p>
+// // // // // // // // // // // // //               <p className="text-sm">Klik tombol "+ Tambah User" untuk membuat akun baru.</p>
+// // // // // // // // // // // // //             </div>
+// // // // // // // // // // // // //           )}
+// // // // // // // // // // // // //         </div>
+// // // // // // // // // // // // //       )}
+// // // // // // // // // // // // //     </div>
+// // // // // // // // // // // // //   );
+// // // // // // // // // // // // // }
+
+
+// // // // // // // // // // // // // PEMBAHARUAN DENGAN RBAC
+
 // // // // // // // // // // // // 'use client';
 
 // // // // // // // // // // // // import { useEffect, useState } from 'react';
 // // // // // // // // // // // // import { api } from '@/lib/api';
 // // // // // // // // // // // // import Link from 'next/link';
-// // // // // // // // // // // // // import { useRouter } from 'next/navigation'; // Tidak wajib jika tidak dipakai navigasi programatis
 
 // // // // // // // // // // // // export default function AdminUsersPage() {
 // // // // // // // // // // // //   const [users, setUsers] = useState<any[]>([]);
@@ -26,7 +282,6 @@
 // // // // // // // // // // // //       setUsers(res.users || []);
 // // // // // // // // // // // //     } catch (err: any) {
 // // // // // // // // // // // //       console.error(err);
-// // // // // // // // // // // //       // Jika error Forbidden, user mungkin bukan Super Admin
 // // // // // // // // // // // //       if (err.message?.includes('Forbidden')) {
 // // // // // // // // // // // //         alert('Akses ditolak. Halaman ini khusus Super Admin.');
 // // // // // // // // // // // //       }
@@ -43,11 +298,9 @@
 // // // // // // // // // // // //       await api('/api/admin/users', { method: 'POST', body: newUser });
 // // // // // // // // // // // //       alert('User berhasil ditambahkan!');
       
-// // // // // // // // // // // //       // Reset form dan tutup modal
 // // // // // // // // // // // //       setShowAddModal(false);
 // // // // // // // // // // // //       setNewUser({ name: '', email: '', password: '', role: 'STUDENT' });
       
-// // // // // // // // // // // //       // Refresh list user
 // // // // // // // // // // // //       loadUsers(); 
 // // // // // // // // // // // //     } catch (err: any) {
 // // // // // // // // // // // //       alert(err.message || 'Gagal menambah user');
@@ -56,20 +309,18 @@
 // // // // // // // // // // // //     }
 // // // // // // // // // // // //   };
 
-// // // // // // // // // // // //   // Handler: Ubah Role (Langsung dari Dropdown)
+// // // // // // // // // // // //   // Handler: Ubah Role
 // // // // // // // // // // // //   const handleRoleChange = async (userId: string, newRole: string) => {
 // // // // // // // // // // // //     try {
-// // // // // // // // // // // //       // Optimistic update (ubah UI dulu biar cepat)
 // // // // // // // // // // // //       setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: newRole } : u));
 
-// // // // // // // // // // // //       // Kirim request ke backend
 // // // // // // // // // // // //       await api(`/api/admin/users/${userId}`, {
 // // // // // // // // // // // //         method: 'PATCH',
 // // // // // // // // // // // //         body: { role: newRole }
 // // // // // // // // // // // //       });
 // // // // // // // // // // // //     } catch (err: any) {
 // // // // // // // // // // // //       alert('Gagal update role: ' + err.message);
-// // // // // // // // // // // //       loadUsers(); // Revert/Refresh jika gagal
+// // // // // // // // // // // //       loadUsers(); 
 // // // // // // // // // // // //     }
 // // // // // // // // // // // //   };
 
@@ -88,6 +339,7 @@
 // // // // // // // // // // // //   const getRoleBadge = (role: string) => {
 // // // // // // // // // // // //     switch (role) {
 // // // // // // // // // // // //       case 'SUPER_ADMIN': return 'bg-purple-100 text-purple-800 border-purple-200';
+// // // // // // // // // // // //       case 'ADMIN': return 'bg-orange-100 text-orange-800 border-orange-200'; // [BARU]
 // // // // // // // // // // // //       case 'FACILITATOR': return 'bg-blue-100 text-blue-800 border-blue-200';
 // // // // // // // // // // // //       default: return 'bg-gray-100 text-gray-800 border-gray-200';
 // // // // // // // // // // // //     }
@@ -154,23 +406,14 @@
 // // // // // // // // // // // //                 >
 // // // // // // // // // // // //                   <option value="STUDENT">Student (Siswa)</option>
 // // // // // // // // // // // //                   <option value="FACILITATOR">Facilitator (Instruktur)</option>
+// // // // // // // // // // // //                   <option value="ADMIN">Admin (Wilayah/Konten)</option> {/* [BARU] */}
 // // // // // // // // // // // //                   <option value="SUPER_ADMIN">Super Admin</option>
 // // // // // // // // // // // //                 </select>
 // // // // // // // // // // // //               </div>
               
 // // // // // // // // // // // //               <div className="flex justify-end gap-2 mt-6">
-// // // // // // // // // // // //                 <button 
-// // // // // // // // // // // //                   type="button" 
-// // // // // // // // // // // //                   onClick={() => setShowAddModal(false)} 
-// // // // // // // // // // // //                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
-// // // // // // // // // // // //                 >
-// // // // // // // // // // // //                   Batal
-// // // // // // // // // // // //                 </button>
-// // // // // // // // // // // //                 <button 
-// // // // // // // // // // // //                   type="submit" 
-// // // // // // // // // // // //                   disabled={isSaving} 
-// // // // // // // // // // // //                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-// // // // // // // // // // // //                 >
+// // // // // // // // // // // //                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition-colors">Batal</button>
+// // // // // // // // // // // //                 <button type="submit" disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors">
 // // // // // // // // // // // //                   {isSaving ? 'Menyimpan...' : 'Simpan User'}
 // // // // // // // // // // // //                 </button>
 // // // // // // // // // // // //               </div>
@@ -204,42 +447,28 @@
 // // // // // // // // // // // //                       {user.email}
 // // // // // // // // // // // //                     </td>
 // // // // // // // // // // // //                     <td className="px-6 py-4 whitespace-nowrap">
-// // // // // // // // // // // //                       {/* DROPDOWN ROLE (Fixed Accessibility Error) */}
 // // // // // // // // // // // //                       <select 
 // // // // // // // // // // // //                         value={user.role}
 // // // // // // // // // // // //                         onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                        
-// // // // // // // // // // // //                         // FIX: Menambahkan accessible name
 // // // // // // // // // // // //                         aria-label={`Ubah role untuk user ${user.name}`}
 // // // // // // // // // // // //                         title={`Ubah role untuk user ${user.name}`}
-
 // // // // // // // // // // // //                         className={`text-xs font-bold px-2 py-1 rounded border cursor-pointer outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${getRoleBadge(user.role)}`}
 // // // // // // // // // // // //                       >
 // // // // // // // // // // // //                         <option value="STUDENT">STUDENT</option>
 // // // // // // // // // // // //                         <option value="FACILITATOR">FACILITATOR</option>
+// // // // // // // // // // // //                         <option value="ADMIN">ADMIN</option> {/* [BARU] */}
 // // // // // // // // // // // //                         <option value="SUPER_ADMIN">SUPER_ADMIN</option>
 // // // // // // // // // // // //                       </select>
 // // // // // // // // // // // //                     </td>
 // // // // // // // // // // // //                     <td className="px-6 py-4 whitespace-nowrap text-right space-x-3">
-// // // // // // // // // // // //                       <Link 
-// // // // // // // // // // // //                         href={`/admin/users/${user._id}`}
-// // // // // // // // // // // //                         className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
-// // // // // // // // // // // //                       >
-// // // // // // // // // // // //                         Detail
-// // // // // // // // // // // //                       </Link>
-// // // // // // // // // // // //                       <button 
-// // // // // // // // // // // //                         onClick={() => handleDelete(user._id)} 
-// // // // // // // // // // // //                         className="text-red-600 hover:text-red-800 font-medium text-sm transition-colors"
-// // // // // // // // // // // //                       >
-// // // // // // // // // // // //                         Hapus
-// // // // // // // // // // // //                       </button>
+// // // // // // // // // // // //                       <Link href={`/admin/users/${user._id}`} className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors">Detail</Link>
+// // // // // // // // // // // //                       <button onClick={() => handleDelete(user._id)} className="text-red-600 hover:text-red-800 font-medium text-sm transition-colors">Hapus</button>
 // // // // // // // // // // // //                     </td>
 // // // // // // // // // // // //                   </tr>
 // // // // // // // // // // // //                 ))}
 // // // // // // // // // // // //               </tbody>
 // // // // // // // // // // // //             </table>
 // // // // // // // // // // // //           </div>
-
 // // // // // // // // // // // //           {users.length === 0 && (
 // // // // // // // // // // // //             <div className="p-10 text-center text-gray-500 flex flex-col items-center">
 // // // // // // // // // // // //               <p className="text-lg font-medium">Belum ada user.</p>
@@ -253,24 +482,47 @@
 // // // // // // // // // // // // }
 
 
-// // // // // // // // // // // // PEMBAHARUAN DENGAN RBAC
 
 // // // // // // // // // // // 'use client';
 
 // // // // // // // // // // // import { useEffect, useState } from 'react';
 // // // // // // // // // // // import { api } from '@/lib/api';
 // // // // // // // // // // // import Link from 'next/link';
+// // // // // // // // // // // import { Loader2, Plus, Trash2, Search, MapPin } from 'lucide-react';
+// // // // // // // // // // // import RegionSelector from '@/components/admin/RegionSelector';
+
+// // // // // // // // // // // // [FIX TS] Definisi Tipe untuk Region Config agar sesuai dengan komponen anak
+// // // // // // // // // // // interface RegionConfig {
+// // // // // // // // // // //   scope: 'national' | 'province' | 'regency';
+// // // // // // // // // // //   provinces: string[];
+// // // // // // // // // // //   regencies: string[];
+// // // // // // // // // // // }
 
 // // // // // // // // // // // export default function AdminUsersPage() {
 // // // // // // // // // // //   const [users, setUsers] = useState<any[]>([]);
 // // // // // // // // // // //   const [loading, setLoading] = useState(true);
+// // // // // // // // // // //   const [search, setSearch] = useState('');
   
-// // // // // // // // // // //   // State Modal Tambah User
+// // // // // // // // // // //   // --- STATE MODAL & FORM ---
 // // // // // // // // // // //   const [showAddModal, setShowAddModal] = useState(false);
-// // // // // // // // // // //   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
 // // // // // // // // // // //   const [isSaving, setIsSaving] = useState(false);
 
-// // // // // // // // // // //   // Load Users saat komponen dimuat
+// // // // // // // // // // //   // State Data User Baru
+// // // // // // // // // // //   const [newUser, setNewUser] = useState({ 
+// // // // // // // // // // //     name: '', 
+// // // // // // // // // // //     email: '', 
+// // // // // // // // // // //     password: '', 
+// // // // // // // // // // //     role: 'STUDENT' 
+// // // // // // // // // // //   });
+
+// // // // // // // // // // //   // [FIX TS] Gunakan interface RegionConfig saat inisialisasi state
+// // // // // // // // // // //   const [regionConfig, setRegionConfig] = useState<RegionConfig>({
+// // // // // // // // // // //     scope: 'national', 
+// // // // // // // // // // //     provinces: [],
+// // // // // // // // // // //     regencies: []
+// // // // // // // // // // //   });
+
+// // // // // // // // // // //   // Load Users
 // // // // // // // // // // //   useEffect(() => {
 // // // // // // // // // // //     loadUsers();
 // // // // // // // // // // //   }, []);
@@ -294,12 +546,41 @@
 // // // // // // // // // // //   const handleCreateUser = async (e: React.FormEvent) => {
 // // // // // // // // // // //     e.preventDefault();
 // // // // // // // // // // //     setIsSaving(true);
+
 // // // // // // // // // // //     try {
-// // // // // // // // // // //       await api('/api/admin/users', { method: 'POST', body: newUser });
+// // // // // // // // // // //       // 1. Siapkan Payload Dasar
+// // // // // // // // // // //       const payload: any = { ...newUser };
+
+// // // // // // // // // // //       // 2. Jika Role ADMIN, Masukkan Data Wilayah
+// // // // // // // // // // //       if (newUser.role === 'ADMIN') {
+// // // // // // // // // // //         payload.regionScope = regionConfig.scope;
+        
+// // // // // // // // // // //         // Validasi sederhana
+// // // // // // // // // // //         if (regionConfig.scope === 'province' && regionConfig.provinces.length === 0) {
+// // // // // // // // // // //           throw new Error("Pilih minimal satu provinsi untuk Admin Provinsi.");
+// // // // // // // // // // //         }
+// // // // // // // // // // //         if (regionConfig.scope === 'regency' && regionConfig.regencies.length === 0) {
+// // // // // // // // // // //           throw new Error("Pilih minimal satu kabupaten untuk Admin Kabupaten.");
+// // // // // // // // // // //         }
+
+// // // // // // // // // // //         payload.managedProvinces = regionConfig.provinces;
+// // // // // // // // // // //         payload.managedRegencies = regionConfig.regencies;
+// // // // // // // // // // //       } else {
+// // // // // // // // // // //         // Reset jika bukan admin (jaga-jaga)
+// // // // // // // // // // //         payload.regionScope = 'national';
+// // // // // // // // // // //         payload.managedProvinces = [];
+// // // // // // // // // // //         payload.managedRegencies = [];
+// // // // // // // // // // //       }
+
+// // // // // // // // // // //       // 3. Kirim ke Backend
+// // // // // // // // // // //       await api('/api/admin/users', { method: 'POST', body: payload });
+      
 // // // // // // // // // // //       alert('User berhasil ditambahkan!');
       
+// // // // // // // // // // //       // Reset Form
 // // // // // // // // // // //       setShowAddModal(false);
 // // // // // // // // // // //       setNewUser({ name: '', email: '', password: '', role: 'STUDENT' });
+// // // // // // // // // // //       setRegionConfig({ scope: 'national', provinces: [], regencies: [] });
       
 // // // // // // // // // // //       loadUsers(); 
 // // // // // // // // // // //     } catch (err: any) {
@@ -309,37 +590,41 @@
 // // // // // // // // // // //     }
 // // // // // // // // // // //   };
 
-// // // // // // // // // // //   // Handler: Ubah Role
+// // // // // // // // // // //   // Handler: Ubah Role (Dropdown di Tabel)
 // // // // // // // // // // //   const handleRoleChange = async (userId: string, newRole: string) => {
+// // // // // // // // // // //     if (newRole === 'ADMIN') {
+// // // // // // // // // // //         if(!confirm("Anda mengubah user ini menjadi ADMIN. Pastikan untuk masuk ke menu 'Detail' user ini nanti untuk mengatur Wilayah Kerjanya.")) return;
+// // // // // // // // // // //     }
+
 // // // // // // // // // // //     try {
 // // // // // // // // // // //       setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: newRole } : u));
-
-// // // // // // // // // // //       await api(`/api/admin/users/${userId}`, {
-// // // // // // // // // // //         method: 'PATCH',
-// // // // // // // // // // //         body: { role: newRole }
-// // // // // // // // // // //       });
+// // // // // // // // // // //       await api(`/api/admin/users/${userId}`, { method: 'PATCH', body: { role: newRole } });
 // // // // // // // // // // //     } catch (err: any) {
 // // // // // // // // // // //       alert('Gagal update role: ' + err.message);
 // // // // // // // // // // //       loadUsers(); 
 // // // // // // // // // // //     }
 // // // // // // // // // // //   };
 
-// // // // // // // // // // //   // Handler: Hapus User
 // // // // // // // // // // //   const handleDelete = async (userId: string) => {
-// // // // // // // // // // //     if (!confirm('Hapus user ini? Semua data progres dan sertifikat mereka akan hilang permanen.')) return;
+// // // // // // // // // // //     if (!confirm('Hapus user ini? Data tidak bisa dikembalikan.')) return;
 // // // // // // // // // // //     try {
 // // // // // // // // // // //       await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
 // // // // // // // // // // //       setUsers(prev => prev.filter(u => u._id !== userId));
 // // // // // // // // // // //     } catch (err: any) {
-// // // // // // // // // // //       alert('Gagal menghapus user: ' + err.message);
+// // // // // // // // // // //       alert('Gagal: ' + err.message);
 // // // // // // // // // // //     }
 // // // // // // // // // // //   };
 
-// // // // // // // // // // //   // Helper untuk warna badge role
+// // // // // // // // // // //   // Filter Search
+// // // // // // // // // // //   const filteredUsers = users.filter(u => 
+// // // // // // // // // // //     u.name.toLowerCase().includes(search.toLowerCase()) || 
+// // // // // // // // // // //     u.email.toLowerCase().includes(search.toLowerCase())
+// // // // // // // // // // //   );
+
 // // // // // // // // // // //   const getRoleBadge = (role: string) => {
 // // // // // // // // // // //     switch (role) {
 // // // // // // // // // // //       case 'SUPER_ADMIN': return 'bg-purple-100 text-purple-800 border-purple-200';
-// // // // // // // // // // //       case 'ADMIN': return 'bg-orange-100 text-orange-800 border-orange-200'; // [BARU]
+// // // // // // // // // // //       case 'ADMIN': return 'bg-orange-100 text-orange-800 border-orange-200';
 // // // // // // // // // // //       case 'FACILITATOR': return 'bg-blue-100 text-blue-800 border-blue-200';
 // // // // // // // // // // //       default: return 'bg-gray-100 text-gray-800 border-gray-200';
 // // // // // // // // // // //     }
@@ -347,485 +632,438 @@
 
 // // // // // // // // // // //   return (
 // // // // // // // // // // //     <div className="p-6 max-w-7xl mx-auto">
-// // // // // // // // // // //       <div className="flex justify-between items-center mb-6">
-// // // // // // // // // // //         <h1 className="text-2xl font-bold text-gray-800">Manajemen Pengguna</h1>
+// // // // // // // // // // //       {/* HEADER */}
+// // // // // // // // // // //       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+// // // // // // // // // // //         <div>
+// // // // // // // // // // //             <h1 className="text-2xl font-bold text-gray-800">Manajemen Pengguna</h1>
+// // // // // // // // // // //             <p className="text-sm text-gray-500">Kelola akses, role, dan wilayah kerja admin.</p>
+// // // // // // // // // // //         </div>
 // // // // // // // // // // //         <button 
 // // // // // // // // // // //           onClick={() => setShowAddModal(true)} 
-// // // // // // // // // // //           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium transition-colors shadow-sm"
+// // // // // // // // // // //           className="bg-red-600 text-white px-5 py-2.5 rounded-xl hover:bg-red-700 font-bold transition-colors shadow-lg shadow-red-100 flex items-center gap-2"
 // // // // // // // // // // //         >
-// // // // // // // // // // //           + Tambah User
+// // // // // // // // // // //           <Plus size={18}/> Tambah User
 // // // // // // // // // // //         </button>
 // // // // // // // // // // //       </div>
 
-// // // // // // // // // // //       {/* --- MODAL TAMBAH USER --- */}
+// // // // // // // // // // //       {/* SEARCH BAR */}
+// // // // // // // // // // //       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex items-center gap-3">
+// // // // // // // // // // //         <Search className="text-gray-400" size={20}/>
+// // // // // // // // // // //         <input 
+// // // // // // // // // // //             type="text" 
+// // // // // // // // // // //             placeholder="Cari nama atau email..." 
+// // // // // // // // // // //             className="flex-1 outline-none text-sm"
+// // // // // // // // // // //             value={search}
+// // // // // // // // // // //             onChange={(e) => setSearch(e.target.value)}
+// // // // // // // // // // // //         />
+// // // // // // // // // // // //       </div>
+
+// // // // // // // // // // // //       {/* MODAL TAMBAH USER */}
+// // // // // // // // // // // //       {showAddModal && (
+// // // // // // // // // // // //         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+// // // // // // // // // // // //           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+// // // // // // // // // // // //             <div className="p-6 border-b">
+// // // // // // // // // // // //                 <h2 className="text-xl font-bold text-gray-800">Tambah User Baru</h2>
+// // // // // // // // // // // //             </div>
+            
+// // // // // // // // // // // //             <div className="p-6 overflow-y-auto custom-scrollbar">
+// // // // // // // // // // // //                 <form id="addUserForm" onSubmit={handleCreateUser} className="space-y-5">
+// // // // // // // // // // // //                 <div>
+// // // // // // // // // // // //                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Nama Lengkap</label>
+// // // // // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="Contoh: Budi Santoso" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})}/>
+// // // // // // // // // // // //                 </div>
+// // // // // // // // // // // //                 <div>
+// // // // // // // // // // // //                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Email</label>
+// // // // // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm" type="email" placeholder="budi@example.com" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})}/>
+// // // // // // // // // // // //                 </div>
+// // // // // // // // // // // //                 <div>
+// // // // // // // // // // // //                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Password</label>
+// // // // // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm" type="password" placeholder="Minimal 6 karakter" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})}/>
+// // // // // // // // // // // //                 </div>
+                
+// // // // // // // // // // // //                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+// // // // // // // // // // // //                     <label className="block text-xs font-bold text-gray-700 mb-2 uppercase">Role / Peran</label>
+// // // // // // // // // // // //                     <select 
+// // // // // // // // // // // //                         className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-white text-sm font-bold"
+// // // // // // // // // // // //                         value={newUser.role}
+// // // // // // // // // // // //                         onChange={e => setNewUser({...newUser, role: e.target.value})}
+// // // // // // // // // // // //                         // [FIX AXE] Tambahkan label aksesibilitas
+// // // // // // // // // // // //                         aria-label="Pilih Peran User Baru"
+// // // // // // // // // // // //                         title="Pilih Peran User Baru"
+// // // // // // // // // // // //                     >
+// // // // // // // // // // // //                         <option value="STUDENT">STUDENT (Peserta)</option>
+// // // // // // // // // // // //                         <option value="FACILITATOR">FACILITATOR (Pengajar)</option>
+// // // // // // // // // // // //                         <option value="ADMIN">ADMIN (Wilayah/Konten)</option>
+// // // // // // // // // // // //                         <option value="SUPER_ADMIN">SUPER ADMIN</option>
+// // // // // // // // // // // //                     </select>
+
+// // // // // // // // // // // //                     {/* REGION SELECTOR (Hanya jika Role ADMIN) */}
+// // // // // // // // // // // //                     {newUser.role === 'ADMIN' && (
+// // // // // // // // // // // //                         <div className="mt-4 animate-in slide-in-from-top-2">
+// // // // // // // // // // // //                             <div className="flex items-center gap-2 mb-2 text-orange-700 bg-orange-50 p-2 rounded-lg text-xs">
+// // // // // // // // // // // //                                 <MapPin size={14}/> Konfigurasi Wilayah Kerja
+// // // // // // // // // // // //                             </div>
+// // // // // // // // // // // //                             <RegionSelector 
+// // // // // // // // // // // //                                 value={regionConfig} 
+// // // // // // // // // // // //                                 onChange={(val) => setRegionConfig(val)} 
+// // // // // // // // // // // //                             />
+// // // // // // // // // // // //                         </div>
+// // // // // // // // // // // //                     )}
+// // // // // // // // // // // //                 </div>
+// // // // // // // // // // // //                 </form>
+// // // // // // // // // // // //             </div>
+
+// // // // // // // // // // // //             <div className="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-3">
+// // // // // // // // // // // //                 <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors text-sm">Batal</button>
+// // // // // // // // // // // //                 <button type="submit" form="addUserForm" disabled={isSaving} className="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors shadow-lg shadow-red-200 text-sm flex items-center gap-2">
+// // // // // // // // // // // //                     {isSaving ? <Loader2 className="animate-spin" size={16}/> : <Plus size={16}/>} Simpan User
+// // // // // // // // // // // //                 </button>
+// // // // // // // // // // // //             </div>
+// // // // // // // // // // // //           </div>
+// // // // // // // // // // // //         </div>
+// // // // // // // // // // // //       )}
+
+// // // // // // // // // // // //       {/* --- TABEL USER --- */}
+// // // // // // // // // // // //       {loading ? (
+// // // // // // // // // // // //         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+// // // // // // // // // // // //             <Loader2 className="animate-spin mb-2" size={32}/>
+// // // // // // // // // // // //             <p>Memuat data...</p>
+// // // // // // // // // // // //         </div>
+// // // // // // // // // // // //       ) : (
+// // // // // // // // // // // //         <div className="bg-white shadow-xl shadow-gray-100 rounded-2xl border border-gray-100 overflow-hidden">
+// // // // // // // // // // // //           <div className="overflow-x-auto">
+// // // // // // // // // // // //             <table className="w-full text-left border-collapse">
+// // // // // // // // // // // //               <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+// // // // // // // // // // // //                 <tr>
+// // // // // // // // // // // //                   <th className="px-6 py-4 border-b border-gray-100">Nama User</th>
+// // // // // // // // // // // //                   <th className="px-6 py-4 border-b border-gray-100">Email</th>
+// // // // // // // // // // // //                   <th className="px-6 py-4 border-b border-gray-100">Role</th>
+// // // // // // // // // // // //                   <th className="px-6 py-4 border-b border-gray-100">Wilayah / Scope</th>
+// // // // // // // // // // // //                   <th className="px-6 py-4 border-b border-gray-100 text-right">Aksi</th>
+// // // // // // // // // // // //                 </tr>
+// // // // // // // // // // // //               </thead>
+// // // // // // // // // // // //               <tbody className="divide-y divide-gray-50">
+// // // // // // // // // // // //                 {filteredUsers.map((user) => (
+// // // // // // // // // // // //                   <tr key={user._id} className="hover:bg-gray-50/80 transition-colors group">
+// // // // // // // // // // // //                     <td className="px-6 py-4">
+// // // // // // // // // // // //                       <div>
+// // // // // // // // // // // //                           <p className="font-bold text-gray-900 text-sm">{user.name}</p>
+// // // // // // // // // // // //                       </div>
+// // // // // // // // // // // //                     </td>
+// // // // // // // // // // // //                     <td className="px-6 py-4 text-xs text-gray-500">
+// // // // // // // // // // // //                         {user.email}
+// // // // // // // // // // // //                     </td>
+// // // // // // // // // // // //                     <td className="px-6 py-4">
+// // // // // // // // // // // //                       <select 
+// // // // // // // // // // // //                         value={user.role}
+// // // // // // // // // // // //                         onChange={(e) => handleRoleChange(user._id, e.target.value)}
+// // // // // // // // // // // //                         className={`text-[10px] font-black px-2 py-1.5 rounded-lg border cursor-pointer outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500 ${getRoleBadge(user.role)}`}
+                        
+// // // // // // // // // // // //                         // [FIX AXE] Tambahkan aria-label yang unik per baris
+// // // // // // // // // // // //                         aria-label={`Ubah role untuk ${user.name}`}
+// // // // // // // // // // // //                         title={`Ubah role untuk ${user.name}`}
+// // // // // // // // // // // //                       >
+// // // // // // // // // // // //                         <option value="STUDENT">STUDENT</option>
+// // // // // // // // // // // //                         <option value="FACILITATOR">FACILITATOR</option>
+// // // // // // // // // // // //                         <option value="ADMIN">ADMIN</option>
+// // // // // // // // // // // //                         <option value="SUPER_ADMIN">SUPER ADMIN</option>
+// // // // // // // // // // // //                       </select>
+// // // // // // // // // // // //                     </td>
+// // // // // // // // // // // //                     <td className="px-6 py-4">
+// // // // // // // // // // // //                         {user.role === 'ADMIN' ? (
+// // // // // // // // // // // //                             <div className="text-xs">
+// // // // // // // // // // // //                                 {user.regionScope === 'national' && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">NASIONAL</span>}
+// // // // // // // // // // // //                                 {user.regionScope === 'province' && (
+// // // // // // // // // // // //                                     <div>
+// // // // // // // // // // // //                                         <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold mb-1 inline-block">PROVINSI</span>
+// // // // // // // // // // // //                                         <p className="text-[10px] text-gray-500 mt-1 max-w-[150px] truncate" title={user.managedProvinces?.join(', ')}>
+// // // // // // // // // // // //                                             {user.managedProvinces?.length || 0} Wilayah
+// // // // // // // // // // // //                                         </p>
+// // // // // // // // // // // //                                     </div>
+// // // // // // // // // // // //                                 )}
+// // // // // // // // // // // //                                 {user.regionScope === 'regency' && (
+// // // // // // // // // // // //                                     <div>
+// // // // // // // // // // // //                                         <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded font-bold mb-1 inline-block">KABUPATEN</span>
+// // // // // // // // // // // //                                         <p className="text-[10px] text-gray-500 mt-1 max-w-[150px] truncate" title={user.managedRegencies?.join(', ')}>
+// // // // // // // // // // // //                                             {user.managedRegencies?.length || 0} Wilayah
+// // // // // // // // // // // //                                         </p>
+// // // // // // // // // // // //                                     </div>
+// // // // // // // // // // // //                                 )}
+// // // // // // // // // // // //                             </div>
+// // // // // // // // // // // //                         ) : (
+// // // // // // // // // // // //                             <span className="text-gray-300 text-xs">-</span>
+// // // // // // // // // // // //                         )}
+// // // // // // // // // // // //                     </td>
+// // // // // // // // // // // //                     <td className="px-6 py-4 text-right space-x-2">
+// // // // // // // // // // // //                       <Link href={`/admin/users/${user._id}`} className="inline-block bg-white border border-gray-200 text-gray-600 hover:text-blue-600 hover:border-blue-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all" aria-label={`Detail user ${user.name}`}>
+// // // // // // // // // // // //                         Detail
+// // // // // // // // // // // //                       </Link>
+// // // // // // // // // // // //                       <button onClick={() => handleDelete(user._id)} className="bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all" aria-label={`Hapus user ${user.name}`} title="Hapus User">
+// // // // // // // // // // // //                         <Trash2 size={14}/>
+// // // // // // // // // // // //                       </button>
+// // // // // // // // // // // //                     </td>
+// // // // // // // // // // // //                   </tr>
+// // // // // // // // // // // //                 ))}
+// // // // // // // // // // // //               </tbody>
+// // // // // // // // // // // //             </table>
+// // // // // // // // // // // //           </div>
+// // // // // // // // // // // //           {filteredUsers.length === 0 && (
+// // // // // // // // // // // //             <div className="p-10 text-center text-gray-500 flex flex-col items-center">
+// // // // // // // // // // // //               <p className="text-lg font-bold text-gray-400">Tidak ada user ditemukan.</p>
+// // // // // // // // // // // //             </div>
+// // // // // // // // // // // //           )}
+// // // // // // // // // // // //         </div>
+// // // // // // // // // // // //       )}
+// // // // // // // // // // // //     </div>
+// // // // // // // // // // // //   );
+// // // // // // // // // // // // }
+
+
+// // // // // // // // // // // 'use client';
+
+// // // // // // // // // // // import { useEffect, useState } from 'react';
+// // // // // // // // // // // import { api, getImageUrl } from '@/lib/api';
+// // // // // // // // // // // import Link from 'next/link';
+// // // // // // // // // // // import { Loader2, Plus, Trash2, Search, MapPin, KeyRound, Shield, Eye } from 'lucide-react';
+// // // // // // // // // // // import RegionSelector from '@/components/admin/RegionSelector';
+
+// // // // // // // // // // // interface RegionConfig {
+// // // // // // // // // // //   scope: 'national' | 'province' | 'regency';
+// // // // // // // // // // //   provinces: string[];
+// // // // // // // // // // //   regencies: string[];
+// // // // // // // // // // // }
+
+// // // // // // // // // // // export default function AdminUsersPage() {
+// // // // // // // // // // //   const [users, setUsers] = useState<any[]>([]);
+// // // // // // // // // // //   const [loading, setLoading] = useState(true);
+// // // // // // // // // // //   const [search, setSearch] = useState('');
+// // // // // // // // // // //   const [roleFilter, setRoleFilter] = useState('ALL');
+  
+// // // // // // // // // // //   // Modal & Form State
+// // // // // // // // // // //   const [showAddModal, setShowAddModal] = useState(false);
+// // // // // // // // // // //   const [isSaving, setIsSaving] = useState(false);
+// // // // // // // // // // //   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
+// // // // // // // // // // //   const [regionConfig, setRegionConfig] = useState<RegionConfig>({ scope: 'national', provinces: [], regencies: [] });
+
+// // // // // // // // // // //   useEffect(() => { loadUsers(); }, []);
+
+// // // // // // // // // // //   const loadUsers = async () => {
+// // // // // // // // // // //     try {
+// // // // // // // // // // //       setLoading(true);
+// // // // // // // // // // //       const res = await api('/api/admin/users');
+// // // // // // // // // // //       setUsers(res.users || []);
+// // // // // // // // // // //     } catch (err: any) {
+// // // // // // // // // // //       console.error(err);
+// // // // // // // // // // //     } finally {
+// // // // // // // // // // //       setLoading(false);
+// // // // // // // // // // //     }
+// // // // // // // // // // //   };
+
+// // // // // // // // // // //   const handleCreateUser = async (e: React.FormEvent) => {
+// // // // // // // // // // //     e.preventDefault();
+// // // // // // // // // // //     setIsSaving(true);
+// // // // // // // // // // //     try {
+// // // // // // // // // // //       const payload: any = { ...newUser };
+// // // // // // // // // // //       if (newUser.role === 'ADMIN') {
+// // // // // // // // // // //         payload.regionScope = regionConfig.scope;
+// // // // // // // // // // //         payload.managedProvinces = regionConfig.provinces;
+// // // // // // // // // // //         payload.managedRegencies = regionConfig.regencies;
+// // // // // // // // // // //       }
+// // // // // // // // // // //       await api('/api/admin/users', { method: 'POST', body: payload });
+// // // // // // // // // // //       alert('User berhasil dibuat!');
+// // // // // // // // // // //       setShowAddModal(false);
+// // // // // // // // // // //       loadUsers();
+// // // // // // // // // // //     } catch (err: any) {
+// // // // // // // // // // //       alert(err.message || 'Gagal buat user');
+// // // // // // // // // // //     } finally { setIsSaving(false); }
+// // // // // // // // // // //   };
+
+// // // // // // // // // // //   const handleDelete = async (userId: string) => {
+// // // // // // // // // // //     if (!confirm('Hapus user ini?')) return;
+// // // // // // // // // // //     try {
+// // // // // // // // // // //       await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
+// // // // // // // // // // //       setUsers(prev => prev.filter(u => u._id !== userId));
+// // // // // // // // // // //     } catch (e) { alert('Gagal hapus'); }
+// // // // // // // // // // //   };
+
+// // // // // // // // // // //   const handleResetPassword = async (userId: string, userName: string) => {
+// // // // // // // // // // //       if (!confirm(`Reset password "${userName}" menjadi "123456"?`)) return;
+// // // // // // // // // // //       try {
+// // // // // // // // // // //           await api(`/api/admin/users/${userId}/reset-password`, { method: 'PATCH' });
+// // // // // // // // // // //           alert(`✅ Sukses! Password ${userName} sekarang: 123456`);
+// // // // // // // // // // //       } catch (e: any) {
+// // // // // // // // // // //           alert(`Gagal: ${e.message}`);
+// // // // // // // // // // //       }
+// // // // // // // // // // //   };
+
+// // // // // // // // // // //   // Logic Filter
+// // // // // // // // // // //   const filteredUsers = users.filter(u => {
+// // // // // // // // // // //       const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
+// // // // // // // // // // //       const matchRole = roleFilter === 'ALL' || u.role === roleFilter;
+// // // // // // // // // // //       return matchSearch && matchRole;
+// // // // // // // // // // //   });
+
+// // // // // // // // // // //   const getRoleBadge = (role: string) => {
+// // // // // // // // // // //     switch (role) {
+// // // // // // // // // // //       case 'SUPER_ADMIN': return 'bg-purple-100 text-purple-800 border-purple-200';
+// // // // // // // // // // //       case 'ADMIN': return 'bg-orange-100 text-orange-800 border-orange-200';
+// // // // // // // // // // //       case 'FACILITATOR': return 'bg-blue-100 text-blue-800 border-blue-200';
+// // // // // // // // // // //       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+// // // // // // // // // // //     }
+// // // // // // // // // // //   };
+
+// // // // // // // // // // //   return (
+// // // // // // // // // // //     <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/50">
+      
+// // // // // // // // // // //       {/* HEADER */}
+// // // // // // // // // // //       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+// // // // // // // // // // //         <div>
+// // // // // // // // // // //             <h1 className="text-2xl font-bold text-gray-800">Manajemen Pengguna</h1>
+// // // // // // // // // // //             <p className="text-sm text-gray-500">Total: {users.length} User Terdaftar</p>
+// // // // // // // // // // //         </div>
+// // // // // // // // // // //         <button onClick={() => setShowAddModal(true)} className="bg-red-600 text-white px-5 py-2.5 rounded-xl hover:bg-red-700 font-bold shadow-lg flex items-center gap-2">
+// // // // // // // // // // //           <Plus size={18}/> Tambah User
+// // // // // // // // // // //         </button>
+// // // // // // // // // // //       </div>
+
+// // // // // // // // // // //       {/* FILTER BAR */}
+// // // // // // // // // // //       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4">
+// // // // // // // // // // //         <div className="relative flex-1">
+// // // // // // // // // // //             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
+// // // // // // // // // // //             <input 
+// // // // // // // // // // //                 type="text" 
+// // // // // // // // // // //                 placeholder="Cari nama, email, atau NIK..." 
+// // // // // // // // // // //                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm"
+// // // // // // // // // // //                 value={search}
+// // // // // // // // // // //                 onChange={(e) => setSearch(e.target.value)}
+// // // // // // // // // // //             />
+// // // // // // // // // // //         </div>
+        
+// // // // // // // // // // //         {/* [FIX 1] Menambahkan aria-label untuk Select Filter */}
+// // // // // // // // // // //         <select 
+// // // // // // // // // // //             className="p-2 border rounded-lg bg-gray-50 text-sm font-medium focus:ring-2 focus:ring-red-500 outline-none"
+// // // // // // // // // // //             value={roleFilter}
+// // // // // // // // // // //             onChange={(e) => setRoleFilter(e.target.value)}
+// // // // // // // // // // //             aria-label="Filter berdasarkan Role"
+// // // // // // // // // // //             title="Filter berdasarkan Role"
+// // // // // // // // // // //         >
+// // // // // // // // // // //             <option value="ALL">Semua Role</option>
+// // // // // // // // // // //             <option value="STUDENT">Peserta (Student)</option>
+// // // // // // // // // // //             <option value="FACILITATOR">Fasilitator</option>
+// // // // // // // // // // //             <option value="ADMIN">Admin Wilayah</option>
+// // // // // // // // // // //             <option value="SUPER_ADMIN">Super Admin</option>
+// // // // // // // // // // //         </select>
+// // // // // // // // // // //       </div>
+
+// // // // // // // // // // //       {/* MODAL TAMBAH (Singkat) */}
 // // // // // // // // // // //       {showAddModal && (
-// // // // // // // // // // //         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-// // // // // // // // // // //           <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
-// // // // // // // // // // //             <h2 className="text-xl font-bold mb-4 text-gray-800">Tambah User Baru</h2>
-// // // // // // // // // // //             <form onSubmit={handleCreateUser} className="space-y-4">
-// // // // // // // // // // //               <div>
-// // // // // // // // // // //                 <label className="block text-sm font-medium mb-1">Nama Lengkap</label>
-// // // // // // // // // // //                 <input 
-// // // // // // // // // // //                   className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" 
-// // // // // // // // // // //                   placeholder="Contoh: Budi Santoso" 
-// // // // // // // // // // //                   required 
-// // // // // // // // // // //                   value={newUser.name}
-// // // // // // // // // // //                   onChange={e => setNewUser({...newUser, name: e.target.value})}
-// // // // // // // // // // //                 />
-// // // // // // // // // // //               </div>
-// // // // // // // // // // //               <div>
-// // // // // // // // // // //                 <label className="block text-sm font-medium mb-1">Email</label>
-// // // // // // // // // // //                 <input 
-// // // // // // // // // // //                   className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" 
-// // // // // // // // // // //                   type="email" 
-// // // // // // // // // // //                   placeholder="budi@example.com" 
-// // // // // // // // // // //                   required 
-// // // // // // // // // // //                   value={newUser.email}
-// // // // // // // // // // //                   onChange={e => setNewUser({...newUser, email: e.target.value})}
-// // // // // // // // // // //                 />
-// // // // // // // // // // //               </div>
-// // // // // // // // // // //               <div>
-// // // // // // // // // // //                 <label className="block text-sm font-medium mb-1">Password</label>
-// // // // // // // // // // //                 <input 
-// // // // // // // // // // //                   className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" 
-// // // // // // // // // // //                   type="password" 
-// // // // // // // // // // //                   placeholder="Minimal 6 karakter" 
-// // // // // // // // // // //                   required 
-// // // // // // // // // // //                   value={newUser.password}
-// // // // // // // // // // //                   onChange={e => setNewUser({...newUser, password: e.target.value})}
-// // // // // // // // // // //                 />
-// // // // // // // // // // //               </div>
-// // // // // // // // // // //               <div>
-// // // // // // // // // // //                 <label className="block text-sm font-medium mb-1">Role</label>
+// // // // // // // // // // //         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+// // // // // // // // // // //           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95">
+// // // // // // // // // // //             <div className="p-6 border-b"><h2 className="font-bold text-lg">Tambah User Baru</h2></div>
+// // // // // // // // // // //             <form onSubmit={handleCreateUser} className="p-6 space-y-4">
+// // // // // // // // // // //                 <input className="w-full border p-3 rounded-lg" placeholder="Nama Lengkap" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})}/>
+// // // // // // // // // // //                 <input className="w-full border p-3 rounded-lg" type="email" placeholder="Email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})}/>
+// // // // // // // // // // //                 <input className="w-full border p-3 rounded-lg" type="password" placeholder="Password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})}/>
+                
+// // // // // // // // // // //                 {/* [FIX 2] Menambahkan aria-label untuk Select di Modal */}
 // // // // // // // // // // //                 <select 
-// // // // // // // // // // //                   className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-// // // // // // // // // // //                   value={newUser.role}
-// // // // // // // // // // //                   onChange={e => setNewUser({...newUser, role: e.target.value})}
-// // // // // // // // // // //                   aria-label="Pilih Role User Baru"
-// // // // // // // // // // //                   title="Pilih Role User Baru"
+// // // // // // // // // // //                     className="w-full border p-3 rounded-lg bg-white" 
+// // // // // // // // // // //                     value={newUser.role} 
+// // // // // // // // // // //                     onChange={e => setNewUser({...newUser, role: e.target.value})}
+// // // // // // // // // // //                     aria-label="Pilih Role User Baru"
+// // // // // // // // // // //                     title="Pilih Role User Baru"
 // // // // // // // // // // //                 >
-// // // // // // // // // // //                   <option value="STUDENT">Student (Siswa)</option>
-// // // // // // // // // // //                   <option value="FACILITATOR">Facilitator (Instruktur)</option>
-// // // // // // // // // // //                   <option value="ADMIN">Admin (Wilayah/Konten)</option> {/* [BARU] */}
-// // // // // // // // // // //                   <option value="SUPER_ADMIN">Super Admin</option>
+// // // // // // // // // // //                     <option value="STUDENT">STUDENT</option>
+// // // // // // // // // // //                     <option value="FACILITATOR">FACILITATOR</option>
+// // // // // // // // // // //                     <option value="ADMIN">ADMIN</option>
 // // // // // // // // // // //                 </select>
-// // // // // // // // // // //               </div>
-              
-// // // // // // // // // // //               <div className="flex justify-end gap-2 mt-6">
-// // // // // // // // // // //                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition-colors">Batal</button>
-// // // // // // // // // // //                 <button type="submit" disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors">
-// // // // // // // // // // //                   {isSaving ? 'Menyimpan...' : 'Simpan User'}
-// // // // // // // // // // //                 </button>
-// // // // // // // // // // //               </div>
+
+// // // // // // // // // // //                 {/* Region Selector Component Here (Jika Admin) */}
+// // // // // // // // // // //                 <div className="flex justify-end gap-2 pt-4">
+// // // // // // // // // // //                     <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-600 font-bold">Batal</button>
+// // // // // // // // // // //                     <button type="submit" disabled={isSaving} className="px-6 py-2 bg-red-600 text-white rounded-lg font-bold">{isSaving ? 'Menyimpan...' : 'Simpan'}</button>
+// // // // // // // // // // //                 </div>
 // // // // // // // // // // //             </form>
 // // // // // // // // // // //           </div>
 // // // // // // // // // // //         </div>
 // // // // // // // // // // //       )}
 
-// // // // // // // // // // //       {/* --- TABEL USER --- */}
-// // // // // // // // // // //       {loading ? (
-// // // // // // // // // // //         <div className="p-8 text-center text-gray-500">Memuat data user...</div>
-// // // // // // // // // // //       ) : (
-// // // // // // // // // // //         <div className="bg-white shadow rounded-lg border overflow-hidden">
-// // // // // // // // // // //           <div className="overflow-x-auto">
-// // // // // // // // // // //             <table className="w-full text-left border-collapse">
-// // // // // // // // // // //               <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+// // // // // // // // // // //       {/* TABEL USER */}
+// // // // // // // // // // //       {loading ? <div className="text-center py-20"><Loader2 className="animate-spin mx-auto"/></div> : (
+// // // // // // // // // // //         <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+// // // // // // // // // // //           <table className="w-full text-left text-sm">
+// // // // // // // // // // //             <thead className="bg-gray-50 text-gray-500 font-bold text-xs uppercase">
 // // // // // // // // // // //                 <tr>
-// // // // // // // // // // //                   <th className="px-6 py-3 border-b">Nama</th>
-// // // // // // // // // // //                   <th className="px-6 py-3 border-b">Email</th>
-// // // // // // // // // // //                   <th className="px-6 py-3 border-b">Role</th>
-// // // // // // // // // // //                   <th className="px-6 py-3 border-b text-right">Aksi</th>
+// // // // // // // // // // //                     <th className="px-6 py-4">User</th>
+// // // // // // // // // // //                     <th className="px-6 py-4">Role</th>
+// // // // // // // // // // //                     <th className="px-6 py-4">Wilayah</th>
+// // // // // // // // // // //                     <th className="px-6 py-4 text-right">Aksi</th>
 // // // // // // // // // // //                 </tr>
-// // // // // // // // // // //               </thead>
-// // // // // // // // // // //               <tbody className="divide-y divide-gray-200">
-// // // // // // // // // // //                 {users.map((user) => (
-// // // // // // // // // // //                   <tr key={user._id} className="hover:bg-gray-50 transition-colors">
-// // // // // // // // // // //                     <td className="px-6 py-4 whitespace-nowrap">
-// // // // // // // // // // //                       <div className="font-medium text-gray-900">{user.name || 'Tanpa Nama'}</div>
-// // // // // // // // // // //                     </td>
-// // // // // // // // // // //                     <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-// // // // // // // // // // //                       {user.email}
-// // // // // // // // // // //                     </td>
-// // // // // // // // // // //                     <td className="px-6 py-4 whitespace-nowrap">
-// // // // // // // // // // //                       <select 
-// // // // // // // // // // //                         value={user.role}
-// // // // // // // // // // //                         onChange={(e) => handleRoleChange(user._id, e.target.value)}
-// // // // // // // // // // //                         aria-label={`Ubah role untuk user ${user.name}`}
-// // // // // // // // // // //                         title={`Ubah role untuk user ${user.name}`}
-// // // // // // // // // // //                         className={`text-xs font-bold px-2 py-1 rounded border cursor-pointer outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${getRoleBadge(user.role)}`}
-// // // // // // // // // // //                       >
-// // // // // // // // // // //                         <option value="STUDENT">STUDENT</option>
-// // // // // // // // // // //                         <option value="FACILITATOR">FACILITATOR</option>
-// // // // // // // // // // //                         <option value="ADMIN">ADMIN</option> {/* [BARU] */}
-// // // // // // // // // // //                         <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-// // // // // // // // // // //                       </select>
-// // // // // // // // // // //                     </td>
-// // // // // // // // // // //                     <td className="px-6 py-4 whitespace-nowrap text-right space-x-3">
-// // // // // // // // // // //                       <Link href={`/admin/users/${user._id}`} className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors">Detail</Link>
-// // // // // // // // // // //                       <button onClick={() => handleDelete(user._id)} className="text-red-600 hover:text-red-800 font-medium text-sm transition-colors">Hapus</button>
-// // // // // // // // // // //                     </td>
-// // // // // // // // // // //                   </tr>
-// // // // // // // // // // //                 ))}
-// // // // // // // // // // //               </tbody>
-// // // // // // // // // // //             </table>
-// // // // // // // // // // //           </div>
-// // // // // // // // // // //           {users.length === 0 && (
-// // // // // // // // // // //             <div className="p-10 text-center text-gray-500 flex flex-col items-center">
-// // // // // // // // // // //               <p className="text-lg font-medium">Belum ada user.</p>
-// // // // // // // // // // //               <p className="text-sm">Klik tombol "+ Tambah User" untuk membuat akun baru.</p>
-// // // // // // // // // // //             </div>
-// // // // // // // // // // //           )}
-// // // // // // // // // // //         </div>
-// // // // // // // // // // //       )}
-// // // // // // // // // // //     </div>
-// // // // // // // // // // //   );
-// // // // // // // // // // // }
-
-
-
-// // // // // // // // // // 'use client';
-
-// // // // // // // // // // import { useEffect, useState } from 'react';
-// // // // // // // // // // import { api } from '@/lib/api';
-// // // // // // // // // // import Link from 'next/link';
-// // // // // // // // // // import { Loader2, Plus, Trash2, Search, MapPin } from 'lucide-react';
-// // // // // // // // // // import RegionSelector from '@/components/admin/RegionSelector';
-
-// // // // // // // // // // // [FIX TS] Definisi Tipe untuk Region Config agar sesuai dengan komponen anak
-// // // // // // // // // // interface RegionConfig {
-// // // // // // // // // //   scope: 'national' | 'province' | 'regency';
-// // // // // // // // // //   provinces: string[];
-// // // // // // // // // //   regencies: string[];
-// // // // // // // // // // }
-
-// // // // // // // // // // export default function AdminUsersPage() {
-// // // // // // // // // //   const [users, setUsers] = useState<any[]>([]);
-// // // // // // // // // //   const [loading, setLoading] = useState(true);
-// // // // // // // // // //   const [search, setSearch] = useState('');
-  
-// // // // // // // // // //   // --- STATE MODAL & FORM ---
-// // // // // // // // // //   const [showAddModal, setShowAddModal] = useState(false);
-// // // // // // // // // //   const [isSaving, setIsSaving] = useState(false);
-
-// // // // // // // // // //   // State Data User Baru
-// // // // // // // // // //   const [newUser, setNewUser] = useState({ 
-// // // // // // // // // //     name: '', 
-// // // // // // // // // //     email: '', 
-// // // // // // // // // //     password: '', 
-// // // // // // // // // //     role: 'STUDENT' 
-// // // // // // // // // //   });
-
-// // // // // // // // // //   // [FIX TS] Gunakan interface RegionConfig saat inisialisasi state
-// // // // // // // // // //   const [regionConfig, setRegionConfig] = useState<RegionConfig>({
-// // // // // // // // // //     scope: 'national', 
-// // // // // // // // // //     provinces: [],
-// // // // // // // // // //     regencies: []
-// // // // // // // // // //   });
-
-// // // // // // // // // //   // Load Users
-// // // // // // // // // //   useEffect(() => {
-// // // // // // // // // //     loadUsers();
-// // // // // // // // // //   }, []);
-
-// // // // // // // // // //   const loadUsers = async () => {
-// // // // // // // // // //     try {
-// // // // // // // // // //       setLoading(true);
-// // // // // // // // // //       const res = await api('/api/admin/users');
-// // // // // // // // // //       setUsers(res.users || []);
-// // // // // // // // // //     } catch (err: any) {
-// // // // // // // // // //       console.error(err);
-// // // // // // // // // //       if (err.message?.includes('Forbidden')) {
-// // // // // // // // // //         alert('Akses ditolak. Halaman ini khusus Super Admin.');
-// // // // // // // // // //       }
-// // // // // // // // // //     } finally {
-// // // // // // // // // //       setLoading(false);
-// // // // // // // // // //     }
-// // // // // // // // // //   };
-
-// // // // // // // // // //   // Handler: Tambah User Baru
-// // // // // // // // // //   const handleCreateUser = async (e: React.FormEvent) => {
-// // // // // // // // // //     e.preventDefault();
-// // // // // // // // // //     setIsSaving(true);
-
-// // // // // // // // // //     try {
-// // // // // // // // // //       // 1. Siapkan Payload Dasar
-// // // // // // // // // //       const payload: any = { ...newUser };
-
-// // // // // // // // // //       // 2. Jika Role ADMIN, Masukkan Data Wilayah
-// // // // // // // // // //       if (newUser.role === 'ADMIN') {
-// // // // // // // // // //         payload.regionScope = regionConfig.scope;
-        
-// // // // // // // // // //         // Validasi sederhana
-// // // // // // // // // //         if (regionConfig.scope === 'province' && regionConfig.provinces.length === 0) {
-// // // // // // // // // //           throw new Error("Pilih minimal satu provinsi untuk Admin Provinsi.");
-// // // // // // // // // //         }
-// // // // // // // // // //         if (regionConfig.scope === 'regency' && regionConfig.regencies.length === 0) {
-// // // // // // // // // //           throw new Error("Pilih minimal satu kabupaten untuk Admin Kabupaten.");
-// // // // // // // // // //         }
-
-// // // // // // // // // //         payload.managedProvinces = regionConfig.provinces;
-// // // // // // // // // //         payload.managedRegencies = regionConfig.regencies;
-// // // // // // // // // //       } else {
-// // // // // // // // // //         // Reset jika bukan admin (jaga-jaga)
-// // // // // // // // // //         payload.regionScope = 'national';
-// // // // // // // // // //         payload.managedProvinces = [];
-// // // // // // // // // //         payload.managedRegencies = [];
-// // // // // // // // // //       }
-
-// // // // // // // // // //       // 3. Kirim ke Backend
-// // // // // // // // // //       await api('/api/admin/users', { method: 'POST', body: payload });
-      
-// // // // // // // // // //       alert('User berhasil ditambahkan!');
-      
-// // // // // // // // // //       // Reset Form
-// // // // // // // // // //       setShowAddModal(false);
-// // // // // // // // // //       setNewUser({ name: '', email: '', password: '', role: 'STUDENT' });
-// // // // // // // // // //       setRegionConfig({ scope: 'national', provinces: [], regencies: [] });
-      
-// // // // // // // // // //       loadUsers(); 
-// // // // // // // // // //     } catch (err: any) {
-// // // // // // // // // //       alert(err.message || 'Gagal menambah user');
-// // // // // // // // // //     } finally {
-// // // // // // // // // //       setIsSaving(false);
-// // // // // // // // // //     }
-// // // // // // // // // //   };
-
-// // // // // // // // // //   // Handler: Ubah Role (Dropdown di Tabel)
-// // // // // // // // // //   const handleRoleChange = async (userId: string, newRole: string) => {
-// // // // // // // // // //     if (newRole === 'ADMIN') {
-// // // // // // // // // //         if(!confirm("Anda mengubah user ini menjadi ADMIN. Pastikan untuk masuk ke menu 'Detail' user ini nanti untuk mengatur Wilayah Kerjanya.")) return;
-// // // // // // // // // //     }
-
-// // // // // // // // // //     try {
-// // // // // // // // // //       setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: newRole } : u));
-// // // // // // // // // //       await api(`/api/admin/users/${userId}`, { method: 'PATCH', body: { role: newRole } });
-// // // // // // // // // //     } catch (err: any) {
-// // // // // // // // // //       alert('Gagal update role: ' + err.message);
-// // // // // // // // // //       loadUsers(); 
-// // // // // // // // // //     }
-// // // // // // // // // //   };
-
-// // // // // // // // // //   const handleDelete = async (userId: string) => {
-// // // // // // // // // //     if (!confirm('Hapus user ini? Data tidak bisa dikembalikan.')) return;
-// // // // // // // // // //     try {
-// // // // // // // // // //       await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
-// // // // // // // // // //       setUsers(prev => prev.filter(u => u._id !== userId));
-// // // // // // // // // //     } catch (err: any) {
-// // // // // // // // // //       alert('Gagal: ' + err.message);
-// // // // // // // // // //     }
-// // // // // // // // // //   };
-
-// // // // // // // // // //   // Filter Search
-// // // // // // // // // //   const filteredUsers = users.filter(u => 
-// // // // // // // // // //     u.name.toLowerCase().includes(search.toLowerCase()) || 
-// // // // // // // // // //     u.email.toLowerCase().includes(search.toLowerCase())
-// // // // // // // // // //   );
-
-// // // // // // // // // //   const getRoleBadge = (role: string) => {
-// // // // // // // // // //     switch (role) {
-// // // // // // // // // //       case 'SUPER_ADMIN': return 'bg-purple-100 text-purple-800 border-purple-200';
-// // // // // // // // // //       case 'ADMIN': return 'bg-orange-100 text-orange-800 border-orange-200';
-// // // // // // // // // //       case 'FACILITATOR': return 'bg-blue-100 text-blue-800 border-blue-200';
-// // // // // // // // // //       default: return 'bg-gray-100 text-gray-800 border-gray-200';
-// // // // // // // // // //     }
-// // // // // // // // // //   };
-
-// // // // // // // // // //   return (
-// // // // // // // // // //     <div className="p-6 max-w-7xl mx-auto">
-// // // // // // // // // //       {/* HEADER */}
-// // // // // // // // // //       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-// // // // // // // // // //         <div>
-// // // // // // // // // //             <h1 className="text-2xl font-bold text-gray-800">Manajemen Pengguna</h1>
-// // // // // // // // // //             <p className="text-sm text-gray-500">Kelola akses, role, dan wilayah kerja admin.</p>
-// // // // // // // // // //         </div>
-// // // // // // // // // //         <button 
-// // // // // // // // // //           onClick={() => setShowAddModal(true)} 
-// // // // // // // // // //           className="bg-red-600 text-white px-5 py-2.5 rounded-xl hover:bg-red-700 font-bold transition-colors shadow-lg shadow-red-100 flex items-center gap-2"
-// // // // // // // // // //         >
-// // // // // // // // // //           <Plus size={18}/> Tambah User
-// // // // // // // // // //         </button>
-// // // // // // // // // //       </div>
-
-// // // // // // // // // //       {/* SEARCH BAR */}
-// // // // // // // // // //       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex items-center gap-3">
-// // // // // // // // // //         <Search className="text-gray-400" size={20}/>
-// // // // // // // // // //         <input 
-// // // // // // // // // //             type="text" 
-// // // // // // // // // //             placeholder="Cari nama atau email..." 
-// // // // // // // // // //             className="flex-1 outline-none text-sm"
-// // // // // // // // // //             value={search}
-// // // // // // // // // //             onChange={(e) => setSearch(e.target.value)}
-// // // // // // // // // // //         />
-// // // // // // // // // // //       </div>
-
-// // // // // // // // // // //       {/* MODAL TAMBAH USER */}
-// // // // // // // // // // //       {showAddModal && (
-// // // // // // // // // // //         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-// // // // // // // // // // //           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
-// // // // // // // // // // //             <div className="p-6 border-b">
-// // // // // // // // // // //                 <h2 className="text-xl font-bold text-gray-800">Tambah User Baru</h2>
-// // // // // // // // // // //             </div>
-            
-// // // // // // // // // // //             <div className="p-6 overflow-y-auto custom-scrollbar">
-// // // // // // // // // // //                 <form id="addUserForm" onSubmit={handleCreateUser} className="space-y-5">
-// // // // // // // // // // //                 <div>
-// // // // // // // // // // //                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Nama Lengkap</label>
-// // // // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="Contoh: Budi Santoso" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})}/>
-// // // // // // // // // // //                 </div>
-// // // // // // // // // // //                 <div>
-// // // // // // // // // // //                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Email</label>
-// // // // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm" type="email" placeholder="budi@example.com" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})}/>
-// // // // // // // // // // //                 </div>
-// // // // // // // // // // //                 <div>
-// // // // // // // // // // //                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Password</label>
-// // // // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm" type="password" placeholder="Minimal 6 karakter" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})}/>
-// // // // // // // // // // //                 </div>
-                
-// // // // // // // // // // //                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-// // // // // // // // // // //                     <label className="block text-xs font-bold text-gray-700 mb-2 uppercase">Role / Peran</label>
-// // // // // // // // // // //                     <select 
-// // // // // // // // // // //                         className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-white text-sm font-bold"
-// // // // // // // // // // //                         value={newUser.role}
-// // // // // // // // // // //                         onChange={e => setNewUser({...newUser, role: e.target.value})}
-// // // // // // // // // // //                         // [FIX AXE] Tambahkan label aksesibilitas
-// // // // // // // // // // //                         aria-label="Pilih Peran User Baru"
-// // // // // // // // // // //                         title="Pilih Peran User Baru"
-// // // // // // // // // // //                     >
-// // // // // // // // // // //                         <option value="STUDENT">STUDENT (Peserta)</option>
-// // // // // // // // // // //                         <option value="FACILITATOR">FACILITATOR (Pengajar)</option>
-// // // // // // // // // // //                         <option value="ADMIN">ADMIN (Wilayah/Konten)</option>
-// // // // // // // // // // //                         <option value="SUPER_ADMIN">SUPER ADMIN</option>
-// // // // // // // // // // //                     </select>
-
-// // // // // // // // // // //                     {/* REGION SELECTOR (Hanya jika Role ADMIN) */}
-// // // // // // // // // // //                     {newUser.role === 'ADMIN' && (
-// // // // // // // // // // //                         <div className="mt-4 animate-in slide-in-from-top-2">
-// // // // // // // // // // //                             <div className="flex items-center gap-2 mb-2 text-orange-700 bg-orange-50 p-2 rounded-lg text-xs">
-// // // // // // // // // // //                                 <MapPin size={14}/> Konfigurasi Wilayah Kerja
-// // // // // // // // // // //                             </div>
-// // // // // // // // // // //                             <RegionSelector 
-// // // // // // // // // // //                                 value={regionConfig} 
-// // // // // // // // // // //                                 onChange={(val) => setRegionConfig(val)} 
-// // // // // // // // // // //                             />
-// // // // // // // // // // //                         </div>
-// // // // // // // // // // //                     )}
-// // // // // // // // // // //                 </div>
-// // // // // // // // // // //                 </form>
-// // // // // // // // // // //             </div>
-
-// // // // // // // // // // //             <div className="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-3">
-// // // // // // // // // // //                 <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors text-sm">Batal</button>
-// // // // // // // // // // //                 <button type="submit" form="addUserForm" disabled={isSaving} className="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors shadow-lg shadow-red-200 text-sm flex items-center gap-2">
-// // // // // // // // // // //                     {isSaving ? <Loader2 className="animate-spin" size={16}/> : <Plus size={16}/>} Simpan User
-// // // // // // // // // // //                 </button>
-// // // // // // // // // // //             </div>
-// // // // // // // // // // //           </div>
-// // // // // // // // // // //         </div>
-// // // // // // // // // // //       )}
-
-// // // // // // // // // // //       {/* --- TABEL USER --- */}
-// // // // // // // // // // //       {loading ? (
-// // // // // // // // // // //         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-// // // // // // // // // // //             <Loader2 className="animate-spin mb-2" size={32}/>
-// // // // // // // // // // //             <p>Memuat data...</p>
-// // // // // // // // // // //         </div>
-// // // // // // // // // // //       ) : (
-// // // // // // // // // // //         <div className="bg-white shadow-xl shadow-gray-100 rounded-2xl border border-gray-100 overflow-hidden">
-// // // // // // // // // // //           <div className="overflow-x-auto">
-// // // // // // // // // // //             <table className="w-full text-left border-collapse">
-// // // // // // // // // // //               <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-// // // // // // // // // // //                 <tr>
-// // // // // // // // // // //                   <th className="px-6 py-4 border-b border-gray-100">Nama User</th>
-// // // // // // // // // // //                   <th className="px-6 py-4 border-b border-gray-100">Email</th>
-// // // // // // // // // // //                   <th className="px-6 py-4 border-b border-gray-100">Role</th>
-// // // // // // // // // // //                   <th className="px-6 py-4 border-b border-gray-100">Wilayah / Scope</th>
-// // // // // // // // // // //                   <th className="px-6 py-4 border-b border-gray-100 text-right">Aksi</th>
-// // // // // // // // // // //                 </tr>
-// // // // // // // // // // //               </thead>
-// // // // // // // // // // //               <tbody className="divide-y divide-gray-50">
+// // // // // // // // // // //             </thead>
+// // // // // // // // // // //             <tbody className="divide-y divide-gray-100">
 // // // // // // // // // // //                 {filteredUsers.map((user) => (
-// // // // // // // // // // //                   <tr key={user._id} className="hover:bg-gray-50/80 transition-colors group">
-// // // // // // // // // // //                     <td className="px-6 py-4">
-// // // // // // // // // // //                       <div>
-// // // // // // // // // // //                           <p className="font-bold text-gray-900 text-sm">{user.name}</p>
-// // // // // // // // // // //                       </div>
-// // // // // // // // // // //                     </td>
-// // // // // // // // // // //                     <td className="px-6 py-4 text-xs text-gray-500">
-// // // // // // // // // // //                         {user.email}
-// // // // // // // // // // //                     </td>
-// // // // // // // // // // //                     <td className="px-6 py-4">
-// // // // // // // // // // //                       <select 
-// // // // // // // // // // //                         value={user.role}
-// // // // // // // // // // //                         onChange={(e) => handleRoleChange(user._id, e.target.value)}
-// // // // // // // // // // //                         className={`text-[10px] font-black px-2 py-1.5 rounded-lg border cursor-pointer outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500 ${getRoleBadge(user.role)}`}
-                        
-// // // // // // // // // // //                         // [FIX AXE] Tambahkan aria-label yang unik per baris
-// // // // // // // // // // //                         aria-label={`Ubah role untuk ${user.name}`}
-// // // // // // // // // // //                         title={`Ubah role untuk ${user.name}`}
-// // // // // // // // // // //                       >
-// // // // // // // // // // //                         <option value="STUDENT">STUDENT</option>
-// // // // // // // // // // //                         <option value="FACILITATOR">FACILITATOR</option>
-// // // // // // // // // // //                         <option value="ADMIN">ADMIN</option>
-// // // // // // // // // // //                         <option value="SUPER_ADMIN">SUPER ADMIN</option>
-// // // // // // // // // // //                       </select>
-// // // // // // // // // // //                     </td>
-// // // // // // // // // // //                     <td className="px-6 py-4">
-// // // // // // // // // // //                         {user.role === 'ADMIN' ? (
-// // // // // // // // // // //                             <div className="text-xs">
-// // // // // // // // // // //                                 {user.regionScope === 'national' && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">NASIONAL</span>}
-// // // // // // // // // // //                                 {user.regionScope === 'province' && (
-// // // // // // // // // // //                                     <div>
-// // // // // // // // // // //                                         <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold mb-1 inline-block">PROVINSI</span>
-// // // // // // // // // // //                                         <p className="text-[10px] text-gray-500 mt-1 max-w-[150px] truncate" title={user.managedProvinces?.join(', ')}>
-// // // // // // // // // // //                                             {user.managedProvinces?.length || 0} Wilayah
-// // // // // // // // // // //                                         </p>
-// // // // // // // // // // //                                     </div>
-// // // // // // // // // // //                                 )}
-// // // // // // // // // // //                                 {user.regionScope === 'regency' && (
-// // // // // // // // // // //                                     <div>
-// // // // // // // // // // //                                         <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded font-bold mb-1 inline-block">KABUPATEN</span>
-// // // // // // // // // // //                                         <p className="text-[10px] text-gray-500 mt-1 max-w-[150px] truncate" title={user.managedRegencies?.join(', ')}>
-// // // // // // // // // // //                                             {user.managedRegencies?.length || 0} Wilayah
-// // // // // // // // // // //                                         </p>
-// // // // // // // // // // //                                     </div>
-// // // // // // // // // // //                                 )}
+// // // // // // // // // // //                     <tr key={user._id} className="hover:bg-gray-50 transition">
+// // // // // // // // // // //                         <td className="px-6 py-4">
+// // // // // // // // // // //                             <div className="flex items-center gap-3">
+// // // // // // // // // // //                                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
+// // // // // // // // // // //                                     <img src={getImageUrl(user.avatarUrl) || `https://ui-avatars.com/api/?name=${user.name}`} className="w-full h-full object-cover" alt=""/>
+// // // // // // // // // // //                                 </div>
+// // // // // // // // // // //                                 <div>
+// // // // // // // // // // //                                     <p className="font-bold text-gray-900">{user.name}</p>
+// // // // // // // // // // //                                     <p className="text-xs text-gray-500">{user.email}</p>
+// // // // // // // // // // //                                 </div>
 // // // // // // // // // // //                             </div>
-// // // // // // // // // // //                         ) : (
-// // // // // // // // // // //                             <span className="text-gray-300 text-xs">-</span>
-// // // // // // // // // // //                         )}
-// // // // // // // // // // //                     </td>
-// // // // // // // // // // //                     <td className="px-6 py-4 text-right space-x-2">
-// // // // // // // // // // //                       <Link href={`/admin/users/${user._id}`} className="inline-block bg-white border border-gray-200 text-gray-600 hover:text-blue-600 hover:border-blue-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all" aria-label={`Detail user ${user.name}`}>
-// // // // // // // // // // //                         Detail
-// // // // // // // // // // //                       </Link>
-// // // // // // // // // // //                       <button onClick={() => handleDelete(user._id)} className="bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all" aria-label={`Hapus user ${user.name}`} title="Hapus User">
-// // // // // // // // // // //                         <Trash2 size={14}/>
-// // // // // // // // // // //                       </button>
-// // // // // // // // // // //                     </td>
-// // // // // // // // // // //                   </tr>
+// // // // // // // // // // //                         </td>
+// // // // // // // // // // //                         <td className="px-6 py-4">
+// // // // // // // // // // //                             <span className={`px-2 py-1 rounded text-xs font-bold border ${getRoleBadge(user.role)}`}>{user.role}</span>
+// // // // // // // // // // //                         </td>
+// // // // // // // // // // //                         <td className="px-6 py-4">
+// // // // // // // // // // //                             {user.regionScope !== 'national' ? (
+// // // // // // // // // // //                                 <div className="text-xs text-gray-600 flex items-center gap-1">
+// // // // // // // // // // //                                     <Shield size={12}/> 
+// // // // // // // // // // //                                     {user.regionScope === 'province' ? 'Provinsi' : 'Kabupaten'}
+// // // // // // // // // // //                                 </div>
+// // // // // // // // // // //                             ) : <span className="text-gray-300 text-xs">-</span>}
+// // // // // // // // // // //                         </td>
+// // // // // // // // // // //                         <td className="px-6 py-4 text-right">
+// // // // // // // // // // //                             <div className="flex items-center justify-end gap-2">
+// // // // // // // // // // //                                 <button 
+// // // // // // // // // // //                                     onClick={() => handleResetPassword(user._id, user.name)}
+// // // // // // // // // // //                                     className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg tooltip-trigger" 
+// // // // // // // // // // //                                     title="Reset Password ke 123456"
+// // // // // // // // // // //                                     aria-label={`Reset password untuk ${user.name}`}
+// // // // // // // // // // //                                 >
+// // // // // // // // // // //                                     <KeyRound size={16}/>
+// // // // // // // // // // //                                 </button>
+// // // // // // // // // // //                                 <Link href={`/admin/users/${user._id}`} className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg" title="Detail" aria-label={`Detail user ${user.name}`}>
+// // // // // // // // // // //                                     <Eye size={16}/>
+// // // // // // // // // // //                                 </Link>
+// // // // // // // // // // //                                 <button onClick={() => handleDelete(user._id)} className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg" title="Hapus" aria-label={`Hapus user ${user.name}`}>
+// // // // // // // // // // //                                     <Trash2 size={16}/>
+// // // // // // // // // // //                                 </button>
+// // // // // // // // // // //                             </div>
+// // // // // // // // // // //                         </td>
+// // // // // // // // // // //                     </tr>
 // // // // // // // // // // //                 ))}
-// // // // // // // // // // //               </tbody>
-// // // // // // // // // // //             </table>
-// // // // // // // // // // //           </div>
-// // // // // // // // // // //           {filteredUsers.length === 0 && (
-// // // // // // // // // // //             <div className="p-10 text-center text-gray-500 flex flex-col items-center">
-// // // // // // // // // // //               <p className="text-lg font-bold text-gray-400">Tidak ada user ditemukan.</p>
-// // // // // // // // // // //             </div>
-// // // // // // // // // // //           )}
+// // // // // // // // // // //             </tbody>
+// // // // // // // // // // //           </table>
+// // // // // // // // // // //           {filteredUsers.length === 0 && <div className="p-10 text-center text-gray-400">Tidak ada user ditemukan.</div>}
 // // // // // // // // // // //         </div>
 // // // // // // // // // // //       )}
 // // // // // // // // // // //     </div>
 // // // // // // // // // // //   );
 // // // // // // // // // // // }
-
 
 // // // // // // // // // // 'use client';
 
 // // // // // // // // // // import { useEffect, useState } from 'react';
 // // // // // // // // // // import { api, getImageUrl } from '@/lib/api';
 // // // // // // // // // // import Link from 'next/link';
-// // // // // // // // // // import { Loader2, Plus, Trash2, Search, MapPin, KeyRound, Shield, Eye } from 'lucide-react';
-// // // // // // // // // // import RegionSelector from '@/components/admin/RegionSelector';
+// // // // // // // // // // import { 
+// // // // // // // // // //     Loader2, Plus, Trash2, Search, MapPin, KeyRound, Shield, Eye, 
+// // // // // // // // // //     ChevronDown, ChevronRight, LayoutList, Layers 
+// // // // // // // // // // } from 'lucide-react';
+// // // // // // // // // // import RegionSelector from '@/components/admin/RegionSelector'; 
 
 // // // // // // // // // // interface RegionConfig {
 // // // // // // // // // //   scope: 'national' | 'province' | 'regency';
@@ -837,9 +1075,15 @@
 // // // // // // // // // //   const [users, setUsers] = useState<any[]>([]);
 // // // // // // // // // //   const [loading, setLoading] = useState(true);
 // // // // // // // // // //   const [search, setSearch] = useState('');
-// // // // // // // // // //   const [roleFilter, setRoleFilter] = useState('ALL');
   
-// // // // // // // // // //   // Modal & Form State
+// // // // // // // // // //   // View Mode: 'list' = Tabel Biasa (Legacy), 'cluster' = Kelompok Wilayah (New)
+// // // // // // // // // //   const [viewMode, setViewMode] = useState<'list' | 'cluster'>('cluster');
+  
+// // // // // // // // // //   // State untuk Accordion UI
+// // // // // // // // // //   const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
+// // // // // // // // // //   const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
+
+// // // // // // // // // //   // Modal & Form State (Logic Lama Tetap Utuh)
 // // // // // // // // // //   const [showAddModal, setShowAddModal] = useState(false);
 // // // // // // // // // //   const [isSaving, setIsSaving] = useState(false);
 // // // // // // // // // //   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
@@ -859,6 +1103,38 @@
 // // // // // // // // // //     }
 // // // // // // // // // //   };
 
+// // // // // // // // // //   // --- LOGIC GROUPING (KLASTERISASI - UI ONLY) ---
+// // // // // // // // // //   // Ini hanya logika transform data untuk tampilan, tidak mengubah data asli
+// // // // // // // // // //   const getClusteredUsers = () => {
+// // // // // // // // // //     const groups: Record<string, Record<string, any[]>> = {};
+
+// // // // // // // // // //     const filtered = users.filter(u => 
+// // // // // // // // // //         u.name.toLowerCase().includes(search.toLowerCase()) || 
+// // // // // // // // // //         u.email.toLowerCase().includes(search.toLowerCase()) ||
+// // // // // // // // // //         (u.memberData?.nia || '').includes(search)
+// // // // // // // // // //     );
+
+// // // // // // // // // //     filtered.forEach(user => {
+// // // // // // // // // //         // Fallback Logic agar tidak 'undefined'
+// // // // // // // // // //         let prov = user.memberData?.province || user.managedProvinces?.[0] || 'LAINNYA';
+// // // // // // // // // //         let kab = user.memberData?.regency || user.managedRegencies?.[0] || 'UMUM / PUSAT';
+
+// // // // // // // // // //         // Normalisasi String
+// // // // // // // // // //         prov = (prov || 'LAINNYA').toUpperCase().trim();
+// // // // // // // // // //         kab = (kab || 'UMUM').toUpperCase().trim();
+
+// // // // // // // // // //         if (!groups[prov]) groups[prov] = {};
+// // // // // // // // // //         if (!groups[prov][kab]) groups[prov][kab] = [];
+        
+// // // // // // // // // //         groups[prov][kab].push(user);
+// // // // // // // // // //     });
+
+// // // // // // // // // //     return groups;
+// // // // // // // // // //   };
+
+// // // // // // // // // //   const clusteredData = getClusteredUsers();
+
+// // // // // // // // // //   // --- HANDLERS (LOGIKA LAMA - TETAP UTUH) ---
 // // // // // // // // // //   const handleCreateUser = async (e: React.FormEvent) => {
 // // // // // // // // // //     e.preventDefault();
 // // // // // // // // // //     setIsSaving(true);
@@ -896,163 +1172,254 @@
 // // // // // // // // // //       }
 // // // // // // // // // //   };
 
-// // // // // // // // // //   // Logic Filter
-// // // // // // // // // //   const filteredUsers = users.filter(u => {
-// // // // // // // // // //       const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
-// // // // // // // // // //       const matchRole = roleFilter === 'ALL' || u.role === roleFilter;
-// // // // // // // // // //       return matchSearch && matchRole;
-// // // // // // // // // //   });
-
-// // // // // // // // // //   const getRoleBadge = (role: string) => {
-// // // // // // // // // //     switch (role) {
-// // // // // // // // // //       case 'SUPER_ADMIN': return 'bg-purple-100 text-purple-800 border-purple-200';
-// // // // // // // // // //       case 'ADMIN': return 'bg-orange-100 text-orange-800 border-orange-200';
-// // // // // // // // // //       case 'FACILITATOR': return 'bg-blue-100 text-blue-800 border-blue-200';
-// // // // // // // // // //       default: return 'bg-gray-100 text-gray-800 border-gray-200';
-// // // // // // // // // //     }
+// // // // // // // // // //   // --- UI ACTIONS ---
+// // // // // // // // // //   const toggleProvince = (prov: string) => {
+// // // // // // // // // //       setExpandedProvinces(prev => ({...prev, [prov]: !prev[prov]}));
 // // // // // // // // // //   };
 
+// // // // // // // // // //   const toggleRegency = (kabId: string) => {
+// // // // // // // // // //       setExpandedRegencies(prev => ({...prev, [kabId]: !prev[kabId]}));
+// // // // // // // // // //   };
+
+// // // // // // // // // //   // --- SUB-COMPONENT: TABEL USER (REUSABLE) ---
+// // // // // // // // // //   const UserTable = ({ data }: { data: any[] }) => (
+// // // // // // // // // //     <table className="w-full text-left text-sm bg-white rounded-lg overflow-hidden">
+// // // // // // // // // //         <thead className="bg-gray-50 text-gray-500 font-bold text-[10px] uppercase border-b border-gray-100">
+// // // // // // // // // //             <tr>
+// // // // // // // // // //                 <th className="px-4 py-3">Nama Anggota</th>
+// // // // // // // // // //                 <th className="px-4 py-3">Role</th>
+// // // // // // // // // //                 <th className="px-4 py-3">Unit / Asal</th>
+// // // // // // // // // //                 <th className="px-4 py-3 text-right">Aksi</th>
+// // // // // // // // // //             </tr>
+// // // // // // // // // //         </thead>
+// // // // // // // // // //         <tbody className="divide-y divide-gray-50">
+// // // // // // // // // //             {data.map(user => (
+// // // // // // // // // //                 <tr key={user._id} className="hover:bg-gray-50 transition-colors">
+// // // // // // // // // //                     <td className="px-4 py-3">
+// // // // // // // // // //                         <div className="flex items-center gap-3">
+// // // // // // // // // //                             <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden border border-gray-100">
+// // // // // // // // // //                                 <img src={getImageUrl(user.avatarUrl)} className="w-full h-full object-cover" alt=""/>
+// // // // // // // // // //                             </div>
+// // // // // // // // // //                             <div>
+// // // // // // // // // //                                 <p className="font-bold text-gray-900 text-sm">{user.name}</p>
+// // // // // // // // // //                                 <p className="text-[10px] text-gray-400">{user.email}</p>
+// // // // // // // // // //                             </div>
+// // // // // // // // // //                         </div>
+// // // // // // // // // //                     </td>
+// // // // // // // // // //                     <td className="px-4 py-3">
+// // // // // // // // // //                         <span className={`text-[10px] px-2 py-0.5 rounded font-bold border ${
+// // // // // // // // // //                             user.role === 'ADMIN' ? 'bg-orange-50 border-orange-200 text-orange-700' : 
+// // // // // // // // // //                             user.role === 'SUPER_ADMIN' ? 'bg-purple-50 border-purple-200 text-purple-700' :
+// // // // // // // // // //                             user.role === 'FACILITATOR' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+// // // // // // // // // //                             'bg-gray-50 border-gray-200 text-gray-600'
+// // // // // // // // // //                         }`}>
+// // // // // // // // // //                             {user.role}
+// // // // // // // // // //                         </span>
+// // // // // // // // // //                     </td>
+// // // // // // // // // //                     <td className="px-4 py-3 text-xs text-gray-600">
+// // // // // // // // // //                         {user.memberData?.unit || '-'}
+// // // // // // // // // //                     </td>
+// // // // // // // // // //                     <td className="px-4 py-3 text-right flex justify-end gap-1">
+// // // // // // // // // //                          <button onClick={() => handleResetPassword(user._id, user.name)} className="p-1.5 text-orange-600 bg-orange-50 rounded hover:bg-orange-100 transition" title="Reset Password" aria-label={`Reset pass ${user.name}`}><KeyRound size={14}/></button>
+// // // // // // // // // //                          <Link href={`/admin/users/${user._id}`} className="p-1.5 text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition" title="Detail" aria-label={`Detail ${user.name}`}><Eye size={14}/></Link>
+// // // // // // // // // //                          <button onClick={() => handleDelete(user._id)} className="p-1.5 text-red-600 bg-red-50 rounded hover:bg-red-100 transition" title="Hapus" aria-label={`Hapus ${user.name}`}><Trash2 size={14}/></button>
+// // // // // // // // // //                     </td>
+// // // // // // // // // //                 </tr>
+// // // // // // // // // //             ))}
+// // // // // // // // // //         </tbody>
+// // // // // // // // // //     </table>
+// // // // // // // // // //   );
+
 // // // // // // // // // //   return (
-// // // // // // // // // //     <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/50">
+// // // // // // // // // //     <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/30">
       
-// // // // // // // // // //       {/* HEADER */}
-// // // // // // // // // //       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+// // // // // // // // // //       {/* HEADER UTAMA */}
+// // // // // // // // // //       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
 // // // // // // // // // //         <div>
-// // // // // // // // // //             <h1 className="text-2xl font-bold text-gray-800">Manajemen Pengguna</h1>
-// // // // // // // // // //             <p className="text-sm text-gray-500">Total: {users.length} User Terdaftar</p>
+// // // // // // // // // //             <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Data Anggota & Pengguna</h1>
+// // // // // // // // // //             <p className="text-sm text-gray-500 mt-1">Kelola seluruh data anggota KSR, PMR, dan Admin dalam satu tempat.</p>
 // // // // // // // // // //         </div>
-// // // // // // // // // //         <button onClick={() => setShowAddModal(true)} className="bg-red-600 text-white px-5 py-2.5 rounded-xl hover:bg-red-700 font-bold shadow-lg flex items-center gap-2">
-// // // // // // // // // //           <Plus size={18}/> Tambah User
-// // // // // // // // // //         </button>
-// // // // // // // // // //       </div>
-
-// // // // // // // // // //       {/* FILTER BAR */}
-// // // // // // // // // //       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4">
-// // // // // // // // // //         <div className="relative flex-1">
-// // // // // // // // // //             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
-// // // // // // // // // //             <input 
-// // // // // // // // // //                 type="text" 
-// // // // // // // // // //                 placeholder="Cari nama, email, atau NIK..." 
-// // // // // // // // // //                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm"
-// // // // // // // // // //                 value={search}
-// // // // // // // // // //                 onChange={(e) => setSearch(e.target.value)}
-// // // // // // // // // //             />
-// // // // // // // // // //         </div>
-        
-// // // // // // // // // //         {/* [FIX 1] Menambahkan aria-label untuk Select Filter */}
-// // // // // // // // // //         <select 
-// // // // // // // // // //             className="p-2 border rounded-lg bg-gray-50 text-sm font-medium focus:ring-2 focus:ring-red-500 outline-none"
-// // // // // // // // // //             value={roleFilter}
-// // // // // // // // // //             onChange={(e) => setRoleFilter(e.target.value)}
-// // // // // // // // // //             aria-label="Filter berdasarkan Role"
-// // // // // // // // // //             title="Filter berdasarkan Role"
-// // // // // // // // // //         >
-// // // // // // // // // //             <option value="ALL">Semua Role</option>
-// // // // // // // // // //             <option value="STUDENT">Peserta (Student)</option>
-// // // // // // // // // //             <option value="FACILITATOR">Fasilitator</option>
-// // // // // // // // // //             <option value="ADMIN">Admin Wilayah</option>
-// // // // // // // // // //             <option value="SUPER_ADMIN">Super Admin</option>
-// // // // // // // // // //         </select>
-// // // // // // // // // //       </div>
-
-// // // // // // // // // //       {/* MODAL TAMBAH (Singkat) */}
-// // // // // // // // // //       {showAddModal && (
-// // // // // // // // // //         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-// // // // // // // // // //           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95">
-// // // // // // // // // //             <div className="p-6 border-b"><h2 className="font-bold text-lg">Tambah User Baru</h2></div>
-// // // // // // // // // //             <form onSubmit={handleCreateUser} className="p-6 space-y-4">
-// // // // // // // // // //                 <input className="w-full border p-3 rounded-lg" placeholder="Nama Lengkap" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})}/>
-// // // // // // // // // //                 <input className="w-full border p-3 rounded-lg" type="email" placeholder="Email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})}/>
-// // // // // // // // // //                 <input className="w-full border p-3 rounded-lg" type="password" placeholder="Password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})}/>
-                
-// // // // // // // // // //                 {/* [FIX 2] Menambahkan aria-label untuk Select di Modal */}
-// // // // // // // // // //                 <select 
-// // // // // // // // // //                     className="w-full border p-3 rounded-lg bg-white" 
-// // // // // // // // // //                     value={newUser.role} 
-// // // // // // // // // //                     onChange={e => setNewUser({...newUser, role: e.target.value})}
-// // // // // // // // // //                     aria-label="Pilih Role User Baru"
-// // // // // // // // // //                     title="Pilih Role User Baru"
+// // // // // // // // // //         <div className="flex gap-3">
+// // // // // // // // // //              {/* VIEW TOGGLE */}
+// // // // // // // // // //             <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
+// // // // // // // // // //                 <button 
+// // // // // // // // // //                     onClick={() => setViewMode('cluster')}
+// // // // // // // // // //                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'cluster' ? 'bg-red-50 text-red-700' : 'text-gray-500 hover:bg-gray-50'}`}
 // // // // // // // // // //                 >
-// // // // // // // // // //                     <option value="STUDENT">STUDENT</option>
-// // // // // // // // // //                     <option value="FACILITATOR">FACILITATOR</option>
-// // // // // // // // // //                     <option value="ADMIN">ADMIN</option>
-// // // // // // // // // //                 </select>
+// // // // // // // // // //                     <Layers size={14}/> Wilayah
+// // // // // // // // // //                 </button>
+// // // // // // // // // //                 <button 
+// // // // // // // // // //                     onClick={() => setViewMode('list')}
+// // // // // // // // // //                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'list' ? 'bg-red-50 text-red-700' : 'text-gray-500 hover:bg-gray-50'}`}
+// // // // // // // // // //                 >
+// // // // // // // // // //                     <LayoutList size={14}/> Tabel
+// // // // // // // // // //                 </button>
+// // // // // // // // // //             </div>
 
-// // // // // // // // // //                 {/* Region Selector Component Here (Jika Admin) */}
-// // // // // // // // // //                 <div className="flex justify-end gap-2 pt-4">
-// // // // // // // // // //                     <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-600 font-bold">Batal</button>
-// // // // // // // // // //                     <button type="submit" disabled={isSaving} className="px-6 py-2 bg-red-600 text-white rounded-lg font-bold">{isSaving ? 'Menyimpan...' : 'Simpan'}</button>
+// // // // // // // // // //             <button onClick={() => setShowAddModal(true)} className="bg-red-700 text-white px-5 py-2.5 rounded-xl hover:bg-red-800 font-bold shadow-lg shadow-red-200 flex items-center gap-2 transition-all active:scale-95">
+// // // // // // // // // //                 <Plus size={18}/> Tambah User
+// // // // // // // // // //             </button>
+// // // // // // // // // //         </div>
+// // // // // // // // // //       </div>
+
+// // // // // // // // // //       {/* SEARCH BAR */}
+// // // // // // // // // //       <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex items-center gap-3 sticky top-4 z-30">
+// // // // // // // // // //         <Search className="text-gray-400" size={20}/>
+// // // // // // // // // //         <input 
+// // // // // // // // // //             type="text" 
+// // // // // // // // // //             placeholder="Cari nama, email, NIA, atau Unit..." 
+// // // // // // // // // //             className="flex-1 outline-none text-sm font-medium"
+// // // // // // // // // //             value={search}
+// // // // // // // // // //             onChange={(e) => setSearch(e.target.value)}
+// // // // // // // // // //         />
+// // // // // // // // // //         {search && <button onClick={() => setSearch('')} className="text-xs font-bold text-gray-400 hover:text-red-600">RESET</button>}
+// // // // // // // // // //       </div>
+
+// // // // // // // // // //       {/* CONTENT AREA */}
+// // // // // // // // // //       {loading ? (
+// // // // // // // // // //           <div className="text-center py-20"><Loader2 className="animate-spin mx-auto text-red-600" size={32}/></div>
+// // // // // // // // // //       ) : (
+// // // // // // // // // //           <div>
+// // // // // // // // // //             {/* TAMPILAN CLUSTER (ACCORDION) */}
+// // // // // // // // // //             {viewMode === 'cluster' && (
+// // // // // // // // // //                 <div className="space-y-4">
+// // // // // // // // // //                     {Object.keys(clusteredData).length === 0 && (
+// // // // // // // // // //                         <div className="text-center py-10 text-gray-400 bg-white rounded-2xl border border-dashed">Tidak ada data ditemukan.</div>
+// // // // // // // // // //                     )}
+
+// // // // // // // // // //                     {Object.keys(clusteredData).sort().map(prov => {
+// // // // // // // // // //                         const totalUsersInProv = Object.values(clusteredData[prov]).flat().length;
+// // // // // // // // // //                         const isProvOpen = expandedProvinces[prov] || search !== ''; // Auto open jika sedang search
+
+// // // // // // // // // //                         return (
+// // // // // // // // // //                             <div key={prov} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm transition-all hover:shadow-md">
+// // // // // // // // // //                                 {/* HEADER PROVINSI */}
+// // // // // // // // // //                                 <div 
+// // // // // // // // // //                                     onClick={() => toggleProvince(prov)}
+// // // // // // // // // //                                     className="p-4 flex justify-between items-center cursor-pointer bg-gray-50/50 hover:bg-gray-50 transition-colors"
+// // // // // // // // // //                                 >
+// // // // // // // // // //                                     <div className="flex items-center gap-3">
+// // // // // // // // // //                                         <div className={`p-2 rounded-lg transition-transform duration-300 ${isProvOpen ? 'rotate-90 bg-red-100 text-red-600' : 'bg-white text-gray-400 border border-gray-200'}`}>
+// // // // // // // // // //                                             <ChevronRight size={18}/>
+// // // // // // // // // //                                         </div>
+// // // // // // // // // //                                         <div>
+// // // // // // // // // //                                             <h3 className="font-bold text-gray-800 text-lg">{prov}</h3>
+// // // // // // // // // //                                             <p className="text-xs text-gray-500 flex items-center gap-1">
+// // // // // // // // // //                                                 <MapPin size={10}/> {Object.keys(clusteredData[prov]).length} Kabupaten/Kota
+// // // // // // // // // //                                             </p>
+// // // // // // // // // //                                         </div>
+// // // // // // // // // //                                     </div>
+// // // // // // // // // //                                     <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+// // // // // // // // // //                                         {totalUsersInProv} Anggota
+// // // // // // // // // //                                     </span>
+// // // // // // // // // //                                 </div>
+
+// // // // // // // // // //                                 {/* LIST KABUPATEN (ISI PROVINSI) */}
+// // // // // // // // // //                                 {isProvOpen && (
+// // // // // // // // // //                                     <div className="p-4 bg-white border-t border-gray-100 space-y-3 animate-in slide-in-from-top-2">
+// // // // // // // // // //                                         {Object.keys(clusteredData[prov]).sort().map(kab => {
+// // // // // // // // // //                                             const kabUsers = clusteredData[prov][kab];
+// // // // // // // // // //                                             const kabId = `${prov}-${kab}`;
+// // // // // // // // // //                                             const isKabOpen = expandedRegencies[kabId] || search !== '';
+
+// // // // // // // // // //                                             return (
+// // // // // // // // // //                                                 <div key={kabId} className="border border-gray-200 rounded-xl overflow-hidden">
+// // // // // // // // // //                                                     <div 
+// // // // // // // // // //                                                         onClick={() => toggleRegency(kabId)}
+// // // // // // // // // //                                                         className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
+// // // // // // // // // //                                                     >
+// // // // // // // // // //                                                         <div className="flex items-center gap-2">
+// // // // // // // // // //                                                             <ChevronDown size={14} className={`transition-transform ${isKabOpen ? 'rotate-180 text-blue-600' : 'text-gray-400'}`}/>
+// // // // // // // // // //                                                             <span className="font-bold text-sm text-gray-700">{kab}</span>
+// // // // // // // // // //                                                         </div>
+// // // // // // // // // //                                                         <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+// // // // // // // // // //                                                             {kabUsers.length} User
+// // // // // // // // // //                                                         </span>
+// // // // // // // // // //                                                     </div>
+
+// // // // // // // // // //                                                     {/* TABEL USER (ISI KABUPATEN) */}
+// // // // // // // // // //                                                     {isKabOpen && (
+// // // // // // // // // //                                                         <div className="border-t border-gray-100 p-2 bg-gray-50/30">
+// // // // // // // // // //                                                             <UserTable data={kabUsers} />
+// // // // // // // // // //                                                         </div>
+// // // // // // // // // //                                                     )}
+// // // // // // // // // //                                                 </div>
+// // // // // // // // // //                                             );
+// // // // // // // // // //                                         })}
+// // // // // // // // // //                                     </div>
+// // // // // // // // // //                                 )}
+// // // // // // // // // //                             </div>
+// // // // // // // // // //                         );
+// // // // // // // // // //                     })}
+// // // // // // // // // //                 </div>
+// // // // // // // // // //             )}
+
+// // // // // // // // // //             {/* TAMPILAN LIST (FLAT TABLE - FALLBACK) */}
+// // // // // // // // // //             {viewMode === 'list' && (
+// // // // // // // // // //                  <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+// // // // // // // // // //                     <UserTable data={users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()))} />
+// // // // // // // // // //                  </div>
+// // // // // // // // // //             )}
+// // // // // // // // // //           </div>
+// // // // // // // // // //       )}
+
+// // // // // // // // // //       {/* MODAL TAMBAH USER (SAMA SEPERTI SEBELUMNYA) */}
+// // // // // // // // // //       {showAddModal && (
+// // // // // // // // // //         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+// // // // // // // // // //           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 overflow-hidden">
+// // // // // // // // // //             <div className="p-6 border-b bg-gray-50">
+// // // // // // // // // //                 <h2 className="font-bold text-lg text-gray-800">Tambah User Baru</h2>
+// // // // // // // // // //                 <p className="text-xs text-gray-500">Buat akun untuk Admin, Fasilitator, atau Peserta.</p>
+// // // // // // // // // //             </div>
+// // // // // // // // // //             <form onSubmit={handleCreateUser} className="p-6 space-y-4">
+// // // // // // // // // //                 <div>
+// // // // // // // // // //                     <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Nama</label>
+// // // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" placeholder="Nama Lengkap" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})}/>
+// // // // // // // // // //                 </div>
+// // // // // // // // // //                 <div>
+// // // // // // // // // //                     <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Email</label>
+// // // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" type="email" placeholder="Email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})}/>
+// // // // // // // // // //                 </div>
+// // // // // // // // // //                 <div>
+// // // // // // // // // //                     <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Password</label>
+// // // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" type="password" placeholder="Password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})}/>
+// // // // // // // // // //                 </div>
+// // // // // // // // // //                 <div>
+// // // // // // // // // //                     <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Role</label>
+// // // // // // // // // //                     <select 
+// // // // // // // // // //                         className="w-full border p-3 rounded-xl bg-white focus:ring-2 focus:ring-red-500 outline-none" 
+// // // // // // // // // //                         value={newUser.role} 
+// // // // // // // // // //                         onChange={e => setNewUser({...newUser, role: e.target.value})}
+// // // // // // // // // //                         aria-label="Pilih Role"
+// // // // // // // // // //                     >
+// // // // // // // // // //                         <option value="STUDENT">STUDENT (Peserta)</option>
+// // // // // // // // // //                         <option value="FACILITATOR">FACILITATOR (Pengajar)</option>
+// // // // // // // // // //                         <option value="ADMIN">ADMIN (Wilayah)</option>
+// // // // // // // // // //                     </select>
+// // // // // // // // // //                 </div>
+                
+// // // // // // // // // //                 {newUser.role === 'ADMIN' && (
+// // // // // // // // // //                     <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
+// // // // // // // // // //                         <p className="text-xs font-bold text-orange-800 mb-2 flex items-center gap-1"><MapPin size={12}/> Konfigurasi Wilayah</p>
+// // // // // // // // // //                         <RegionSelector value={regionConfig} onChange={setRegionConfig} />
+// // // // // // // // // //                     </div>
+// // // // // // // // // //                 )}
+
+// // // // // // // // // //                 <div className="flex justify-end gap-2 pt-4 border-t">
+// // // // // // // // // //                     <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-100 rounded-xl text-sm">Batal</button>
+// // // // // // // // // //                     <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-red-700 text-white rounded-xl font-bold hover:bg-red-800 shadow-lg text-sm flex items-center gap-2">
+// // // // // // // // // //                         {isSaving ? <Loader2 className="animate-spin" size={16}/> : <Plus size={16}/>} Simpan User
+// // // // // // // // // //                     </button>
 // // // // // // // // // //                 </div>
 // // // // // // // // // //             </form>
 // // // // // // // // // //           </div>
 // // // // // // // // // //         </div>
 // // // // // // // // // //       )}
-
-// // // // // // // // // //       {/* TABEL USER */}
-// // // // // // // // // //       {loading ? <div className="text-center py-20"><Loader2 className="animate-spin mx-auto"/></div> : (
-// // // // // // // // // //         <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-// // // // // // // // // //           <table className="w-full text-left text-sm">
-// // // // // // // // // //             <thead className="bg-gray-50 text-gray-500 font-bold text-xs uppercase">
-// // // // // // // // // //                 <tr>
-// // // // // // // // // //                     <th className="px-6 py-4">User</th>
-// // // // // // // // // //                     <th className="px-6 py-4">Role</th>
-// // // // // // // // // //                     <th className="px-6 py-4">Wilayah</th>
-// // // // // // // // // //                     <th className="px-6 py-4 text-right">Aksi</th>
-// // // // // // // // // //                 </tr>
-// // // // // // // // // //             </thead>
-// // // // // // // // // //             <tbody className="divide-y divide-gray-100">
-// // // // // // // // // //                 {filteredUsers.map((user) => (
-// // // // // // // // // //                     <tr key={user._id} className="hover:bg-gray-50 transition">
-// // // // // // // // // //                         <td className="px-6 py-4">
-// // // // // // // // // //                             <div className="flex items-center gap-3">
-// // // // // // // // // //                                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-// // // // // // // // // //                                     <img src={getImageUrl(user.avatarUrl) || `https://ui-avatars.com/api/?name=${user.name}`} className="w-full h-full object-cover" alt=""/>
-// // // // // // // // // //                                 </div>
-// // // // // // // // // //                                 <div>
-// // // // // // // // // //                                     <p className="font-bold text-gray-900">{user.name}</p>
-// // // // // // // // // //                                     <p className="text-xs text-gray-500">{user.email}</p>
-// // // // // // // // // //                                 </div>
-// // // // // // // // // //                             </div>
-// // // // // // // // // //                         </td>
-// // // // // // // // // //                         <td className="px-6 py-4">
-// // // // // // // // // //                             <span className={`px-2 py-1 rounded text-xs font-bold border ${getRoleBadge(user.role)}`}>{user.role}</span>
-// // // // // // // // // //                         </td>
-// // // // // // // // // //                         <td className="px-6 py-4">
-// // // // // // // // // //                             {user.regionScope !== 'national' ? (
-// // // // // // // // // //                                 <div className="text-xs text-gray-600 flex items-center gap-1">
-// // // // // // // // // //                                     <Shield size={12}/> 
-// // // // // // // // // //                                     {user.regionScope === 'province' ? 'Provinsi' : 'Kabupaten'}
-// // // // // // // // // //                                 </div>
-// // // // // // // // // //                             ) : <span className="text-gray-300 text-xs">-</span>}
-// // // // // // // // // //                         </td>
-// // // // // // // // // //                         <td className="px-6 py-4 text-right">
-// // // // // // // // // //                             <div className="flex items-center justify-end gap-2">
-// // // // // // // // // //                                 <button 
-// // // // // // // // // //                                     onClick={() => handleResetPassword(user._id, user.name)}
-// // // // // // // // // //                                     className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg tooltip-trigger" 
-// // // // // // // // // //                                     title="Reset Password ke 123456"
-// // // // // // // // // //                                     aria-label={`Reset password untuk ${user.name}`}
-// // // // // // // // // //                                 >
-// // // // // // // // // //                                     <KeyRound size={16}/>
-// // // // // // // // // //                                 </button>
-// // // // // // // // // //                                 <Link href={`/admin/users/${user._id}`} className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg" title="Detail" aria-label={`Detail user ${user.name}`}>
-// // // // // // // // // //                                     <Eye size={16}/>
-// // // // // // // // // //                                 </Link>
-// // // // // // // // // //                                 <button onClick={() => handleDelete(user._id)} className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg" title="Hapus" aria-label={`Hapus user ${user.name}`}>
-// // // // // // // // // //                                     <Trash2 size={16}/>
-// // // // // // // // // //                                 </button>
-// // // // // // // // // //                             </div>
-// // // // // // // // // //                         </td>
-// // // // // // // // // //                     </tr>
-// // // // // // // // // //                 ))}
-// // // // // // // // // //             </tbody>
-// // // // // // // // // //           </table>
-// // // // // // // // // //           {filteredUsers.length === 0 && <div className="p-10 text-center text-gray-400">Tidak ada user ditemukan.</div>}
-// // // // // // // // // //         </div>
-// // // // // // // // // //       )}
 // // // // // // // // // //     </div>
 // // // // // // // // // //   );
 // // // // // // // // // // }
+
+
 
 // // // // // // // // // 'use client';
 
@@ -1064,6 +1431,7 @@
 // // // // // // // // //     ChevronDown, ChevronRight, LayoutList, Layers 
 // // // // // // // // // } from 'lucide-react';
 // // // // // // // // // import RegionSelector from '@/components/admin/RegionSelector'; 
+// // // // // // // // // import { usePermission } from '@/hooks/usePermission';
 
 // // // // // // // // // interface RegionConfig {
 // // // // // // // // //   scope: 'national' | 'province' | 'regency';
@@ -1072,18 +1440,18 @@
 // // // // // // // // // }
 
 // // // // // // // // // export default function AdminUsersPage() {
+// // // // // // // // //   const { hasPermission } = usePermission();
+// // // // // // // // //   const canManageUsers = hasPermission('manage_users');
+
 // // // // // // // // //   const [users, setUsers] = useState<any[]>([]);
 // // // // // // // // //   const [loading, setLoading] = useState(true);
 // // // // // // // // //   const [search, setSearch] = useState('');
   
-// // // // // // // // //   // View Mode: 'list' = Tabel Biasa (Legacy), 'cluster' = Kelompok Wilayah (New)
 // // // // // // // // //   const [viewMode, setViewMode] = useState<'list' | 'cluster'>('cluster');
   
-// // // // // // // // //   // State untuk Accordion UI
 // // // // // // // // //   const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
 // // // // // // // // //   const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
 
-// // // // // // // // //   // Modal & Form State (Logic Lama Tetap Utuh)
 // // // // // // // // //   const [showAddModal, setShowAddModal] = useState(false);
 // // // // // // // // //   const [isSaving, setIsSaving] = useState(false);
 // // // // // // // // //   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
@@ -1103,8 +1471,6 @@
 // // // // // // // // //     }
 // // // // // // // // //   };
 
-// // // // // // // // //   // --- LOGIC GROUPING (KLASTERISASI - UI ONLY) ---
-// // // // // // // // //   // Ini hanya logika transform data untuk tampilan, tidak mengubah data asli
 // // // // // // // // //   const getClusteredUsers = () => {
 // // // // // // // // //     const groups: Record<string, Record<string, any[]>> = {};
 
@@ -1115,11 +1481,9 @@
 // // // // // // // // //     );
 
 // // // // // // // // //     filtered.forEach(user => {
-// // // // // // // // //         // Fallback Logic agar tidak 'undefined'
 // // // // // // // // //         let prov = user.memberData?.province || user.managedProvinces?.[0] || 'LAINNYA';
 // // // // // // // // //         let kab = user.memberData?.regency || user.managedRegencies?.[0] || 'UMUM / PUSAT';
 
-// // // // // // // // //         // Normalisasi String
 // // // // // // // // //         prov = (prov || 'LAINNYA').toUpperCase().trim();
 // // // // // // // // //         kab = (kab || 'UMUM').toUpperCase().trim();
 
@@ -1134,7 +1498,6 @@
 
 // // // // // // // // //   const clusteredData = getClusteredUsers();
 
-// // // // // // // // //   // --- HANDLERS (LOGIKA LAMA - TETAP UTUH) ---
 // // // // // // // // //   const handleCreateUser = async (e: React.FormEvent) => {
 // // // // // // // // //     e.preventDefault();
 // // // // // // // // //     setIsSaving(true);
@@ -1144,6 +1507,7 @@
 // // // // // // // // //         payload.regionScope = regionConfig.scope;
 // // // // // // // // //         payload.managedProvinces = regionConfig.provinces;
 // // // // // // // // //         payload.managedRegencies = regionConfig.regencies;
+// // // // // // // // //         payload.permissions = []; 
 // // // // // // // // //       }
 // // // // // // // // //       await api('/api/admin/users', { method: 'POST', body: payload });
 // // // // // // // // //       alert('User berhasil dibuat!');
@@ -1172,7 +1536,6 @@
 // // // // // // // // //       }
 // // // // // // // // //   };
 
-// // // // // // // // //   // --- UI ACTIONS ---
 // // // // // // // // //   const toggleProvince = (prov: string) => {
 // // // // // // // // //       setExpandedProvinces(prev => ({...prev, [prov]: !prev[prov]}));
 // // // // // // // // //   };
@@ -1181,7 +1544,6 @@
 // // // // // // // // //       setExpandedRegencies(prev => ({...prev, [kabId]: !prev[kabId]}));
 // // // // // // // // //   };
 
-// // // // // // // // //   // --- SUB-COMPONENT: TABEL USER (REUSABLE) ---
 // // // // // // // // //   const UserTable = ({ data }: { data: any[] }) => (
 // // // // // // // // //     <table className="w-full text-left text-sm bg-white rounded-lg overflow-hidden">
 // // // // // // // // //         <thead className="bg-gray-50 text-gray-500 font-bold text-[10px] uppercase border-b border-gray-100">
@@ -1217,12 +1579,16 @@
 // // // // // // // // //                         </span>
 // // // // // // // // //                     </td>
 // // // // // // // // //                     <td className="px-4 py-3 text-xs text-gray-600">
-// // // // // // // // //                         {user.memberData?.unit || '-'}
+// // // // // // // // //                         {user.memberData?.unit || user.managedProvinces?.[0] || '-'}
 // // // // // // // // //                     </td>
 // // // // // // // // //                     <td className="px-4 py-3 text-right flex justify-end gap-1">
-// // // // // // // // //                          <button onClick={() => handleResetPassword(user._id, user.name)} className="p-1.5 text-orange-600 bg-orange-50 rounded hover:bg-orange-100 transition" title="Reset Password" aria-label={`Reset pass ${user.name}`}><KeyRound size={14}/></button>
-// // // // // // // // //                          <Link href={`/admin/users/${user._id}`} className="p-1.5 text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition" title="Detail" aria-label={`Detail ${user.name}`}><Eye size={14}/></Link>
-// // // // // // // // //                          <button onClick={() => handleDelete(user._id)} className="p-1.5 text-red-600 bg-red-50 rounded hover:bg-red-100 transition" title="Hapus" aria-label={`Hapus ${user.name}`}><Trash2 size={14}/></button>
+// // // // // // // // //                          {canManageUsers && (
+// // // // // // // // //                              <>
+// // // // // // // // //                                 <button onClick={() => handleResetPassword(user._id, user.name)} className="p-1.5 text-orange-600 bg-orange-50 rounded hover:bg-orange-100 transition" title="Reset Password" aria-label="Reset Password"><KeyRound size={14}/></button>
+// // // // // // // // //                                 <button onClick={() => handleDelete(user._id)} className="p-1.5 text-red-600 bg-red-50 rounded hover:bg-red-100 transition" title="Hapus" aria-label="Hapus User"><Trash2 size={14}/></button>
+// // // // // // // // //                              </>
+// // // // // // // // //                          )}
+// // // // // // // // //                          <Link href={`/admin/users/${user._id}`} className="p-1.5 text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition" title="Detail" aria-label="Lihat Detail"><Eye size={14}/></Link>
 // // // // // // // // //                     </td>
 // // // // // // // // //                 </tr>
 // // // // // // // // //             ))}
@@ -1233,36 +1599,29 @@
 // // // // // // // // //   return (
 // // // // // // // // //     <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/30">
       
-// // // // // // // // //       {/* HEADER UTAMA */}
 // // // // // // // // //       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
 // // // // // // // // //         <div>
 // // // // // // // // //             <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Data Anggota & Pengguna</h1>
 // // // // // // // // //             <p className="text-sm text-gray-500 mt-1">Kelola seluruh data anggota KSR, PMR, dan Admin dalam satu tempat.</p>
 // // // // // // // // //         </div>
 // // // // // // // // //         <div className="flex gap-3">
-// // // // // // // // //              {/* VIEW TOGGLE */}
 // // // // // // // // //             <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
-// // // // // // // // //                 <button 
-// // // // // // // // //                     onClick={() => setViewMode('cluster')}
-// // // // // // // // //                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'cluster' ? 'bg-red-50 text-red-700' : 'text-gray-500 hover:bg-gray-50'}`}
-// // // // // // // // //                 >
+// // // // // // // // //                 <button onClick={() => setViewMode('cluster')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'cluster' ? 'bg-red-50 text-red-700' : 'text-gray-500 hover:bg-gray-50'}`}>
 // // // // // // // // //                     <Layers size={14}/> Wilayah
 // // // // // // // // //                 </button>
-// // // // // // // // //                 <button 
-// // // // // // // // //                     onClick={() => setViewMode('list')}
-// // // // // // // // //                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'list' ? 'bg-red-50 text-red-700' : 'text-gray-500 hover:bg-gray-50'}`}
-// // // // // // // // //                 >
+// // // // // // // // //                 <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'list' ? 'bg-red-50 text-red-700' : 'text-gray-500 hover:bg-gray-50'}`}>
 // // // // // // // // //                     <LayoutList size={14}/> Tabel
 // // // // // // // // //                 </button>
 // // // // // // // // //             </div>
 
-// // // // // // // // //             <button onClick={() => setShowAddModal(true)} className="bg-red-700 text-white px-5 py-2.5 rounded-xl hover:bg-red-800 font-bold shadow-lg shadow-red-200 flex items-center gap-2 transition-all active:scale-95">
-// // // // // // // // //                 <Plus size={18}/> Tambah User
-// // // // // // // // //             </button>
+// // // // // // // // //             {canManageUsers && (
+// // // // // // // // //                 <button onClick={() => setShowAddModal(true)} className="bg-red-700 text-white px-5 py-2.5 rounded-xl hover:bg-red-800 font-bold shadow-lg shadow-red-200 flex items-center gap-2 transition-all active:scale-95">
+// // // // // // // // //                     <Plus size={18}/> Tambah User
+// // // // // // // // //                 </button>
+// // // // // // // // //             )}
 // // // // // // // // //         </div>
 // // // // // // // // //       </div>
 
-// // // // // // // // //       {/* SEARCH BAR */}
 // // // // // // // // //       <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex items-center gap-3 sticky top-4 z-30">
 // // // // // // // // //         <Search className="text-gray-400" size={20}/>
 // // // // // // // // //         <input 
@@ -1275,77 +1634,43 @@
 // // // // // // // // //         {search && <button onClick={() => setSearch('')} className="text-xs font-bold text-gray-400 hover:text-red-600">RESET</button>}
 // // // // // // // // //       </div>
 
-// // // // // // // // //       {/* CONTENT AREA */}
 // // // // // // // // //       {loading ? (
 // // // // // // // // //           <div className="text-center py-20"><Loader2 className="animate-spin mx-auto text-red-600" size={32}/></div>
 // // // // // // // // //       ) : (
 // // // // // // // // //           <div>
-// // // // // // // // //             {/* TAMPILAN CLUSTER (ACCORDION) */}
 // // // // // // // // //             {viewMode === 'cluster' && (
 // // // // // // // // //                 <div className="space-y-4">
 // // // // // // // // //                     {Object.keys(clusteredData).length === 0 && (
 // // // // // // // // //                         <div className="text-center py-10 text-gray-400 bg-white rounded-2xl border border-dashed">Tidak ada data ditemukan.</div>
 // // // // // // // // //                     )}
-
 // // // // // // // // //                     {Object.keys(clusteredData).sort().map(prov => {
 // // // // // // // // //                         const totalUsersInProv = Object.values(clusteredData[prov]).flat().length;
-// // // // // // // // //                         const isProvOpen = expandedProvinces[prov] || search !== ''; // Auto open jika sedang search
-
+// // // // // // // // //                         const isProvOpen = expandedProvinces[prov] || search !== '';
 // // // // // // // // //                         return (
 // // // // // // // // //                             <div key={prov} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm transition-all hover:shadow-md">
-// // // // // // // // //                                 {/* HEADER PROVINSI */}
-// // // // // // // // //                                 <div 
-// // // // // // // // //                                     onClick={() => toggleProvince(prov)}
-// // // // // // // // //                                     className="p-4 flex justify-between items-center cursor-pointer bg-gray-50/50 hover:bg-gray-50 transition-colors"
-// // // // // // // // //                                 >
+// // // // // // // // //                                 <div onClick={() => toggleProvince(prov)} className="p-4 flex justify-between items-center cursor-pointer bg-gray-50/50 hover:bg-gray-50 transition-colors">
 // // // // // // // // //                                     <div className="flex items-center gap-3">
-// // // // // // // // //                                         <div className={`p-2 rounded-lg transition-transform duration-300 ${isProvOpen ? 'rotate-90 bg-red-100 text-red-600' : 'bg-white text-gray-400 border border-gray-200'}`}>
-// // // // // // // // //                                             <ChevronRight size={18}/>
-// // // // // // // // //                                         </div>
-// // // // // // // // //                                         <div>
-// // // // // // // // //                                             <h3 className="font-bold text-gray-800 text-lg">{prov}</h3>
-// // // // // // // // //                                             <p className="text-xs text-gray-500 flex items-center gap-1">
-// // // // // // // // //                                                 <MapPin size={10}/> {Object.keys(clusteredData[prov]).length} Kabupaten/Kota
-// // // // // // // // //                                             </p>
-// // // // // // // // //                                         </div>
+// // // // // // // // //                                         <div className={`p-2 rounded-lg transition-transform duration-300 ${isProvOpen ? 'rotate-90 bg-red-100 text-red-600' : 'bg-white text-gray-400 border border-gray-200'}`}><ChevronRight size={18}/></div>
+// // // // // // // // //                                         <div><h3 className="font-bold text-gray-800 text-lg">{prov}</h3><p className="text-xs text-gray-500 flex items-center gap-1"><MapPin size={10}/> {Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p></div>
 // // // // // // // // //                                     </div>
-// // // // // // // // //                                     <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
-// // // // // // // // //                                         {totalUsersInProv} Anggota
-// // // // // // // // //                                     </span>
+// // // // // // // // //                                     <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">{totalUsersInProv} Anggota</span>
 // // // // // // // // //                                 </div>
-
-// // // // // // // // //                                 {/* LIST KABUPATEN (ISI PROVINSI) */}
 // // // // // // // // //                                 {isProvOpen && (
 // // // // // // // // //                                     <div className="p-4 bg-white border-t border-gray-100 space-y-3 animate-in slide-in-from-top-2">
-// // // // // // // // //                                         {Object.keys(clusteredData[prov]).sort().map(kab => {
-// // // // // // // // //                                             const kabUsers = clusteredData[prov][kab];
-// // // // // // // // //                                             const kabId = `${prov}-${kab}`;
-// // // // // // // // //                                             const isKabOpen = expandedRegencies[kabId] || search !== '';
-
-// // // // // // // // //                                             return (
-// // // // // // // // //                                                 <div key={kabId} className="border border-gray-200 rounded-xl overflow-hidden">
-// // // // // // // // //                                                     <div 
-// // // // // // // // //                                                         onClick={() => toggleRegency(kabId)}
-// // // // // // // // //                                                         className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
-// // // // // // // // //                                                     >
-// // // // // // // // //                                                         <div className="flex items-center gap-2">
-// // // // // // // // //                                                             <ChevronDown size={14} className={`transition-transform ${isKabOpen ? 'rotate-180 text-blue-600' : 'text-gray-400'}`}/>
-// // // // // // // // //                                                             <span className="font-bold text-sm text-gray-700">{kab}</span>
+// // // // // // // // //                                             {Object.keys(clusteredData[prov]).sort().map(kab => {
+// // // // // // // // //                                                 const kabUsers = clusteredData[prov][kab];
+// // // // // // // // //                                                 const kabId = `${prov}-${kab}`;
+// // // // // // // // //                                                 const isKabOpen = expandedRegencies[kabId] || search !== '';
+// // // // // // // // //                                                 return (
+// // // // // // // // //                                                     <div key={kabId} className="border border-gray-200 rounded-xl overflow-hidden">
+// // // // // // // // //                                                         <div onClick={() => toggleRegency(kabId)} className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors">
+// // // // // // // // //                                                             <div className="flex items-center gap-2"><ChevronDown size={14} className={`transition-transform ${isKabOpen ? 'rotate-180 text-blue-600' : 'text-gray-400'}`}/><span className="font-bold text-sm text-gray-700">{kab}</span></div>
+// // // // // // // // //                                                             <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{kabUsers.length} User</span>
 // // // // // // // // //                                                         </div>
-// // // // // // // // //                                                         <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-// // // // // // // // //                                                             {kabUsers.length} User
-// // // // // // // // //                                                         </span>
+// // // // // // // // //                                                         {isKabOpen && <div className="border-t border-gray-100 p-2 bg-gray-50/30"><UserTable data={kabUsers} /></div>}
 // // // // // // // // //                                                     </div>
-
-// // // // // // // // //                                                     {/* TABEL USER (ISI KABUPATEN) */}
-// // // // // // // // //                                                     {isKabOpen && (
-// // // // // // // // //                                                         <div className="border-t border-gray-100 p-2 bg-gray-50/30">
-// // // // // // // // //                                                             <UserTable data={kabUsers} />
-// // // // // // // // //                                                         </div>
-// // // // // // // // //                                                     )}
-// // // // // // // // //                                                 </div>
-// // // // // // // // //                                             );
-// // // // // // // // //                                         })}
+// // // // // // // // //                                                 );
+// // // // // // // // //                                             })}
 // // // // // // // // //                                     </div>
 // // // // // // // // //                                 )}
 // // // // // // // // //                             </div>
@@ -1354,7 +1679,6 @@
 // // // // // // // // //                 </div>
 // // // // // // // // //             )}
 
-// // // // // // // // //             {/* TAMPILAN LIST (FLAT TABLE - FALLBACK) */}
 // // // // // // // // //             {viewMode === 'list' && (
 // // // // // // // // //                  <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
 // // // // // // // // //                     <UserTable data={users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()))} />
@@ -1363,7 +1687,6 @@
 // // // // // // // // //           </div>
 // // // // // // // // //       )}
 
-// // // // // // // // //       {/* MODAL TAMBAH USER (SAMA SEPERTI SEBELUMNYA) */}
 // // // // // // // // //       {showAddModal && (
 // // // // // // // // //         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
 // // // // // // // // //           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 overflow-hidden">
@@ -1372,39 +1695,30 @@
 // // // // // // // // //                 <p className="text-xs text-gray-500">Buat akun untuk Admin, Fasilitator, atau Peserta.</p>
 // // // // // // // // //             </div>
 // // // // // // // // //             <form onSubmit={handleCreateUser} className="p-6 space-y-4">
-// // // // // // // // //                 <div>
-// // // // // // // // //                     <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Nama</label>
-// // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" placeholder="Nama Lengkap" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})}/>
-// // // // // // // // //                 </div>
-// // // // // // // // //                 <div>
-// // // // // // // // //                     <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Email</label>
-// // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" type="email" placeholder="Email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})}/>
-// // // // // // // // //                 </div>
-// // // // // // // // //                 <div>
-// // // // // // // // //                     <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Password</label>
-// // // // // // // // //                     <input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" type="password" placeholder="Password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})}/>
-// // // // // // // // //                 </div>
+// // // // // // // // //                 <div><label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Nama</label><input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" placeholder="Nama Lengkap" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})}/></div>
+// // // // // // // // //                 <div><label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Email</label><input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" type="email" placeholder="Email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})}/></div>
+// // // // // // // // //                 <div><label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Password</label><input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" type="password" placeholder="Password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})}/></div>
 // // // // // // // // //                 <div>
 // // // // // // // // //                     <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Role</label>
+// // // // // // // // //                     {/* [FIX] Accessibility Axe Error: Select Name */}
 // // // // // // // // //                     <select 
 // // // // // // // // //                         className="w-full border p-3 rounded-xl bg-white focus:ring-2 focus:ring-red-500 outline-none" 
 // // // // // // // // //                         value={newUser.role} 
 // // // // // // // // //                         onChange={e => setNewUser({...newUser, role: e.target.value})}
-// // // // // // // // //                         aria-label="Pilih Role"
+// // // // // // // // //                         aria-label="Pilih Role Pengguna"
+// // // // // // // // //                         title="Pilih Role Pengguna"
 // // // // // // // // //                     >
 // // // // // // // // //                         <option value="STUDENT">STUDENT (Peserta)</option>
 // // // // // // // // //                         <option value="FACILITATOR">FACILITATOR (Pengajar)</option>
 // // // // // // // // //                         <option value="ADMIN">ADMIN (Wilayah)</option>
 // // // // // // // // //                     </select>
 // // // // // // // // //                 </div>
-                
 // // // // // // // // //                 {newUser.role === 'ADMIN' && (
 // // // // // // // // //                     <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
 // // // // // // // // //                         <p className="text-xs font-bold text-orange-800 mb-2 flex items-center gap-1"><MapPin size={12}/> Konfigurasi Wilayah</p>
 // // // // // // // // //                         <RegionSelector value={regionConfig} onChange={setRegionConfig} />
 // // // // // // // // //                     </div>
 // // // // // // // // //                 )}
-
 // // // // // // // // //                 <div className="flex justify-end gap-2 pt-4 border-t">
 // // // // // // // // //                     <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-100 rounded-xl text-sm">Batal</button>
 // // // // // // // // //                     <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-red-700 text-white rounded-xl font-bold hover:bg-red-800 shadow-lg text-sm flex items-center gap-2">
@@ -1421,320 +1735,406 @@
 
 
 
+
 // // // // // // // // 'use client';
 
 // // // // // // // // import { useEffect, useState } from 'react';
 // // // // // // // // import { api, getImageUrl } from '@/lib/api';
 // // // // // // // // import Link from 'next/link';
 // // // // // // // // import { 
-// // // // // // // //     Loader2, Plus, Trash2, Search, MapPin, KeyRound, Shield, Eye, 
-// // // // // // // //     ChevronDown, ChevronRight, LayoutList, Layers 
+// // // // // // // //     Loader2, Plus, Trash2, Search, MapPin, KeyRound, Eye, 
+// // // // // // // //     ChevronDown, ChevronRight, LayoutList, Layers, Upload, FileSpreadsheet, X, Settings
 // // // // // // // // } from 'lucide-react';
 // // // // // // // // import RegionSelector from '@/components/admin/RegionSelector'; 
 // // // // // // // // import { usePermission } from '@/hooks/usePermission';
+// // // // // // // // import UserProfileForm from '@/app/admin/members/UserProfileForm';
 
 // // // // // // // // interface RegionConfig {
-// // // // // // // //   scope: 'national' | 'province' | 'regency';
-// // // // // // // //   provinces: string[];
-// // // // // // // //   regencies: string[];
+// // // // // // // //     scope: 'national' | 'province' | 'regency';
+// // // // // // // //     provinces: string[];
+// // // // // // // //     regencies: string[];
 // // // // // // // // }
 
 // // // // // // // // export default function AdminUsersPage() {
-// // // // // // // //   const { hasPermission } = usePermission();
-// // // // // // // //   const canManageUsers = hasPermission('manage_users');
+// // // // // // // //     const { hasPermission } = usePermission();
+// // // // // // // //     const canManageUsers = hasPermission('manage_users');
 
-// // // // // // // //   const [users, setUsers] = useState<any[]>([]);
-// // // // // // // //   const [loading, setLoading] = useState(true);
-// // // // // // // //   const [search, setSearch] = useState('');
-  
-// // // // // // // //   const [viewMode, setViewMode] = useState<'list' | 'cluster'>('cluster');
-  
-// // // // // // // //   const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
-// // // // // // // //   const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
+// // // // // // // //     const [users, setUsers] = useState<any[]>([]);
+// // // // // // // //     const [loading, setLoading] = useState(true);
+// // // // // // // //     const [search, setSearch] = useState('');
+    
+// // // // // // // //     const [viewMode, setViewMode] = useState<'list' | 'cluster'>('list');
+    
+// // // // // // // //     const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
+// // // // // // // //     const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
 
-// // // // // // // //   const [showAddModal, setShowAddModal] = useState(false);
-// // // // // // // //   const [isSaving, setIsSaving] = useState(false);
-// // // // // // // //   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
-// // // // // // // //   const [regionConfig, setRegionConfig] = useState<RegionConfig>({ scope: 'national', provinces: [], regencies: [] });
+// // // // // // // //     const [showAddModal, setShowAddModal] = useState(false);
+    
+// // // // // // // //     // State untuk Modal Edit/View Profil
+// // // // // // // //     const [selectedUser, setSelectedUser] = useState<any>(null); 
+// // // // // // // //     const [showProfileModal, setShowProfileModal] = useState(false);
 
-// // // // // // // //   useEffect(() => { loadUsers(); }, []);
+// // // // // // // //     const [isSaving, setIsSaving] = useState(false);
+// // // // // // // //     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
+// // // // // // // //     const [regionConfig, setRegionConfig] = useState<RegionConfig>({ scope: 'national', provinces: [], regencies: [] });
 
-// // // // // // // //   const loadUsers = async () => {
-// // // // // // // //     try {
-// // // // // // // //       setLoading(true);
-// // // // // // // //       const res = await api('/api/admin/users');
-// // // // // // // //       setUsers(res.users || []);
-// // // // // // // //     } catch (err: any) {
-// // // // // // // //       console.error(err);
-// // // // // // // //     } finally {
-// // // // // // // //       setLoading(false);
-// // // // // // // //     }
-// // // // // // // //   };
+// // // // // // // //     useEffect(() => { loadUsers(); }, []);
 
-// // // // // // // //   const getClusteredUsers = () => {
-// // // // // // // //     const groups: Record<string, Record<string, any[]>> = {};
+// // // // // // // //     const loadUsers = async () => {
+// // // // // // // //         try {
+// // // // // // // //             setLoading(true);
+// // // // // // // //             const res = await api('/api/admin/users');
+// // // // // // // //             setUsers(res.users || []);
+// // // // // // // //         } catch (err: any) { console.error(err); } finally { setLoading(false); }
+// // // // // // // //     };
 
-// // // // // // // //     const filtered = users.filter(u => 
-// // // // // // // //         u.name.toLowerCase().includes(search.toLowerCase()) || 
-// // // // // // // //         u.email.toLowerCase().includes(search.toLowerCase()) ||
-// // // // // // // //         (u.memberData?.nia || '').includes(search)
+// // // // // // // //     const getClusteredUsers = () => {
+// // // // // // // //         const groups: Record<string, Record<string, any[]>> = {};
+// // // // // // // //         const filtered = users.filter(u => 
+// // // // // // // //             u.name.toLowerCase().includes(search.toLowerCase()) || 
+// // // // // // // //             u.email.toLowerCase().includes(search.toLowerCase()) ||
+// // // // // // // //             (u.memberData?.nia || '').includes(search)
+// // // // // // // //         );
+
+// // // // // // // //         filtered.forEach(user => {
+// // // // // // // //             let prov = user.province || user.memberData?.province || user.managedProvinces?.[0] || 'LAINNYA';
+// // // // // // // //             let kab = user.city || user.memberData?.regency || user.managedRegencies?.[0] || 'UMUM / PUSAT';
+// // // // // // // //             prov = (prov || 'LAINNYA').toUpperCase().trim();
+// // // // // // // //             kab = (kab || 'UMUM').toUpperCase().trim();
+// // // // // // // //             if (!groups[prov]) groups[prov] = {};
+// // // // // // // //             if (!groups[prov][kab]) groups[prov][kab] = [];
+// // // // // // // //             groups[prov][kab].push(user);
+// // // // // // // //         });
+// // // // // // // //         return groups;
+// // // // // // // //     };
+
+// // // // // // // //     const clusteredData = getClusteredUsers();
+
+// // // // // // // //     const handleCreateUser = async (e: React.FormEvent) => {
+// // // // // // // //         e.preventDefault();
+// // // // // // // //         setIsSaving(true);
+// // // // // // // //         try {
+// // // // // // // //             const payload: any = { ...newUser };
+// // // // // // // //             if (newUser.role === 'ADMIN') {
+// // // // // // // //                 payload.regionScope = regionConfig.scope;
+// // // // // // // //                 payload.managedProvinces = regionConfig.provinces;
+// // // // // // // //                 payload.managedRegencies = regionConfig.regencies;
+// // // // // // // //                 payload.permissions = []; 
+// // // // // // // //             }
+// // // // // // // //             await api('/api/admin/users', { method: 'POST', body: payload });
+// // // // // // // //             alert('User berhasil dibuat!');
+// // // // // // // //             setShowAddModal(false);
+// // // // // // // //             loadUsers();
+// // // // // // // //         } catch (err: any) { alert(err.message || 'Gagal buat user'); } finally { setIsSaving(false); }
+// // // // // // // //     };
+
+// // // // // // // //     const handleDelete = async (userId: string) => {
+// // // // // // // //         if (!confirm('Hapus user ini?')) return;
+// // // // // // // //         try {
+// // // // // // // //             await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
+// // // // // // // //             setUsers(prev => prev.filter(u => u._id !== userId));
+// // // // // // // //         } catch (e) { alert('Gagal hapus'); }
+// // // // // // // //     };
+
+// // // // // // // //     const handleResetPassword = async (userId: string, userName: string) => {
+// // // // // // // //         if (!confirm(`Reset password "${userName}" menjadi "123456"?`)) return;
+// // // // // // // //         try {
+// // // // // // // //             await api(`/api/admin/users/${userId}/reset-password`, { method: 'PATCH' });
+// // // // // // // //             alert(`✅ Password ${userName} di-reset ke: 123456`);
+// // // // // // // //         } catch (e: any) { alert(`Gagal: ${e.message}`); }
+// // // // // // // //     };
+
+// // // // // // // //     const handleViewProfile = (user: any) => {
+// // // // // // // //         setSelectedUser(user);
+// // // // // // // //         setShowProfileModal(true);
+// // // // // // // //     };
+
+// // // // // // // //     const handleUpdateProfile = async (updatedData: any) => {
+// // // // // // // //         try {
+// // // // // // // //             await api(`/api/admin/users/${selectedUser._id}`, {
+// // // // // // // //                 method: 'PATCH',
+// // // // // // // //                 body: updatedData
+// // // // // // // //             });
+// // // // // // // //             alert("Data user berhasil diperbarui!");
+// // // // // // // //             setShowProfileModal(false);
+// // // // // // // //             loadUsers(); 
+// // // // // // // //         } catch (err: any) {
+// // // // // // // //             alert("Gagal update: " + err.message);
+// // // // // // // //         }
+// // // // // // // //     };
+
+// // // // // // // //     const toggleProvince = (prov: string) => setExpandedProvinces(prev => ({...prev, [prov]: !prev[prov]}));
+// // // // // // // //     const toggleRegency = (kabId: string) => setExpandedRegencies(prev => ({...prev, [kabId]: !prev[kabId]}));
+
+// // // // // // // //     const UserTable = ({ data }: { data: any[] }) => (
+// // // // // // // //         <div className="overflow-x-auto">
+// // // // // // // //             <table className="w-full text-left text-sm">
+// // // // // // // //                 <thead className="bg-gray-100 text-gray-600 font-bold text-xs uppercase border-b border-gray-200">
+// // // // // // // //                     <tr>
+// // // // // // // //                         <th className="px-6 py-4 rounded-tl-xl">Nama Anggota</th>
+// // // // // // // //                         <th className="px-6 py-4">Posisi</th>
+// // // // // // // //                         <th className="px-6 py-4">Type Role</th>
+// // // // // // // //                         <th className="px-6 py-4">Domisili PMI</th>
+// // // // // // // //                         <th className="px-6 py-4 text-right rounded-tr-xl">Aksi</th>
+// // // // // // // //                     </tr>
+// // // // // // // //                 </thead>
+// // // // // // // //                 <tbody className="divide-y divide-gray-100 bg-white">
+// // // // // // // //                     {data.map(user => (
+// // // // // // // //                         <tr key={user._id} className="hover:bg-blue-50/50 transition-colors group">
+// // // // // // // //                             <td className="px-6 py-4">
+// // // // // // // //                                 <div className="flex items-center gap-4">
+// // // // // // // //                                     <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+// // // // // // // //                                         <img src={getImageUrl(user.avatarUrl)} className="w-full h-full object-cover" alt=""/>
+// // // // // // // //                                     </div>
+// // // // // // // //                                     <div>
+// // // // // // // //                                         <p className="font-bold text-gray-900 text-sm group-hover:text-blue-700 transition-colors">{user.name}</p>
+// // // // // // // //                                         <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+// // // // // // // //                                             <span>{user.email}</span>
+// // // // // // // //                                             {(user.memberData?.nia || user.memberData?.kode) && (
+// // // // // // // //                                                 <span className="bg-gray-100 px-1.5 rounded text-[10px] font-mono border border-gray-200">
+// // // // // // // //                                                     {user.memberData.nia || user.memberData.kode}
+// // // // // // // //                                                 </span>
+// // // // // // // //                                             )}
+// // // // // // // //                                         </div>
+// // // // // // // //                                     </div>
+// // // // // // // //                                 </div>
+// // // // // // // //                             </td>
+// // // // // // // //                             <td className="px-6 py-4">
+// // // // // // // //                                 {user.memberType ? (
+// // // // // // // //                                     <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+// // // // // // // //                                         {user.memberType}
+// // // // // // // //                                     </span>
+// // // // // // // //                                 ) : <span className="text-gray-400 text-xs italic">-</span>}
+// // // // // // // //                             </td>
+// // // // // // // //                             <td className="px-6 py-4">
+// // // // // // // //                                 <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold border ${
+// // // // // // // //                                     user.role === 'ADMIN' ? 'bg-orange-50 border-orange-200 text-orange-700' : 
+// // // // // // // //                                     user.role === 'SUPER_ADMIN' ? 'bg-purple-50 border-purple-200 text-purple-700' :
+// // // // // // // //                                     user.role === 'FACILITATOR' ? 'bg-green-50 border-green-200 text-green-700' :
+// // // // // // // //                                     'bg-gray-100 border-gray-200 text-gray-600'
+// // // // // // // //                                 }`}>
+// // // // // // // //                                     {user.role}
+// // // // // // // //                                 </span>
+// // // // // // // //                             </td>
+// // // // // // // //                             <td className="px-6 py-4">
+// // // // // // // //                                 <div className="text-xs space-y-1">
+// // // // // // // //                                     {(user.city || user.province) && (
+// // // // // // // //                                         <div className="flex items-center gap-1 font-bold text-gray-700">
+// // // // // // // //                                             <MapPin size={12} className="text-red-500" />
+// // // // // // // //                                             <span className="truncate max-w-[150px]" title={`${user.city || ''}, ${user.province || ''}`}>
+// // // // // // // //                                                 {user.city || user.province || 'Nasional'}
+// // // // // // // //                                             </span>
+// // // // // // // //                                         </div>
+// // // // // // // //                                     )}
+// // // // // // // //                                     <p className="text-gray-500 pl-4">{user.memberData?.unit || user.managedProvinces?.[0] || '-'}</p>
+// // // // // // // //                                 </div>
+// // // // // // // //                             </td>
+// // // // // // // //                             <td className="px-6 py-4 text-right">
+// // // // // // // //                                 <div className="flex justify-end gap-2">
+// // // // // // // //                                      <button 
+// // // // // // // //                                         onClick={() => handleViewProfile(user)}
+// // // // // // // //                                         className="p-2 text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 shadow-sm transition-all"
+// // // // // // // //                                         title="Lihat Profil"
+// // // // // // // //                                         aria-label="Lihat Profil"
+// // // // // // // //                                      >
+// // // // // // // //                                          <Eye size={16}/>
+// // // // // // // //                                      </button>
+
+// // // // // // // //                                      <Link 
+// // // // // // // //                                         href={`/admin/users/${user._id}`} 
+// // // // // // // //                                         className="p-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 hover:border-gray-400 shadow-sm transition-all" 
+// // // // // // // //                                         title="Setting Role & Izin"
+// // // // // // // //                                         aria-label="Setting Role"
+// // // // // // // //                                      >
+// // // // // // // //                                          <Settings size={16}/>
+// // // // // // // //                                      </Link>
+
+// // // // // // // //                                      {canManageUsers && (
+// // // // // // // //                                          <>
+// // // // // // // //                                             <button 
+// // // // // // // //                                                 onClick={() => handleResetPassword(user._id, user.name)} 
+// // // // // // // //                                                 className="p-2 text-orange-600 bg-white border border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 shadow-sm transition-all" 
+// // // // // // // //                                                 title="Reset Password ke 123456"
+// // // // // // // //                                                 aria-label="Reset Password"
+// // // // // // // //                                             >
+// // // // // // // //                                                 <KeyRound size={16}/>
+// // // // // // // //                                             </button>
+
+// // // // // // // //                                             <button 
+// // // // // // // //                                                 onClick={() => handleDelete(user._id)} 
+// // // // // // // //                                                 className="p-2 text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 hover:border-red-300 shadow-sm transition-all" 
+// // // // // // // //                                                 title="Hapus User"
+// // // // // // // //                                                 aria-label="Hapus User"
+// // // // // // // //                                             >
+// // // // // // // //                                                 <Trash2 size={16}/>
+// // // // // // // //                                             </button>
+// // // // // // // //                                          </>
+// // // // // // // //                                      )}
+// // // // // // // //                                 </div>
+// // // // // // // //                             </td>
+// // // // // // // //                         </tr>
+// // // // // // // //                     ))}
+// // // // // // // //                 </tbody>
+// // // // // // // //             </table>
+// // // // // // // //         </div>
 // // // // // // // //     );
 
-// // // // // // // //     filtered.forEach(user => {
-// // // // // // // //         let prov = user.memberData?.province || user.managedProvinces?.[0] || 'LAINNYA';
-// // // // // // // //         let kab = user.memberData?.regency || user.managedRegencies?.[0] || 'UMUM / PUSAT';
+// // // // // // // //     return (
+// // // // // // // //         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/50">
+// // // // // // // //             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+// // // // // // // //                 <div>
+// // // // // // // //                     <h1 className="text-2xl font-black text-gray-900 tracking-tight">Data Pengguna</h1>
+// // // // // // // //                     <p className="text-sm text-gray-500 mt-1">Kelola akun, import data anggota, dan hak akses.</p>
+// // // // // // // //                 </div>
+// // // // // // // //                 <div className="flex flex-wrap gap-3">
+// // // // // // // //                     <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
+// // // // // // // //                         <button onClick={() => setViewMode('cluster')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'cluster' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'}`} title="Wilayah" aria-label="Wilayah"><Layers size={14}/> Wilayah</button>
+// // // // // // // //                         <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'list' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'}`} title="Tabel" aria-label="Tabel"><LayoutList size={14}/> Tabel</button>
+// // // // // // // //                     </div>
+// // // // // // // //                     {canManageUsers && (
+// // // // // // // //                         <>
+// // // // // // // //                             <Link href="/admin/members/import">
+// // // // // // // //                                 <button className="bg-green-600 text-white px-5 py-2.5 rounded-xl hover:bg-green-700 font-bold shadow-lg shadow-green-100 flex items-center gap-2 transition-all active:scale-95">
+// // // // // // // //                                     <FileSpreadsheet size={18}/> Import Excel/CSV
+// // // // // // // //                                 </button>
+// // // // // // // //                             </Link>
+// // // // // // // //                             <button onClick={() => setShowAddModal(true)} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-black font-bold shadow-lg shadow-gray-200 flex items-center gap-2 transition-all active:scale-95">
+// // // // // // // //                                 <Plus size={18}/> User Manual
+// // // // // // // //                             </button>
+// // // // // // // //                         </>
+// // // // // // // //                     )}
+// // // // // // // //                 </div>
+// // // // // // // //             </div>
 
-// // // // // // // //         prov = (prov || 'LAINNYA').toUpperCase().trim();
-// // // // // // // //         kab = (kab || 'UMUM').toUpperCase().trim();
+// // // // // // // //             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 mb-6 flex items-center gap-3 sticky top-4 z-30 ring-1 ring-gray-100">
+// // // // // // // //                 <Search className="text-gray-400" size={20}/>
+// // // // // // // //                 <input type="text" placeholder="Cari nama, email, NIA, unit, atau kota..." className="flex-1 outline-none text-sm font-medium bg-transparent" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Cari User"/>
+// // // // // // // //                 {search && <button onClick={() => setSearch('')} className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 bg-red-50 rounded-lg">RESET</button>}
+// // // // // // // //             </div>
 
-// // // // // // // //         if (!groups[prov]) groups[prov] = {};
-// // // // // // // //         if (!groups[prov][kab]) groups[prov][kab] = [];
-        
-// // // // // // // //         groups[prov][kab].push(user);
-// // // // // // // //     });
+// // // // // // // //             {loading ? (
+// // // // // // // //                 <div className="text-center py-20 flex flex-col items-center gap-4"><Loader2 className="animate-spin text-gray-400" size={40}/><p className="text-sm text-gray-500 font-medium">Memuat data pengguna...</p></div>
+// // // // // // // //             ) : (
+// // // // // // // //                 <div>
+// // // // // // // //                     {viewMode === 'cluster' && (
+// // // // // // // //                         <div className="space-y-4">
+// // // // // // // //                             {Object.keys(clusteredData).length === 0 && <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300"><p className="text-gray-400 font-medium">Tidak ada data ditemukan.</p></div>}
+// // // // // // // //                             {Object.keys(clusteredData).sort().map(prov => {
+// // // // // // // //                                 const isProvOpen = expandedProvinces[prov] || search !== '';
+// // // // // // // //                                 return (
+// // // // // // // //                                     <div key={prov} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm transition-all hover:shadow-md">
+// // // // // // // //                                         <div onClick={() => toggleProvince(prov)} className="p-5 flex justify-between items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors">
+// // // // // // // //                                             <div className="flex items-center gap-4">
+// // // // // // // //                                                 <div className={`p-2 rounded-full transition-transform duration-300 border ${isProvOpen ? 'rotate-90 bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-400 border-gray-200'}`}><ChevronRight size={16}/></div>
+// // // // // // // //                                                 <div><h3 className="font-bold text-gray-800 text-lg">{prov}</h3><p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5"><MapPin size={12}/> {Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p></div>
+// // // // // // // //                                             </div>
+// // // // // // // //                                             <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-xs font-bold border border-gray-200">{Object.values(clusteredData[prov]).flat().length} Anggota</span>
+// // // // // // // //                                         </div>
+// // // // // // // //                                         {isProvOpen && (
+// // // // // // // //                                             <div className="p-4 bg-gray-50/50 border-t border-gray-100 space-y-3 animate-in slide-in-from-top-2">
+// // // // // // // //                                                 {Object.keys(clusteredData[prov]).sort().map(kab => {
+// // // // // // // //                                                     const kabId = `${prov}-${kab}`;
+// // // // // // // //                                                     const isKabOpen = expandedRegencies[kabId] || search !== '';
+// // // // // // // //                                                     return (
+// // // // // // // //                                                         <div key={kabId} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+// // // // // // // //                                                             <div onClick={() => toggleRegency(kabId)} className="px-5 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors border-l-4 border-l-transparent hover:border-l-gray-900">
+// // // // // // // //                                                                 <div className="flex items-center gap-3"><ChevronDown size={16} className={`transition-transform duration-200 ${isKabOpen ? 'rotate-180 text-gray-900' : 'text-gray-400'}`}/><span className="font-bold text-sm text-gray-700">{kab}</span></div>
+// // // // // // // //                                                                 <span className="text-xs font-medium text-gray-500">{clusteredData[prov][kab].length} User</span>
+// // // // // // // //                                                             </div>
+// // // // // // // //                                                             {isKabOpen && <div className="border-t border-gray-100"><UserTable data={clusteredData[prov][kab]} /></div>}
+// // // // // // // //                                                         </div>
+// // // // // // // //                                                     );
+// // // // // // // //                                                 })}
+// // // // // // // //                                             </div>
+// // // // // // // //                                         )}
+// // // // // // // //                                     </div>
+// // // // // // // //                                 );
+// // // // // // // //                             })}
+// // // // // // // //                         </div>
+// // // // // // // //                     )}
+// // // // // // // //                     {viewMode === 'list' && (
+// // // // // // // //                          <div className="bg-white shadow-lg shadow-gray-100 rounded-2xl border border-gray-200 overflow-hidden">
+// // // // // // // //                             <UserTable data={users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) || (u.memberData?.nia || '').includes(search))} />
+// // // // // // // //                          </div>
+// // // // // // // //                     )}
+// // // // // // // //                 </div>
+// // // // // // // //             )}
 
-// // // // // // // //     return groups;
-// // // // // // // //   };
-
-// // // // // // // //   const clusteredData = getClusteredUsers();
-
-// // // // // // // //   const handleCreateUser = async (e: React.FormEvent) => {
-// // // // // // // //     e.preventDefault();
-// // // // // // // //     setIsSaving(true);
-// // // // // // // //     try {
-// // // // // // // //       const payload: any = { ...newUser };
-// // // // // // // //       if (newUser.role === 'ADMIN') {
-// // // // // // // //         payload.regionScope = regionConfig.scope;
-// // // // // // // //         payload.managedProvinces = regionConfig.provinces;
-// // // // // // // //         payload.managedRegencies = regionConfig.regencies;
-// // // // // // // //         payload.permissions = []; 
-// // // // // // // //       }
-// // // // // // // //       await api('/api/admin/users', { method: 'POST', body: payload });
-// // // // // // // //       alert('User berhasil dibuat!');
-// // // // // // // //       setShowAddModal(false);
-// // // // // // // //       loadUsers();
-// // // // // // // //     } catch (err: any) {
-// // // // // // // //       alert(err.message || 'Gagal buat user');
-// // // // // // // //     } finally { setIsSaving(false); }
-// // // // // // // //   };
-
-// // // // // // // //   const handleDelete = async (userId: string) => {
-// // // // // // // //     if (!confirm('Hapus user ini?')) return;
-// // // // // // // //     try {
-// // // // // // // //       await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
-// // // // // // // //       setUsers(prev => prev.filter(u => u._id !== userId));
-// // // // // // // //     } catch (e) { alert('Gagal hapus'); }
-// // // // // // // //   };
-
-// // // // // // // //   const handleResetPassword = async (userId: string, userName: string) => {
-// // // // // // // //       if (!confirm(`Reset password "${userName}" menjadi "123456"?`)) return;
-// // // // // // // //       try {
-// // // // // // // //           await api(`/api/admin/users/${userId}/reset-password`, { method: 'PATCH' });
-// // // // // // // //           alert(`✅ Sukses! Password ${userName} sekarang: 123456`);
-// // // // // // // //       } catch (e: any) {
-// // // // // // // //           alert(`Gagal: ${e.message}`);
-// // // // // // // //       }
-// // // // // // // //   };
-
-// // // // // // // //   const toggleProvince = (prov: string) => {
-// // // // // // // //       setExpandedProvinces(prev => ({...prev, [prov]: !prev[prov]}));
-// // // // // // // //   };
-
-// // // // // // // //   const toggleRegency = (kabId: string) => {
-// // // // // // // //       setExpandedRegencies(prev => ({...prev, [kabId]: !prev[kabId]}));
-// // // // // // // //   };
-
-// // // // // // // //   const UserTable = ({ data }: { data: any[] }) => (
-// // // // // // // //     <table className="w-full text-left text-sm bg-white rounded-lg overflow-hidden">
-// // // // // // // //         <thead className="bg-gray-50 text-gray-500 font-bold text-[10px] uppercase border-b border-gray-100">
-// // // // // // // //             <tr>
-// // // // // // // //                 <th className="px-4 py-3">Nama Anggota</th>
-// // // // // // // //                 <th className="px-4 py-3">Role</th>
-// // // // // // // //                 <th className="px-4 py-3">Unit / Asal</th>
-// // // // // // // //                 <th className="px-4 py-3 text-right">Aksi</th>
-// // // // // // // //             </tr>
-// // // // // // // //         </thead>
-// // // // // // // //         <tbody className="divide-y divide-gray-50">
-// // // // // // // //             {data.map(user => (
-// // // // // // // //                 <tr key={user._id} className="hover:bg-gray-50 transition-colors">
-// // // // // // // //                     <td className="px-4 py-3">
-// // // // // // // //                         <div className="flex items-center gap-3">
-// // // // // // // //                             <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden border border-gray-100">
-// // // // // // // //                                 <img src={getImageUrl(user.avatarUrl)} className="w-full h-full object-cover" alt=""/>
+// // // // // // // //             {/* MODAL TAMBAH USER (MANUAL) */}
+// // // // // // // //             {showAddModal && (
+// // // // // // // //                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in">
+// // // // // // // //                     <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 overflow-hidden">
+// // // // // // // //                         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+// // // // // // // //                             <div><h2 className="font-bold text-lg text-gray-900">Tambah User Baru</h2><p className="text-xs text-gray-500 mt-1">Buat akun manual untuk Admin atau Peserta.</p></div>
+// // // // // // // //                             <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200/50" title="Tutup" aria-label="Tutup"><X size={24}/></button>
+// // // // // // // //                         </div>
+// // // // // // // //                         <form onSubmit={handleCreateUser} className="p-6 space-y-5">
+// // // // // // // //                             <div>
+// // // // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Nama Lengkap</label>
+// // // // // // // //                                 {/* [FIX AXE] Ditambahkan aria-label/title */}
+// // // // // // // //                                 <input 
+// // // // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
+// // // // // // // //                                     placeholder="Nama Lengkap" 
+// // // // // // // //                                     required 
+// // // // // // // //                                     value={newUser.name} 
+// // // // // // // //                                     onChange={e => setNewUser({...newUser, name: e.target.value})}
+// // // // // // // //                                     title="Nama Lengkap"
+// // // // // // // //                                     aria-label="Nama Lengkap"
+// // // // // // // //                                 />
 // // // // // // // //                             </div>
 // // // // // // // //                             <div>
-// // // // // // // //                                 <p className="font-bold text-gray-900 text-sm">{user.name}</p>
-// // // // // // // //                                 <p className="text-[10px] text-gray-400">{user.email}</p>
+// // // // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Email</label>
+// // // // // // // //                                 {/* [FIX AXE] Ditambahkan aria-label/title */}
+// // // // // // // //                                 <input 
+// // // // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
+// // // // // // // //                                     type="email" 
+// // // // // // // //                                     placeholder="contoh@email.com" 
+// // // // // // // //                                     required 
+// // // // // // // //                                     value={newUser.email} 
+// // // // // // // //                                     onChange={e => setNewUser({...newUser, email: e.target.value})}
+// // // // // // // //                                     title="Email"
+// // // // // // // //                                     aria-label="Email"
+// // // // // // // //                                 />
 // // // // // // // //                             </div>
-// // // // // // // //                         </div>
-// // // // // // // //                     </td>
-// // // // // // // //                     <td className="px-4 py-3">
-// // // // // // // //                         <span className={`text-[10px] px-2 py-0.5 rounded font-bold border ${
-// // // // // // // //                             user.role === 'ADMIN' ? 'bg-orange-50 border-orange-200 text-orange-700' : 
-// // // // // // // //                             user.role === 'SUPER_ADMIN' ? 'bg-purple-50 border-purple-200 text-purple-700' :
-// // // // // // // //                             user.role === 'FACILITATOR' ? 'bg-blue-50 border-blue-200 text-blue-700' :
-// // // // // // // //                             'bg-gray-50 border-gray-200 text-gray-600'
-// // // // // // // //                         }`}>
-// // // // // // // //                             {user.role}
-// // // // // // // //                         </span>
-// // // // // // // //                     </td>
-// // // // // // // //                     <td className="px-4 py-3 text-xs text-gray-600">
-// // // // // // // //                         {user.memberData?.unit || user.managedProvinces?.[0] || '-'}
-// // // // // // // //                     </td>
-// // // // // // // //                     <td className="px-4 py-3 text-right flex justify-end gap-1">
-// // // // // // // //                          {canManageUsers && (
-// // // // // // // //                              <>
-// // // // // // // //                                 <button onClick={() => handleResetPassword(user._id, user.name)} className="p-1.5 text-orange-600 bg-orange-50 rounded hover:bg-orange-100 transition" title="Reset Password" aria-label="Reset Password"><KeyRound size={14}/></button>
-// // // // // // // //                                 <button onClick={() => handleDelete(user._id)} className="p-1.5 text-red-600 bg-red-50 rounded hover:bg-red-100 transition" title="Hapus" aria-label="Hapus User"><Trash2 size={14}/></button>
-// // // // // // // //                              </>
-// // // // // // // //                          )}
-// // // // // // // //                          <Link href={`/admin/users/${user._id}`} className="p-1.5 text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition" title="Detail" aria-label="Lihat Detail"><Eye size={14}/></Link>
-// // // // // // // //                     </td>
-// // // // // // // //                 </tr>
-// // // // // // // //             ))}
-// // // // // // // //         </tbody>
-// // // // // // // //     </table>
-// // // // // // // //   );
-
-// // // // // // // //   return (
-// // // // // // // //     <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/30">
-      
-// // // // // // // //       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-// // // // // // // //         <div>
-// // // // // // // //             <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Data Anggota & Pengguna</h1>
-// // // // // // // //             <p className="text-sm text-gray-500 mt-1">Kelola seluruh data anggota KSR, PMR, dan Admin dalam satu tempat.</p>
-// // // // // // // //         </div>
-// // // // // // // //         <div className="flex gap-3">
-// // // // // // // //             <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
-// // // // // // // //                 <button onClick={() => setViewMode('cluster')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'cluster' ? 'bg-red-50 text-red-700' : 'text-gray-500 hover:bg-gray-50'}`}>
-// // // // // // // //                     <Layers size={14}/> Wilayah
-// // // // // // // //                 </button>
-// // // // // // // //                 <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'list' ? 'bg-red-50 text-red-700' : 'text-gray-500 hover:bg-gray-50'}`}>
-// // // // // // // //                     <LayoutList size={14}/> Tabel
-// // // // // // // //                 </button>
-// // // // // // // //             </div>
-
-// // // // // // // //             {canManageUsers && (
-// // // // // // // //                 <button onClick={() => setShowAddModal(true)} className="bg-red-700 text-white px-5 py-2.5 rounded-xl hover:bg-red-800 font-bold shadow-lg shadow-red-200 flex items-center gap-2 transition-all active:scale-95">
-// // // // // // // //                     <Plus size={18}/> Tambah User
-// // // // // // // //                 </button>
-// // // // // // // //             )}
-// // // // // // // //         </div>
-// // // // // // // //       </div>
-
-// // // // // // // //       <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex items-center gap-3 sticky top-4 z-30">
-// // // // // // // //         <Search className="text-gray-400" size={20}/>
-// // // // // // // //         <input 
-// // // // // // // //             type="text" 
-// // // // // // // //             placeholder="Cari nama, email, NIA, atau Unit..." 
-// // // // // // // //             className="flex-1 outline-none text-sm font-medium"
-// // // // // // // //             value={search}
-// // // // // // // //             onChange={(e) => setSearch(e.target.value)}
-// // // // // // // //         />
-// // // // // // // //         {search && <button onClick={() => setSearch('')} className="text-xs font-bold text-gray-400 hover:text-red-600">RESET</button>}
-// // // // // // // //       </div>
-
-// // // // // // // //       {loading ? (
-// // // // // // // //           <div className="text-center py-20"><Loader2 className="animate-spin mx-auto text-red-600" size={32}/></div>
-// // // // // // // //       ) : (
-// // // // // // // //           <div>
-// // // // // // // //             {viewMode === 'cluster' && (
-// // // // // // // //                 <div className="space-y-4">
-// // // // // // // //                     {Object.keys(clusteredData).length === 0 && (
-// // // // // // // //                         <div className="text-center py-10 text-gray-400 bg-white rounded-2xl border border-dashed">Tidak ada data ditemukan.</div>
-// // // // // // // //                     )}
-// // // // // // // //                     {Object.keys(clusteredData).sort().map(prov => {
-// // // // // // // //                         const totalUsersInProv = Object.values(clusteredData[prov]).flat().length;
-// // // // // // // //                         const isProvOpen = expandedProvinces[prov] || search !== '';
-// // // // // // // //                         return (
-// // // // // // // //                             <div key={prov} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm transition-all hover:shadow-md">
-// // // // // // // //                                 <div onClick={() => toggleProvince(prov)} className="p-4 flex justify-between items-center cursor-pointer bg-gray-50/50 hover:bg-gray-50 transition-colors">
-// // // // // // // //                                     <div className="flex items-center gap-3">
-// // // // // // // //                                         <div className={`p-2 rounded-lg transition-transform duration-300 ${isProvOpen ? 'rotate-90 bg-red-100 text-red-600' : 'bg-white text-gray-400 border border-gray-200'}`}><ChevronRight size={18}/></div>
-// // // // // // // //                                         <div><h3 className="font-bold text-gray-800 text-lg">{prov}</h3><p className="text-xs text-gray-500 flex items-center gap-1"><MapPin size={10}/> {Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p></div>
-// // // // // // // //                                     </div>
-// // // // // // // //                                     <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">{totalUsersInProv} Anggota</span>
-// // // // // // // //                                 </div>
-// // // // // // // //                                 {isProvOpen && (
-// // // // // // // //                                     <div className="p-4 bg-white border-t border-gray-100 space-y-3 animate-in slide-in-from-top-2">
-// // // // // // // //                                             {Object.keys(clusteredData[prov]).sort().map(kab => {
-// // // // // // // //                                                 const kabUsers = clusteredData[prov][kab];
-// // // // // // // //                                                 const kabId = `${prov}-${kab}`;
-// // // // // // // //                                                 const isKabOpen = expandedRegencies[kabId] || search !== '';
-// // // // // // // //                                                 return (
-// // // // // // // //                                                     <div key={kabId} className="border border-gray-200 rounded-xl overflow-hidden">
-// // // // // // // //                                                         <div onClick={() => toggleRegency(kabId)} className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors">
-// // // // // // // //                                                             <div className="flex items-center gap-2"><ChevronDown size={14} className={`transition-transform ${isKabOpen ? 'rotate-180 text-blue-600' : 'text-gray-400'}`}/><span className="font-bold text-sm text-gray-700">{kab}</span></div>
-// // // // // // // //                                                             <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{kabUsers.length} User</span>
-// // // // // // // //                                                         </div>
-// // // // // // // //                                                         {isKabOpen && <div className="border-t border-gray-100 p-2 bg-gray-50/30"><UserTable data={kabUsers} /></div>}
-// // // // // // // //                                                     </div>
-// // // // // // // //                                                 );
-// // // // // // // //                                             })}
-// // // // // // // //                                     </div>
-// // // // // // // //                                 )}
+// // // // // // // //                             <div>
+// // // // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Password</label>
+// // // // // // // //                                 {/* [FIX AXE] Ditambahkan aria-label/title */}
+// // // // // // // //                                 <input 
+// // // // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
+// // // // // // // //                                     type="password" 
+// // // // // // // //                                     placeholder="Minimal 6 karakter" 
+// // // // // // // //                                     required 
+// // // // // // // //                                     value={newUser.password} 
+// // // // // // // //                                     onChange={e => setNewUser({...newUser, password: e.target.value})}
+// // // // // // // //                                     title="Password"
+// // // // // // // //                                     aria-label="Password"
+// // // // // // // //                                 />
 // // // // // // // //                             </div>
-// // // // // // // //                         );
-// // // // // // // //                     })}
-// // // // // // // //                 </div>
-// // // // // // // //             )}
-
-// // // // // // // //             {viewMode === 'list' && (
-// // // // // // // //                  <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-// // // // // // // //                     <UserTable data={users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()))} />
-// // // // // // // //                  </div>
-// // // // // // // //             )}
-// // // // // // // //           </div>
-// // // // // // // //       )}
-
-// // // // // // // //       {showAddModal && (
-// // // // // // // //         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-// // // // // // // //           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 overflow-hidden">
-// // // // // // // //             <div className="p-6 border-b bg-gray-50">
-// // // // // // // //                 <h2 className="font-bold text-lg text-gray-800">Tambah User Baru</h2>
-// // // // // // // //                 <p className="text-xs text-gray-500">Buat akun untuk Admin, Fasilitator, atau Peserta.</p>
-// // // // // // // //             </div>
-// // // // // // // //             <form onSubmit={handleCreateUser} className="p-6 space-y-4">
-// // // // // // // //                 <div><label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Nama</label><input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" placeholder="Nama Lengkap" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})}/></div>
-// // // // // // // //                 <div><label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Email</label><input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" type="email" placeholder="Email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})}/></div>
-// // // // // // // //                 <div><label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Password</label><input className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" type="password" placeholder="Password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})}/></div>
-// // // // // // // //                 <div>
-// // // // // // // //                     <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Role</label>
-// // // // // // // //                     {/* [FIX] Accessibility Axe Error: Select Name */}
-// // // // // // // //                     <select 
-// // // // // // // //                         className="w-full border p-3 rounded-xl bg-white focus:ring-2 focus:ring-red-500 outline-none" 
-// // // // // // // //                         value={newUser.role} 
-// // // // // // // //                         onChange={e => setNewUser({...newUser, role: e.target.value})}
-// // // // // // // //                         aria-label="Pilih Role Pengguna"
-// // // // // // // //                         title="Pilih Role Pengguna"
-// // // // // // // //                     >
-// // // // // // // //                         <option value="STUDENT">STUDENT (Peserta)</option>
-// // // // // // // //                         <option value="FACILITATOR">FACILITATOR (Pengajar)</option>
-// // // // // // // //                         <option value="ADMIN">ADMIN (Wilayah)</option>
-// // // // // // // //                     </select>
-// // // // // // // //                 </div>
-// // // // // // // //                 {newUser.role === 'ADMIN' && (
-// // // // // // // //                     <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
-// // // // // // // //                         <p className="text-xs font-bold text-orange-800 mb-2 flex items-center gap-1"><MapPin size={12}/> Konfigurasi Wilayah</p>
-// // // // // // // //                         <RegionSelector value={regionConfig} onChange={setRegionConfig} />
+// // // // // // // //                             <div>
+// // // // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Role</label>
+// // // // // // // //                                 <select className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} title="Role" aria-label="Role"><option value="STUDENT">STUDENT (Peserta)</option><option value="FACILITATOR">FACILITATOR (Pengajar)</option><option value="ADMIN">ADMIN (Wilayah)</option></select>
+// // // // // // // //                             </div>
+// // // // // // // //                             {newUser.role === 'ADMIN' && (<div className="bg-orange-50 p-4 rounded-xl border border-orange-100"><RegionSelector value={regionConfig} onChange={setRegionConfig} /></div>)}
+// // // // // // // //                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+// // // // // // // //                                 <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-100 rounded-xl text-sm">Batal</button>
+// // // // // // // //                                 <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-gray-900 text-white rounded-xl font-bold hover:bg-black shadow-lg shadow-gray-200 text-sm flex items-center gap-2">{isSaving ? <Loader2 className="animate-spin" size={16}/> : <Plus size={16}/>} Simpan User</button>
+// // // // // // // //                             </div>
+// // // // // // // //                         </form>
 // // // // // // // //                     </div>
-// // // // // // // //                 )}
-// // // // // // // //                 <div className="flex justify-end gap-2 pt-4 border-t">
-// // // // // // // //                     <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-100 rounded-xl text-sm">Batal</button>
-// // // // // // // //                     <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-red-700 text-white rounded-xl font-bold hover:bg-red-800 shadow-lg text-sm flex items-center gap-2">
-// // // // // // // //                         {isSaving ? <Loader2 className="animate-spin" size={16}/> : <Plus size={16}/>} Simpan User
-// // // // // // // //                     </button>
 // // // // // // // //                 </div>
-// // // // // // // //             </form>
-// // // // // // // //           </div>
+// // // // // // // //             )}
+
+// // // // // // // //             {/* MODAL LIHAT/EDIT PROFIL */}
+// // // // // // // //             {showProfileModal && selectedUser && (
+// // // // // // // //                 <UserProfileForm 
+// // // // // // // //                     initialData={selectedUser}
+// // // // // // // //                     onClose={() => setShowProfileModal(false)}
+// // // // // // // //                     onSave={handleUpdateProfile}
+// // // // // // // //                 />
+// // // // // // // //             )}
 // // // // // // // //         </div>
-// // // // // // // //       )}
-// // // // // // // //     </div>
-// // // // // // // //   );
+// // // // // // // //     );
 // // // // // // // // }
-
-
-
 
 // // // // // // // 'use client';
 
@@ -1743,7 +2143,7 @@
 // // // // // // // import Link from 'next/link';
 // // // // // // // import { 
 // // // // // // //     Loader2, Plus, Trash2, Search, MapPin, KeyRound, Eye, 
-// // // // // // //     ChevronDown, ChevronRight, LayoutList, Layers, Upload, FileSpreadsheet, X, Settings
+// // // // // // //     ChevronDown, ChevronRight, LayoutList, Layers, FileSpreadsheet, X, Settings, Briefcase, Building2
 // // // // // // // } from 'lucide-react';
 // // // // // // // import RegionSelector from '@/components/admin/RegionSelector'; 
 // // // // // // // import { usePermission } from '@/hooks/usePermission';
@@ -1763,17 +2163,19 @@
 // // // // // // //     const [loading, setLoading] = useState(true);
 // // // // // // //     const [search, setSearch] = useState('');
     
-// // // // // // //     const [viewMode, setViewMode] = useState<'list' | 'cluster'>('list');
+// // // // // // //     // Default 'cluster' agar admin langsung lihat berdasarkan wilayah
+// // // // // // //     const [viewMode, setViewMode] = useState<'list' | 'cluster'>('cluster');
     
+// // // // // // //     // State untuk Accordion (Grouping)
 // // // // // // //     const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
 // // // // // // //     const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
 
+// // // // // // //     // State Modals
 // // // // // // //     const [showAddModal, setShowAddModal] = useState(false);
-    
-// // // // // // //     // State untuk Modal Edit/View Profil
 // // // // // // //     const [selectedUser, setSelectedUser] = useState<any>(null); 
 // // // // // // //     const [showProfileModal, setShowProfileModal] = useState(false);
 
+// // // // // // //     // State Form Create
 // // // // // // //     const [isSaving, setIsSaving] = useState(false);
 // // // // // // //     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
 // // // // // // //     const [regionConfig, setRegionConfig] = useState<RegionConfig>({ scope: 'national', provinces: [], regencies: [] });
@@ -1788,27 +2190,48 @@
 // // // // // // //         } catch (err: any) { console.error(err); } finally { setLoading(false); }
 // // // // // // //     };
 
+// // // // // // //     // --- LOGIKA GROUPING (PROVINSI > KABUPATEN) ---
 // // // // // // //     const getClusteredUsers = () => {
 // // // // // // //         const groups: Record<string, Record<string, any[]>> = {};
+        
 // // // // // // //         const filtered = users.filter(u => 
 // // // // // // //             u.name.toLowerCase().includes(search.toLowerCase()) || 
 // // // // // // //             u.email.toLowerCase().includes(search.toLowerCase()) ||
-// // // // // // //             (u.memberData?.nia || '').includes(search)
+// // // // // // //             (u.memberData?.nia || '').includes(search) ||
+// // // // // // //             (u.memberData?.unit || '').toLowerCase().includes(search.toLowerCase())
 // // // // // // //         );
 
 // // // // // // //         filtered.forEach(user => {
-// // // // // // //             let prov = user.province || user.memberData?.province || user.managedProvinces?.[0] || 'LAINNYA';
-// // // // // // //             let kab = user.city || user.memberData?.regency || user.managedRegencies?.[0] || 'UMUM / PUSAT';
-// // // // // // //             prov = (prov || 'LAINNYA').toUpperCase().trim();
-// // // // // // //             kab = (kab || 'UMUM').toUpperCase().trim();
+// // // // // // //             // 1. Ambil Provinsi (Handle kode '35')
+// // // // // // //             let rawProv = user.province || user.memberData?.province || 'LAINNYA';
+// // // // // // //             let prov = rawProv.toString().toUpperCase().trim();
+// // // // // // //             if (prov === '35') prov = 'JAWA TIMUR'; 
+
+// // // // // // //             // 2. Ambil Kabupaten
+// // // // // // //             let rawKab = user.city || user.memberData?.regency || 'UMUM / PUSAT';
+// // // // // // //             let kab = rawKab.toString().toUpperCase().trim();
+
+// // // // // // //             // 3. Masukkan ke Group
 // // // // // // //             if (!groups[prov]) groups[prov] = {};
 // // // // // // //             if (!groups[prov][kab]) groups[prov][kab] = [];
+            
 // // // // // // //             groups[prov][kab].push(user);
 // // // // // // //         });
+        
 // // // // // // //         return groups;
 // // // // // // //     };
 
 // // // // // // //     const clusteredData = getClusteredUsers();
+
+// // // // // // //     // Toggle Provinsi dengan ID yang aman
+// // // // // // //     const toggleProvince = (provKey: string) => {
+// // // // // // //         setExpandedProvinces(prev => ({...prev, [provKey]: !prev[provKey]}));
+// // // // // // //     };
+
+// // // // // // //     // Toggle Kabupaten dengan ID Unik
+// // // // // // //     const toggleRegency = (uniqueId: string) => {
+// // // // // // //         setExpandedRegencies(prev => ({...prev, [uniqueId]: !prev[uniqueId]}));
+// // // // // // //     };
 
 // // // // // // //     const handleCreateUser = async (e: React.FormEvent) => {
 // // // // // // //         e.preventDefault();
@@ -1863,35 +2286,35 @@
 // // // // // // //         }
 // // // // // // //     };
 
-// // // // // // //     const toggleProvince = (prov: string) => setExpandedProvinces(prev => ({...prev, [prov]: !prev[prov]}));
-// // // // // // //     const toggleRegency = (kabId: string) => setExpandedRegencies(prev => ({...prev, [kabId]: !prev[kabId]}));
-
+// // // // // // //     // --- KOMPONEN TABEL USER ---
 // // // // // // //     const UserTable = ({ data }: { data: any[] }) => (
-// // // // // // //         <div className="overflow-x-auto">
+// // // // // // //         <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
 // // // // // // //             <table className="w-full text-left text-sm">
-// // // // // // //                 <thead className="bg-gray-100 text-gray-600 font-bold text-xs uppercase border-b border-gray-200">
+// // // // // // //                 <thead className="bg-gray-50 text-gray-600 font-bold text-xs uppercase border-b border-gray-200">
 // // // // // // //                     <tr>
-// // // // // // //                         <th className="px-6 py-4 rounded-tl-xl">Nama Anggota</th>
-// // // // // // //                         <th className="px-6 py-4">Posisi</th>
-// // // // // // //                         <th className="px-6 py-4">Type Role</th>
-// // // // // // //                         <th className="px-6 py-4">Domisili PMI</th>
-// // // // // // //                         <th className="px-6 py-4 text-right rounded-tr-xl">Aksi</th>
+// // // // // // //                         <th className="px-6 py-3">Nama Anggota</th>
+// // // // // // //                         <th className="px-6 py-3">Posisi & Jabatan</th>
+// // // // // // //                         <th className="px-6 py-3">Role Sistem</th>
+// // // // // // //                         <th className="px-6 py-3">Unit / Asal</th>
+// // // // // // //                         <th className="px-6 py-3 text-right">Aksi</th>
 // // // // // // //                     </tr>
 // // // // // // //                 </thead>
-// // // // // // //                 <tbody className="divide-y divide-gray-100 bg-white">
+// // // // // // //                 <tbody className="divide-y divide-gray-100">
 // // // // // // //                     {data.map(user => (
-// // // // // // //                         <tr key={user._id} className="hover:bg-blue-50/50 transition-colors group">
+// // // // // // //                         <tr key={user._id} className="hover:bg-blue-50/30 transition-colors group">
+                            
+// // // // // // //                             {/* 1. NAMA */}
 // // // // // // //                             <td className="px-6 py-4">
-// // // // // // //                                 <div className="flex items-center gap-4">
-// // // // // // //                                     <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+// // // // // // //                                 <div className="flex items-center gap-3">
+// // // // // // //                                     <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden border border-gray-200 flex-shrink-0">
 // // // // // // //                                         <img src={getImageUrl(user.avatarUrl)} className="w-full h-full object-cover" alt=""/>
 // // // // // // //                                     </div>
 // // // // // // //                                     <div>
-// // // // // // //                                         <p className="font-bold text-gray-900 text-sm group-hover:text-blue-700 transition-colors">{user.name}</p>
+// // // // // // //                                         <p className="font-bold text-gray-900 text-sm">{user.name}</p>
 // // // // // // //                                         <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
 // // // // // // //                                             <span>{user.email}</span>
 // // // // // // //                                             {(user.memberData?.nia || user.memberData?.kode) && (
-// // // // // // //                                                 <span className="bg-gray-100 px-1.5 rounded text-[10px] font-mono border border-gray-200">
+// // // // // // //                                                 <span className="bg-gray-100 px-1.5 rounded text-[10px] font-mono border border-gray-200 text-gray-600">
 // // // // // // //                                                     {user.memberData.nia || user.memberData.kode}
 // // // // // // //                                                 </span>
 // // // // // // //                                             )}
@@ -1899,13 +2322,23 @@
 // // // // // // //                                     </div>
 // // // // // // //                                 </div>
 // // // // // // //                             </td>
+
+// // // // // // //                             {/* 2. POSISI */}
 // // // // // // //                             <td className="px-6 py-4">
-// // // // // // //                                 {user.memberType ? (
-// // // // // // //                                     <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
-// // // // // // //                                         {user.memberType}
+// // // // // // //                                 <div className="flex flex-col items-start gap-1">
+// // // // // // //                                     <span className="inline-block px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
+// // // // // // //                                         {user.memberType || user.memberData?.position || 'Anggota'}
 // // // // // // //                                     </span>
-// // // // // // //                                 ) : <span className="text-gray-400 text-xs italic">-</span>}
+// // // // // // //                                     {user.memberData?.position && user.memberData.position !== user.memberType && (
+// // // // // // //                                         <div className="flex items-center gap-1 text-xs text-gray-500">
+// // // // // // //                                             <Briefcase size={12}/>
+// // // // // // //                                             <span className="truncate max-w-[150px]">{user.memberData.position}</span>
+// // // // // // //                                         </div>
+// // // // // // //                                     )}
+// // // // // // //                                 </div>
 // // // // // // //                             </td>
+
+// // // // // // //                             {/* 3. ROLE */}
 // // // // // // //                             <td className="px-6 py-4">
 // // // // // // //                                 <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold border ${
 // // // // // // //                                     user.role === 'ADMIN' ? 'bg-orange-50 border-orange-200 text-orange-700' : 
@@ -1916,53 +2349,59 @@
 // // // // // // //                                     {user.role}
 // // // // // // //                                 </span>
 // // // // // // //                             </td>
+
+// // // // // // //                             {/* 4. DOMISILI */}
 // // // // // // //                             <td className="px-6 py-4">
 // // // // // // //                                 <div className="text-xs space-y-1">
+// // // // // // //                                     <div className="flex items-center gap-1.5 font-medium text-gray-800">
+// // // // // // //                                         <Building2 size={12} className="text-gray-400"/>
+// // // // // // //                                         <span className="truncate max-w-[180px]">
+// // // // // // //                                             {user.memberData?.unit || '-'}
+// // // // // // //                                         </span>
+// // // // // // //                                     </div>
 // // // // // // //                                     {(user.city || user.province) && (
-// // // // // // //                                         <div className="flex items-center gap-1 font-bold text-gray-700">
-// // // // // // //                                             <MapPin size={12} className="text-red-500" />
-// // // // // // //                                             <span className="truncate max-w-[150px]" title={`${user.city || ''}, ${user.province || ''}`}>
-// // // // // // //                                                 {user.city || user.province || 'Nasional'}
+// // // // // // //                                         <div className="flex items-center gap-1.5 text-gray-500 pl-4">
+// // // // // // //                                             <MapPin size={10}/>
+// // // // // // //                                             <span className="truncate max-w-[160px]">
+// // // // // // //                                                 {user.city || user.province}
 // // // // // // //                                             </span>
 // // // // // // //                                         </div>
 // // // // // // //                                     )}
-// // // // // // //                                     <p className="text-gray-500 pl-4">{user.memberData?.unit || user.managedProvinces?.[0] || '-'}</p>
 // // // // // // //                                 </div>
 // // // // // // //                             </td>
+
+// // // // // // //                             {/* 5. AKSI */}
 // // // // // // //                             <td className="px-6 py-4 text-right">
-// // // // // // //                                 <div className="flex justify-end gap-2">
+// // // // // // //                                 <div className="flex justify-end gap-1">
 // // // // // // //                                      <button 
-// // // // // // //                                         onClick={() => handleViewProfile(user)}
-// // // // // // //                                         className="p-2 text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 shadow-sm transition-all"
+// // // // // // //                                         onClick={() => handleViewProfile(user)} 
+// // // // // // //                                         className="p-1.5 text-blue-600 bg-white border border-blue-200 rounded hover:bg-blue-50 transition" 
 // // // // // // //                                         title="Lihat Profil"
 // // // // // // //                                         aria-label="Lihat Profil"
 // // // // // // //                                      >
 // // // // // // //                                          <Eye size={16}/>
 // // // // // // //                                      </button>
-
 // // // // // // //                                      <Link 
 // // // // // // //                                         href={`/admin/users/${user._id}`} 
-// // // // // // //                                         className="p-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 hover:border-gray-400 shadow-sm transition-all" 
-// // // // // // //                                         title="Setting Role & Izin"
+// // // // // // //                                         className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-100 transition" 
+// // // // // // //                                         title="Setting Role"
 // // // // // // //                                         aria-label="Setting Role"
 // // // // // // //                                      >
 // // // // // // //                                          <Settings size={16}/>
 // // // // // // //                                      </Link>
-
 // // // // // // //                                      {canManageUsers && (
 // // // // // // //                                          <>
 // // // // // // //                                             <button 
 // // // // // // //                                                 onClick={() => handleResetPassword(user._id, user.name)} 
-// // // // // // //                                                 className="p-2 text-orange-600 bg-white border border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 shadow-sm transition-all" 
-// // // // // // //                                                 title="Reset Password ke 123456"
+// // // // // // //                                                 className="p-1.5 text-orange-600 bg-white border border-orange-200 rounded hover:bg-orange-50 transition" 
+// // // // // // //                                                 title="Reset Password"
 // // // // // // //                                                 aria-label="Reset Password"
 // // // // // // //                                             >
 // // // // // // //                                                 <KeyRound size={16}/>
 // // // // // // //                                             </button>
-
 // // // // // // //                                             <button 
 // // // // // // //                                                 onClick={() => handleDelete(user._id)} 
-// // // // // // //                                                 className="p-2 text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 hover:border-red-300 shadow-sm transition-all" 
+// // // // // // //                                                 className="p-1.5 text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition" 
 // // // // // // //                                                 title="Hapus User"
 // // // // // // //                                                 aria-label="Hapus User"
 // // // // // // //                                             >
@@ -1981,6 +2420,7 @@
 
 // // // // // // //     return (
 // // // // // // //         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/50">
+// // // // // // //             {/* Header */}
 // // // // // // //             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
 // // // // // // //                 <div>
 // // // // // // //                     <h1 className="text-2xl font-black text-gray-900 tracking-tight">Data Pengguna</h1>
@@ -1988,17 +2428,17 @@
 // // // // // // //                 </div>
 // // // // // // //                 <div className="flex flex-wrap gap-3">
 // // // // // // //                     <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
-// // // // // // //                         <button onClick={() => setViewMode('cluster')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'cluster' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'}`} title="Wilayah" aria-label="Wilayah"><Layers size={14}/> Wilayah</button>
-// // // // // // //                         <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'list' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'}`} title="Tabel" aria-label="Tabel"><LayoutList size={14}/> Tabel</button>
+// // // // // // //                         <button onClick={() => setViewMode('cluster')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'cluster' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'}`} aria-label="Tampilan Wilayah"><Layers size={14}/> Wilayah</button>
+// // // // // // //                         <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'list' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'}`} aria-label="Tampilan Tabel"><LayoutList size={14}/> Tabel</button>
 // // // // // // //                     </div>
 // // // // // // //                     {canManageUsers && (
 // // // // // // //                         <>
 // // // // // // //                             <Link href="/admin/members/import">
-// // // // // // //                                 <button className="bg-green-600 text-white px-5 py-2.5 rounded-xl hover:bg-green-700 font-bold shadow-lg shadow-green-100 flex items-center gap-2 transition-all active:scale-95">
+// // // // // // //                                 <button className="bg-green-600 text-white px-5 py-2.5 rounded-xl hover:bg-green-700 font-bold shadow-lg shadow-green-100 flex items-center gap-2 transition-all active:scale-95" aria-label="Import Excel CSV">
 // // // // // // //                                     <FileSpreadsheet size={18}/> Import Excel/CSV
 // // // // // // //                                 </button>
 // // // // // // //                             </Link>
-// // // // // // //                             <button onClick={() => setShowAddModal(true)} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-black font-bold shadow-lg shadow-gray-200 flex items-center gap-2 transition-all active:scale-95">
+// // // // // // //                             <button onClick={() => setShowAddModal(true)} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-black font-bold shadow-lg shadow-gray-200 flex items-center gap-2 transition-all active:scale-95" aria-label="Tambah User Manual">
 // // // // // // //                                 <Plus size={18}/> User Manual
 // // // // // // //                             </button>
 // // // // // // //                         </>
@@ -2006,42 +2446,63 @@
 // // // // // // //                 </div>
 // // // // // // //             </div>
 
+// // // // // // //             {/* Search */}
 // // // // // // //             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 mb-6 flex items-center gap-3 sticky top-4 z-30 ring-1 ring-gray-100">
 // // // // // // //                 <Search className="text-gray-400" size={20}/>
 // // // // // // //                 <input type="text" placeholder="Cari nama, email, NIA, unit, atau kota..." className="flex-1 outline-none text-sm font-medium bg-transparent" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Cari User"/>
-// // // // // // //                 {search && <button onClick={() => setSearch('')} className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 bg-red-50 rounded-lg">RESET</button>}
+// // // // // // //                 {search && <button onClick={() => setSearch('')} className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 bg-red-50 rounded-lg" aria-label="Reset Pencarian">RESET</button>}
 // // // // // // //             </div>
 
+// // // // // // //             {/* Content */}
 // // // // // // //             {loading ? (
 // // // // // // //                 <div className="text-center py-20 flex flex-col items-center gap-4"><Loader2 className="animate-spin text-gray-400" size={40}/><p className="text-sm text-gray-500 font-medium">Memuat data pengguna...</p></div>
 // // // // // // //             ) : (
-// // // // // // //                 <div>
+// // // // // // //                 <div className="space-y-6">
+// // // // // // //                     {/* VIEW MODE: CLUSTER (WILAYAH) */}
 // // // // // // //                     {viewMode === 'cluster' && (
 // // // // // // //                         <div className="space-y-4">
 // // // // // // //                             {Object.keys(clusteredData).length === 0 && <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300"><p className="text-gray-400 font-medium">Tidak ada data ditemukan.</p></div>}
+                            
+// // // // // // //                             {/* Loop Provinsi */}
 // // // // // // //                             {Object.keys(clusteredData).sort().map(prov => {
 // // // // // // //                                 const isProvOpen = expandedProvinces[prov] || search !== '';
+// // // // // // //                                 const totalProvUsers = Object.values(clusteredData[prov]).flat().length;
+
 // // // // // // //                                 return (
 // // // // // // //                                     <div key={prov} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm transition-all hover:shadow-md">
+// // // // // // //                                         {/* HEADER PROVINSI */}
 // // // // // // //                                         <div onClick={() => toggleProvince(prov)} className="p-5 flex justify-between items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors">
 // // // // // // //                                             <div className="flex items-center gap-4">
 // // // // // // //                                                 <div className={`p-2 rounded-full transition-transform duration-300 border ${isProvOpen ? 'rotate-90 bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-400 border-gray-200'}`}><ChevronRight size={16}/></div>
-// // // // // // //                                                 <div><h3 className="font-bold text-gray-800 text-lg">{prov}</h3><p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5"><MapPin size={12}/> {Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p></div>
+// // // // // // //                                                 <div>
+// // // // // // //                                                     <h3 className="font-bold text-gray-800 text-lg">{prov}</h3>
+// // // // // // //                                                     <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5"><MapPin size={12}/> {Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p>
+// // // // // // //                                                 </div>
 // // // // // // //                                             </div>
-// // // // // // //                                             <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-xs font-bold border border-gray-200">{Object.values(clusteredData[prov]).flat().length} Anggota</span>
+// // // // // // //                                             <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-xs font-bold border border-gray-200">{totalProvUsers} Anggota</span>
 // // // // // // //                                         </div>
+
+// // // // // // //                                         {/* ISI PROVINSI (DAFTAR KABUPATEN) */}
 // // // // // // //                                         {isProvOpen && (
 // // // // // // //                                             <div className="p-4 bg-gray-50/50 border-t border-gray-100 space-y-3 animate-in slide-in-from-top-2">
 // // // // // // //                                                 {Object.keys(clusteredData[prov]).sort().map(kab => {
-// // // // // // //                                                     const kabId = `${prov}-${kab}`;
-// // // // // // //                                                     const isKabOpen = expandedRegencies[kabId] || search !== '';
+// // // // // // //                                                     // ID Unik (Gabungan Prov + Kab) agar accordion tidak macet
+// // // // // // //                                                     const uniqueKabId = `${prov}_${kab}`.replace(/\s+/g, '_');
+// // // // // // //                                                     const isKabOpen = expandedRegencies[uniqueKabId] || search !== '';
+// // // // // // //                                                     const kabUsers = clusteredData[prov][kab];
+
 // // // // // // //                                                     return (
-// // // // // // //                                                         <div key={kabId} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-// // // // // // //                                                             <div onClick={() => toggleRegency(kabId)} className="px-5 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors border-l-4 border-l-transparent hover:border-l-gray-900">
-// // // // // // //                                                                 <div className="flex items-center gap-3"><ChevronDown size={16} className={`transition-transform duration-200 ${isKabOpen ? 'rotate-180 text-gray-900' : 'text-gray-400'}`}/><span className="font-bold text-sm text-gray-700">{kab}</span></div>
-// // // // // // //                                                                 <span className="text-xs font-medium text-gray-500">{clusteredData[prov][kab].length} User</span>
+// // // // // // //                                                         <div key={uniqueKabId} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+// // // // // // //                                                             {/* HEADER KABUPATEN */}
+// // // // // // //                                                             <div onClick={() => toggleRegency(uniqueKabId)} className="px-5 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors border-l-4 border-l-transparent hover:border-l-gray-900">
+// // // // // // //                                                                 <div className="flex items-center gap-3">
+// // // // // // //                                                                     <ChevronDown size={16} className={`transition-transform duration-200 ${isKabOpen ? 'rotate-180 text-gray-900' : 'text-gray-400'}`}/>
+// // // // // // //                                                                     <span className="font-bold text-sm text-gray-700">{kab}</span>
+// // // // // // //                                                                 </div>
+// // // // // // //                                                                 <span className="text-xs font-medium text-gray-500">{kabUsers.length} User</span>
 // // // // // // //                                                             </div>
-// // // // // // //                                                             {isKabOpen && <div className="border-t border-gray-100"><UserTable data={clusteredData[prov][kab]} /></div>}
+// // // // // // //                                                             {/* TABEL USER */}
+// // // // // // //                                                             {isKabOpen && <div className="border-t border-gray-100 p-2 bg-gray-50/30"><UserTable data={kabUsers} /></div>}
 // // // // // // //                                                         </div>
 // // // // // // //                                                     );
 // // // // // // //                                                 })}
@@ -2052,6 +2513,8 @@
 // // // // // // //                             })}
 // // // // // // //                         </div>
 // // // // // // //                     )}
+                    
+// // // // // // //                     {/* VIEW MODE: LIST */}
 // // // // // // //                     {viewMode === 'list' && (
 // // // // // // //                          <div className="bg-white shadow-lg shadow-gray-100 rounded-2xl border border-gray-200 overflow-hidden">
 // // // // // // //                             <UserTable data={users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) || (u.memberData?.nia || '').includes(search))} />
@@ -2060,59 +2523,70 @@
 // // // // // // //                 </div>
 // // // // // // //             )}
 
-// // // // // // //             {/* MODAL TAMBAH USER (MANUAL) */}
+// // // // // // //             {/* MODAL TAMBAH USER */}
 // // // // // // //             {showAddModal && (
 // // // // // // //                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in">
 // // // // // // //                     <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 overflow-hidden">
 // // // // // // //                         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
 // // // // // // //                             <div><h2 className="font-bold text-lg text-gray-900">Tambah User Baru</h2><p className="text-xs text-gray-500 mt-1">Buat akun manual untuk Admin atau Peserta.</p></div>
-// // // // // // //                             <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200/50" title="Tutup" aria-label="Tutup"><X size={24}/></button>
+// // // // // // //                             <button 
+// // // // // // //                                 onClick={() => setShowAddModal(false)} 
+// // // // // // //                                 className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200/50"
+// // // // // // //                                 aria-label="Tutup Modal"
+// // // // // // //                                 title="Tutup"
+// // // // // // //                             >
+// // // // // // //                                 <X size={24}/>
+// // // // // // //                             </button>
 // // // // // // //                         </div>
 // // // // // // //                         <form onSubmit={handleCreateUser} className="p-6 space-y-5">
 // // // // // // //                             <div>
 // // // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Nama Lengkap</label>
-// // // // // // //                                 {/* [FIX AXE] Ditambahkan aria-label/title */}
 // // // // // // //                                 <input 
 // // // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
-// // // // // // //                                     placeholder="Nama Lengkap" 
 // // // // // // //                                     required 
 // // // // // // //                                     value={newUser.name} 
 // // // // // // //                                     onChange={e => setNewUser({...newUser, name: e.target.value})}
-// // // // // // //                                     title="Nama Lengkap"
 // // // // // // //                                     aria-label="Nama Lengkap"
+// // // // // // //                                     title="Nama Lengkap"
 // // // // // // //                                 />
 // // // // // // //                             </div>
 // // // // // // //                             <div>
 // // // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Email</label>
-// // // // // // //                                 {/* [FIX AXE] Ditambahkan aria-label/title */}
 // // // // // // //                                 <input 
 // // // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
 // // // // // // //                                     type="email" 
-// // // // // // //                                     placeholder="contoh@email.com" 
 // // // // // // //                                     required 
 // // // // // // //                                     value={newUser.email} 
 // // // // // // //                                     onChange={e => setNewUser({...newUser, email: e.target.value})}
-// // // // // // //                                     title="Email"
 // // // // // // //                                     aria-label="Email"
+// // // // // // //                                     title="Email"
 // // // // // // //                                 />
 // // // // // // //                             </div>
 // // // // // // //                             <div>
 // // // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Password</label>
-// // // // // // //                                 {/* [FIX AXE] Ditambahkan aria-label/title */}
 // // // // // // //                                 <input 
 // // // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
 // // // // // // //                                     type="password" 
-// // // // // // //                                     placeholder="Minimal 6 karakter" 
 // // // // // // //                                     required 
 // // // // // // //                                     value={newUser.password} 
 // // // // // // //                                     onChange={e => setNewUser({...newUser, password: e.target.value})}
-// // // // // // //                                     title="Password"
 // // // // // // //                                     aria-label="Password"
+// // // // // // //                                     title="Password"
 // // // // // // //                                 />
 // // // // // // //                             </div>
 // // // // // // //                             <div>
 // // // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Role</label>
-// // // // // // //                                 <select className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} title="Role" aria-label="Role"><option value="STUDENT">STUDENT (Peserta)</option><option value="FACILITATOR">FACILITATOR (Pengajar)</option><option value="ADMIN">ADMIN (Wilayah)</option></select>
+// // // // // // //                                 <select 
+// // // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
+// // // // // // //                                     value={newUser.role} 
+// // // // // // //                                     onChange={e => setNewUser({...newUser, role: e.target.value})}
+// // // // // // //                                     aria-label="Pilih Role"
+// // // // // // //                                     title="Pilih Role"
+// // // // // // //                                 >
+// // // // // // //                                     <option value="STUDENT">STUDENT (Peserta)</option>
+// // // // // // //                                     <option value="FACILITATOR">FACILITATOR (Pengajar)</option>
+// // // // // // //                                     <option value="ADMIN">ADMIN (Wilayah)</option>
+// // // // // // //                                 </select>
 // // // // // // //                             </div>
 // // // // // // //                             {newUser.role === 'ADMIN' && (<div className="bg-orange-50 p-4 rounded-xl border border-orange-100"><RegionSelector value={regionConfig} onChange={setRegionConfig} /></div>)}
 // // // // // // //                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
@@ -2136,6 +2610,8 @@
 // // // // // // //     );
 // // // // // // // }
 
+
+
 // // // // // // 'use client';
 
 // // // // // // import { useEffect, useState } from 'react';
@@ -2143,7 +2619,7 @@
 // // // // // // import Link from 'next/link';
 // // // // // // import { 
 // // // // // //     Loader2, Plus, Trash2, Search, MapPin, KeyRound, Eye, 
-// // // // // //     ChevronDown, ChevronRight, LayoutList, Layers, FileSpreadsheet, X, Settings, Briefcase, Building2
+// // // // // //     ChevronDown, ChevronRight, LayoutList, Layers, FileSpreadsheet, X, Settings, Briefcase, Building2, Users
 // // // // // // } from 'lucide-react';
 // // // // // // import RegionSelector from '@/components/admin/RegionSelector'; 
 // // // // // // import { usePermission } from '@/hooks/usePermission';
@@ -2163,12 +2639,13 @@
 // // // // // //     const [loading, setLoading] = useState(true);
 // // // // // //     const [search, setSearch] = useState('');
     
-// // // // // //     // Default 'cluster' agar admin langsung lihat berdasarkan wilayah
+// // // // // //     // View Mode
 // // // // // //     const [viewMode, setViewMode] = useState<'list' | 'cluster'>('cluster');
     
-// // // // // //     // State untuk Accordion (Grouping)
+// // // // // //     // State untuk Accordion (Grouping 3 Level)
 // // // // // //     const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
 // // // // // //     const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
+// // // // // //     const [expandedPositions, setExpandedPositions] = useState<Record<string, boolean>>({}); // [BARU] Level 3
 
 // // // // // //     // State Modals
 // // // // // //     const [showAddModal, setShowAddModal] = useState(false);
@@ -2190,9 +2667,10 @@
 // // // // // //         } catch (err: any) { console.error(err); } finally { setLoading(false); }
 // // // // // //     };
 
-// // // // // //     // --- LOGIKA GROUPING (PROVINSI > KABUPATEN) ---
+// // // // // //     // --- LOGIKA GROUPING 3 LEVEL (PROVINSI > KABUPATEN > JABATAN) ---
 // // // // // //     const getClusteredUsers = () => {
-// // // // // //         const groups: Record<string, Record<string, any[]>> = {};
+// // // // // //         // Struktur Baru: { "JAWA TIMUR": { "SAMPANG": { "KSR": [User...], "TSR": [User...] } } }
+// // // // // //         const groups: Record<string, Record<string, Record<string, any[]>>> = {};
         
 // // // // // //         const filtered = users.filter(u => 
 // // // // // //             u.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -2202,20 +2680,32 @@
 // // // // // //         );
 
 // // // // // //         filtered.forEach(user => {
-// // // // // //             // 1. Ambil Provinsi (Handle kode '35')
+// // // // // //             // 1. Level Provinsi
 // // // // // //             let rawProv = user.province || user.memberData?.province || 'LAINNYA';
 // // // // // //             let prov = rawProv.toString().toUpperCase().trim();
 // // // // // //             if (prov === '35') prov = 'JAWA TIMUR'; 
 
-// // // // // //             // 2. Ambil Kabupaten
+// // // // // //             // 2. Level Kabupaten
 // // // // // //             let rawKab = user.city || user.memberData?.regency || 'UMUM / PUSAT';
 // // // // // //             let kab = rawKab.toString().toUpperCase().trim();
 
-// // // // // //             // 3. Masukkan ke Group
+// // // // // //             // 3. Level Posisi / Jabatan (Grouping Baru)
+// // // // // //             let rawPos = user.memberType || user.memberData?.position || 'LAINNYA';
+// // // // // //             let pos = rawPos.toString().toUpperCase().trim();
+
+// // // // // //             // Normalisasi Nama Group (Opsional, agar rapi)
+// // // // // //             if (pos.includes('KSR')) pos = 'KSR';
+// // // // // //             else if (pos.includes('TSR')) pos = 'TSR';
+// // // // // //             else if (pos.includes('PEGAWAI') || pos.includes('STAFF')) pos = 'PEGAWAI';
+// // // // // //             else if (pos.includes('PENGURUS')) pos = 'PENGURUS';
+// // // // // //             else if (pos.includes('PMR') || pos.includes('MULA') || pos.includes('MADYA') || pos.includes('WIRA')) pos = 'PMR';
+
+// // // // // //             // Inisialisasi Nested Object
 // // // // // //             if (!groups[prov]) groups[prov] = {};
-// // // // // //             if (!groups[prov][kab]) groups[prov][kab] = [];
+// // // // // //             if (!groups[prov][kab]) groups[prov][kab] = {};
+// // // // // //             if (!groups[prov][kab][pos]) groups[prov][kab][pos] = [];
             
-// // // // // //             groups[prov][kab].push(user);
+// // // // // //             groups[prov][kab][pos].push(user);
 // // // // // //         });
         
 // // // // // //         return groups;
@@ -2223,16 +2713,12 @@
 
 // // // // // //     const clusteredData = getClusteredUsers();
 
-// // // // // //     // Toggle Provinsi dengan ID yang aman
-// // // // // //     const toggleProvince = (provKey: string) => {
-// // // // // //         setExpandedProvinces(prev => ({...prev, [provKey]: !prev[provKey]}));
-// // // // // //     };
+// // // // // //     // Toggle Functions dengan ID Unik
+// // // // // //     const toggleProvince = (id: string) => setExpandedProvinces(p => ({...p, [id]: !p[id]}));
+// // // // // //     const toggleRegency = (id: string) => setExpandedRegencies(p => ({...p, [id]: !p[id]}));
+// // // // // //     const togglePosition = (id: string) => setExpandedPositions(p => ({...p, [id]: !p[id]})); // [BARU]
 
-// // // // // //     // Toggle Kabupaten dengan ID Unik
-// // // // // //     const toggleRegency = (uniqueId: string) => {
-// // // // // //         setExpandedRegencies(prev => ({...prev, [uniqueId]: !prev[uniqueId]}));
-// // // // // //     };
-
+// // // // // //     // ... (Fungsi CRUD User sama seperti sebelumnya, tidak berubah) ...
 // // // // // //     const handleCreateUser = async (e: React.FormEvent) => {
 // // // // // //         e.preventDefault();
 // // // // // //         setIsSaving(true);
@@ -2274,16 +2760,11 @@
 
 // // // // // //     const handleUpdateProfile = async (updatedData: any) => {
 // // // // // //         try {
-// // // // // //             await api(`/api/admin/users/${selectedUser._id}`, {
-// // // // // //                 method: 'PATCH',
-// // // // // //                 body: updatedData
-// // // // // //             });
+// // // // // //             await api(`/api/admin/users/${selectedUser._id}`, { method: 'PATCH', body: updatedData });
 // // // // // //             alert("Data user berhasil diperbarui!");
 // // // // // //             setShowProfileModal(false);
 // // // // // //             loadUsers(); 
-// // // // // //         } catch (err: any) {
-// // // // // //             alert("Gagal update: " + err.message);
-// // // // // //         }
+// // // // // //         } catch (err: any) { alert("Gagal update: " + err.message); }
 // // // // // //     };
 
 // // // // // //     // --- KOMPONEN TABEL USER ---
@@ -2293,7 +2774,7 @@
 // // // // // //                 <thead className="bg-gray-50 text-gray-600 font-bold text-xs uppercase border-b border-gray-200">
 // // // // // //                     <tr>
 // // // // // //                         <th className="px-6 py-3">Nama Anggota</th>
-// // // // // //                         <th className="px-6 py-3">Posisi & Jabatan</th>
+// // // // // //                         <th className="px-6 py-3">Posisi Detail</th>
 // // // // // //                         <th className="px-6 py-3">Role Sistem</th>
 // // // // // //                         <th className="px-6 py-3">Unit / Asal</th>
 // // // // // //                         <th className="px-6 py-3 text-right">Aksi</th>
@@ -2302,8 +2783,6 @@
 // // // // // //                 <tbody className="divide-y divide-gray-100">
 // // // // // //                     {data.map(user => (
 // // // // // //                         <tr key={user._id} className="hover:bg-blue-50/30 transition-colors group">
-                            
-// // // // // //                             {/* 1. NAMA */}
 // // // // // //                             <td className="px-6 py-4">
 // // // // // //                                 <div className="flex items-center gap-3">
 // // // // // //                                     <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden border border-gray-200 flex-shrink-0">
@@ -2322,91 +2801,46 @@
 // // // // // //                                     </div>
 // // // // // //                                 </div>
 // // // // // //                             </td>
-
-// // // // // //                             {/* 2. POSISI */}
 // // // // // //                             <td className="px-6 py-4">
 // // // // // //                                 <div className="flex flex-col items-start gap-1">
 // // // // // //                                     <span className="inline-block px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
-// // // // // //                                         {user.memberType || user.memberData?.position || 'Anggota'}
+// // // // // //                                         {user.memberType || 'Anggota'}
 // // // // // //                                     </span>
 // // // // // //                                     {user.memberData?.position && user.memberData.position !== user.memberType && (
 // // // // // //                                         <div className="flex items-center gap-1 text-xs text-gray-500">
-// // // // // //                                             <Briefcase size={12}/>
-// // // // // //                                             <span className="truncate max-w-[150px]">{user.memberData.position}</span>
+// // // // // //                                             <Briefcase size={12}/> <span className="truncate max-w-[150px]">{user.memberData.position}</span>
 // // // // // //                                         </div>
 // // // // // //                                     )}
 // // // // // //                                 </div>
 // // // // // //                             </td>
-
-// // // // // //                             {/* 3. ROLE */}
 // // // // // //                             <td className="px-6 py-4">
 // // // // // //                                 <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold border ${
 // // // // // //                                     user.role === 'ADMIN' ? 'bg-orange-50 border-orange-200 text-orange-700' : 
 // // // // // //                                     user.role === 'SUPER_ADMIN' ? 'bg-purple-50 border-purple-200 text-purple-700' :
 // // // // // //                                     user.role === 'FACILITATOR' ? 'bg-green-50 border-green-200 text-green-700' :
 // // // // // //                                     'bg-gray-100 border-gray-200 text-gray-600'
-// // // // // //                                 }`}>
-// // // // // //                                     {user.role}
-// // // // // //                                 </span>
+// // // // // //                                 }`}>{user.role}</span>
 // // // // // //                             </td>
-
-// // // // // //                             {/* 4. DOMISILI */}
 // // // // // //                             <td className="px-6 py-4">
 // // // // // //                                 <div className="text-xs space-y-1">
 // // // // // //                                     <div className="flex items-center gap-1.5 font-medium text-gray-800">
-// // // // // //                                         <Building2 size={12} className="text-gray-400"/>
-// // // // // //                                         <span className="truncate max-w-[180px]">
-// // // // // //                                             {user.memberData?.unit || '-'}
-// // // // // //                                         </span>
+// // // // // //                                         <Building2 size={12} className="text-gray-400"/> <span className="truncate max-w-[180px]">{user.memberData?.unit || '-'}</span>
 // // // // // //                                     </div>
 // // // // // //                                     {(user.city || user.province) && (
 // // // // // //                                         <div className="flex items-center gap-1.5 text-gray-500 pl-4">
-// // // // // //                                             <MapPin size={10}/>
-// // // // // //                                             <span className="truncate max-w-[160px]">
-// // // // // //                                                 {user.city || user.province}
-// // // // // //                                             </span>
+// // // // // //                                             <MapPin size={10}/> <span className="truncate max-w-[160px]">{user.city || user.province}</span>
 // // // // // //                                         </div>
 // // // // // //                                     )}
 // // // // // //                                 </div>
 // // // // // //                             </td>
-
-// // // // // //                             {/* 5. AKSI */}
 // // // // // //                             <td className="px-6 py-4 text-right">
 // // // // // //                                 <div className="flex justify-end gap-1">
-// // // // // //                                      <button 
-// // // // // //                                         onClick={() => handleViewProfile(user)} 
-// // // // // //                                         className="p-1.5 text-blue-600 bg-white border border-blue-200 rounded hover:bg-blue-50 transition" 
-// // // // // //                                         title="Lihat Profil"
-// // // // // //                                         aria-label="Lihat Profil"
-// // // // // //                                      >
-// // // // // //                                          <Eye size={16}/>
-// // // // // //                                      </button>
-// // // // // //                                      <Link 
-// // // // // //                                         href={`/admin/users/${user._id}`} 
-// // // // // //                                         className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-100 transition" 
-// // // // // //                                         title="Setting Role"
-// // // // // //                                         aria-label="Setting Role"
-// // // // // //                                      >
-// // // // // //                                          <Settings size={16}/>
-// // // // // //                                      </Link>
+// // // // // //                                      <button onClick={() => handleViewProfile(user)} className="p-1.5 text-blue-600 bg-white border border-blue-200 rounded hover:bg-blue-50 transition" title="Lihat Profil" aria-label="Lihat Profil"><Eye size={16}/></button>
+// // // // // //                                      <Link href={`/admin/users/${user._id}`} className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-100 transition" title="Setting Role" aria-label="Setting Role"><Settings size={16}/></Link>
 // // // // // //                                      {canManageUsers && (
 // // // // // //                                          <>
-// // // // // //                                             <button 
-// // // // // //                                                 onClick={() => handleResetPassword(user._id, user.name)} 
-// // // // // //                                                 className="p-1.5 text-orange-600 bg-white border border-orange-200 rounded hover:bg-orange-50 transition" 
-// // // // // //                                                 title="Reset Password"
-// // // // // //                                                 aria-label="Reset Password"
-// // // // // //                                             >
-// // // // // //                                                 <KeyRound size={16}/>
-// // // // // //                                             </button>
-// // // // // //                                             <button 
-// // // // // //                                                 onClick={() => handleDelete(user._id)} 
-// // // // // //                                                 className="p-1.5 text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition" 
-// // // // // //                                                 title="Hapus User"
-// // // // // //                                                 aria-label="Hapus User"
-// // // // // //                                             >
-// // // // // //                                                 <Trash2 size={16}/>
-// // // // // //                                             </button>
+// // // // // //                                             <button onClick={() => handleResetPassword(user._id, user.name)} className="p-1.5 text-orange-600 bg-white border border-orange-200 rounded hover:bg-orange-50 transition" title="Reset Password" aria-label="Reset Password"><KeyRound size={16}/></button>
+// // // // // //                                             <button onClick={() => handleDelete(user._id)} className="p-1.5 text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition" title="Hapus User" aria-label="Hapus User"><Trash2 size={16}/></button>
 // // // // // //                                          </>
 // // // // // //                                      )}
 // // // // // //                                 </div>
@@ -2420,12 +2854,9 @@
 
 // // // // // //     return (
 // // // // // //         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/50">
-// // // // // //             {/* Header */}
+// // // // // //             {/* Header, Search, & Buttons (Sama seperti sebelumnya) */}
 // // // // // //             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-// // // // // //                 <div>
-// // // // // //                     <h1 className="text-2xl font-black text-gray-900 tracking-tight">Data Pengguna</h1>
-// // // // // //                     <p className="text-sm text-gray-500 mt-1">Kelola akun, import data anggota, dan hak akses.</p>
-// // // // // //                 </div>
+// // // // // //                 <div><h1 className="text-2xl font-black text-gray-900 tracking-tight">Data Pengguna</h1><p className="text-sm text-gray-500 mt-1">Kelola akun, import data anggota, dan hak akses.</p></div>
 // // // // // //                 <div className="flex flex-wrap gap-3">
 // // // // // //                     <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
 // // // // // //                         <button onClick={() => setViewMode('cluster')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'cluster' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'}`} aria-label="Tampilan Wilayah"><Layers size={14}/> Wilayah</button>
@@ -2433,76 +2864,100 @@
 // // // // // //                     </div>
 // // // // // //                     {canManageUsers && (
 // // // // // //                         <>
-// // // // // //                             <Link href="/admin/members/import">
-// // // // // //                                 <button className="bg-green-600 text-white px-5 py-2.5 rounded-xl hover:bg-green-700 font-bold shadow-lg shadow-green-100 flex items-center gap-2 transition-all active:scale-95" aria-label="Import Excel CSV">
-// // // // // //                                     <FileSpreadsheet size={18}/> Import Excel/CSV
-// // // // // //                                 </button>
-// // // // // //                             </Link>
-// // // // // //                             <button onClick={() => setShowAddModal(true)} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-black font-bold shadow-lg shadow-gray-200 flex items-center gap-2 transition-all active:scale-95" aria-label="Tambah User Manual">
-// // // // // //                                 <Plus size={18}/> User Manual
-// // // // // //                             </button>
+// // // // // //                             <Link href="/admin/members/import"><button className="bg-green-600 text-white px-5 py-2.5 rounded-xl hover:bg-green-700 font-bold shadow-lg shadow-green-100 flex items-center gap-2 transition-all active:scale-95" aria-label="Import CSV"><FileSpreadsheet size={18}/> Import Excel/CSV</button></Link>
+// // // // // //                             <button onClick={() => setShowAddModal(true)} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-black font-bold shadow-lg shadow-gray-200 flex items-center gap-2 transition-all active:scale-95" aria-label="User Manual"><Plus size={18}/> User Manual</button>
 // // // // // //                         </>
 // // // // // //                     )}
 // // // // // //                 </div>
 // // // // // //             </div>
 
-// // // // // //             {/* Search */}
 // // // // // //             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 mb-6 flex items-center gap-3 sticky top-4 z-30 ring-1 ring-gray-100">
 // // // // // //                 <Search className="text-gray-400" size={20}/>
 // // // // // //                 <input type="text" placeholder="Cari nama, email, NIA, unit, atau kota..." className="flex-1 outline-none text-sm font-medium bg-transparent" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Cari User"/>
-// // // // // //                 {search && <button onClick={() => setSearch('')} className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 bg-red-50 rounded-lg" aria-label="Reset Pencarian">RESET</button>}
+// // // // // //                 {search && <button onClick={() => setSearch('')} className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 bg-red-50 rounded-lg" aria-label="Reset">RESET</button>}
 // // // // // //             </div>
 
-// // // // // //             {/* Content */}
+// // // // // //             {/* Content Area */}
 // // // // // //             {loading ? (
 // // // // // //                 <div className="text-center py-20 flex flex-col items-center gap-4"><Loader2 className="animate-spin text-gray-400" size={40}/><p className="text-sm text-gray-500 font-medium">Memuat data pengguna...</p></div>
 // // // // // //             ) : (
 // // // // // //                 <div className="space-y-6">
-// // // // // //                     {/* VIEW MODE: CLUSTER (WILAYAH) */}
+// // // // // //                     {/* VIEW MODE: CLUSTER (WILAYAH > JABATAN) */}
 // // // // // //                     {viewMode === 'cluster' && (
 // // // // // //                         <div className="space-y-4">
 // // // // // //                             {Object.keys(clusteredData).length === 0 && <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300"><p className="text-gray-400 font-medium">Tidak ada data ditemukan.</p></div>}
                             
-// // // // // //                             {/* Loop Provinsi */}
+// // // // // //                             {/* LEVEL 1: PROVINSI */}
 // // // // // //                             {Object.keys(clusteredData).sort().map(prov => {
 // // // // // //                                 const isProvOpen = expandedProvinces[prov] || search !== '';
-// // // // // //                                 const totalProvUsers = Object.values(clusteredData[prov]).flat().length;
+// // // // // //                                 // Hitung total user di provinsi ini (dari semua kab & posisi)
+// // // // // //                                 const totalProvUsers = Object.values(clusteredData[prov]).reduce((acc, kabObj) => 
+// // // // // //                                     acc + Object.values(kabObj).flat().length, 0
+// // // // // //                                 );
 
 // // // // // //                                 return (
 // // // // // //                                     <div key={prov} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm transition-all hover:shadow-md">
-// // // // // //                                         {/* HEADER PROVINSI */}
 // // // // // //                                         <div onClick={() => toggleProvince(prov)} className="p-5 flex justify-between items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors">
 // // // // // //                                             <div className="flex items-center gap-4">
 // // // // // //                                                 <div className={`p-2 rounded-full transition-transform duration-300 border ${isProvOpen ? 'rotate-90 bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-400 border-gray-200'}`}><ChevronRight size={16}/></div>
-// // // // // //                                                 <div>
-// // // // // //                                                     <h3 className="font-bold text-gray-800 text-lg">{prov}</h3>
-// // // // // //                                                     <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5"><MapPin size={12}/> {Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p>
-// // // // // //                                                 </div>
+// // // // // //                                                 <div><h3 className="font-bold text-gray-800 text-lg">{prov}</h3><p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5"><MapPin size={12}/> {Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p></div>
 // // // // // //                                             </div>
 // // // // // //                                             <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-xs font-bold border border-gray-200">{totalProvUsers} Anggota</span>
 // // // // // //                                         </div>
 
-// // // // // //                                         {/* ISI PROVINSI (DAFTAR KABUPATEN) */}
 // // // // // //                                         {isProvOpen && (
 // // // // // //                                             <div className="p-4 bg-gray-50/50 border-t border-gray-100 space-y-3 animate-in slide-in-from-top-2">
+// // // // // //                                                 {/* LEVEL 2: KABUPATEN */}
 // // // // // //                                                 {Object.keys(clusteredData[prov]).sort().map(kab => {
-// // // // // //                                                     // ID Unik (Gabungan Prov + Kab) agar accordion tidak macet
 // // // // // //                                                     const uniqueKabId = `${prov}_${kab}`.replace(/\s+/g, '_');
 // // // // // //                                                     const isKabOpen = expandedRegencies[uniqueKabId] || search !== '';
-// // // // // //                                                     const kabUsers = clusteredData[prov][kab];
+// // // // // //                                                     const posGroups = clusteredData[prov][kab];
+// // // // // //                                                     // Hitung total user di kabupaten ini
+// // // // // //                                                     const totalKabUsers = Object.values(posGroups).flat().length;
 
 // // // // // //                                                     return (
 // // // // // //                                                         <div key={uniqueKabId} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-// // // // // //                                                             {/* HEADER KABUPATEN */}
 // // // // // //                                                             <div onClick={() => toggleRegency(uniqueKabId)} className="px-5 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors border-l-4 border-l-transparent hover:border-l-gray-900">
 // // // // // //                                                                 <div className="flex items-center gap-3">
 // // // // // //                                                                     <ChevronDown size={16} className={`transition-transform duration-200 ${isKabOpen ? 'rotate-180 text-gray-900' : 'text-gray-400'}`}/>
 // // // // // //                                                                     <span className="font-bold text-sm text-gray-700">{kab}</span>
 // // // // // //                                                                 </div>
-// // // // // //                                                                 <span className="text-xs font-medium text-gray-500">{kabUsers.length} User</span>
+// // // // // //                                                                 <span className="text-xs font-medium text-gray-500">{totalKabUsers} User</span>
 // // // // // //                                                             </div>
-// // // // // //                                                             {/* TABEL USER */}
-// // // // // //                                                             {isKabOpen && <div className="border-t border-gray-100 p-2 bg-gray-50/30"><UserTable data={kabUsers} /></div>}
+
+// // // // // //                                                             {/* LEVEL 3: POSISI / JABATAN (KSR, TSR, DLL) */}
+// // // // // //                                                             {isKabOpen && (
+// // // // // //                                                                 <div className="border-t border-gray-100 bg-gray-50/30 p-3 space-y-2">
+// // // // // //                                                                     {Object.keys(posGroups).sort().map(pos => {
+// // // // // //                                                                         const uniquePosId = `${uniqueKabId}_${pos}`;
+// // // // // //                                                                         const isPosOpen = expandedPositions[uniquePosId] || search !== '';
+// // // // // //                                                                         const posUsers = posGroups[pos];
+
+// // // // // //                                                                         return (
+// // // // // //                                                                             <div key={uniquePosId} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+// // // // // //                                                                                  <div onClick={() => togglePosition(uniquePosId)} className="px-4 py-2.5 flex justify-between items-center cursor-pointer hover:bg-blue-50/50 transition-colors">
+// // // // // //                                                                                     <div className="flex items-center gap-2">
+// // // // // //                                                                                         <ChevronRight size={14} className={`transition-transform duration-200 ${isPosOpen ? 'rotate-90 text-blue-600' : 'text-gray-400'}`}/>
+// // // // // //                                                                                         {/* Ikon Berbeda untuk tiap jabatan */}
+// // // // // //                                                                                         {pos === 'KSR' || pos === 'TSR' ? <Users size={14} className="text-blue-500"/> : 
+// // // // // //                                                                                          pos === 'PEGAWAI' ? <Briefcase size={14} className="text-purple-500"/> :
+// // // // // //                                                                                          <Users size={14} className="text-gray-500"/>}
+// // // // // //                                                                                         <span className="font-bold text-xs text-gray-800">{pos}</span>
+// // // // // //                                                                                     </div>
+// // // // // //                                                                                     <span className="text-[10px] font-bold bg-gray-100 px-2 py-0.5 rounded text-gray-600">{posUsers.length} Org</span>
+// // // // // //                                                                                  </div>
+                                                                                 
+// // // // // //                                                                                  {/* LEVEL 4: TABEL USER */}
+// // // // // //                                                                                  {isPosOpen && (
+// // // // // //                                                                                      <div className="border-t border-gray-100 p-2">
+// // // // // //                                                                                          <UserTable data={posUsers} />
+// // // // // //                                                                                      </div>
+// // // // // //                                                                                  )}
+// // // // // //                                                                             </div>
+// // // // // //                                                                         );
+// // // // // //                                                                     })}
+// // // // // //                                                                 </div>
+// // // // // //                                                             )}
 // // // // // //                                                         </div>
 // // // // // //                                                     );
 // // // // // //                                                 })}
@@ -2514,7 +2969,7 @@
 // // // // // //                         </div>
 // // // // // //                     )}
                     
-// // // // // //                     {/* VIEW MODE: LIST */}
+// // // // // //                     {/* VIEW MODE: LIST (TANPA GROUPING) */}
 // // // // // //                     {viewMode === 'list' && (
 // // // // // //                          <div className="bg-white shadow-lg shadow-gray-100 rounded-2xl border border-gray-200 overflow-hidden">
 // // // // // //                             <UserTable data={users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) || (u.memberData?.nia || '').includes(search))} />
@@ -2523,71 +2978,19 @@
 // // // // // //                 </div>
 // // // // // //             )}
 
-// // // // // //             {/* MODAL TAMBAH USER */}
+// // // // // //             {/* ... Modal Tambah User & Profil (Sama seperti sebelumnya) ... */}
 // // // // // //             {showAddModal && (
 // // // // // //                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in">
 // // // // // //                     <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 overflow-hidden">
 // // // // // //                         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
 // // // // // //                             <div><h2 className="font-bold text-lg text-gray-900">Tambah User Baru</h2><p className="text-xs text-gray-500 mt-1">Buat akun manual untuk Admin atau Peserta.</p></div>
-// // // // // //                             <button 
-// // // // // //                                 onClick={() => setShowAddModal(false)} 
-// // // // // //                                 className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200/50"
-// // // // // //                                 aria-label="Tutup Modal"
-// // // // // //                                 title="Tutup"
-// // // // // //                             >
-// // // // // //                                 <X size={24}/>
-// // // // // //                             </button>
+// // // // // //                             <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200/50" aria-label="Tutup" title="Tutup"><X size={24}/></button>
 // // // // // //                         </div>
 // // // // // //                         <form onSubmit={handleCreateUser} className="p-6 space-y-5">
-// // // // // //                             <div>
-// // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Nama Lengkap</label>
-// // // // // //                                 <input 
-// // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
-// // // // // //                                     required 
-// // // // // //                                     value={newUser.name} 
-// // // // // //                                     onChange={e => setNewUser({...newUser, name: e.target.value})}
-// // // // // //                                     aria-label="Nama Lengkap"
-// // // // // //                                     title="Nama Lengkap"
-// // // // // //                                 />
-// // // // // //                             </div>
-// // // // // //                             <div>
-// // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Email</label>
-// // // // // //                                 <input 
-// // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
-// // // // // //                                     type="email" 
-// // // // // //                                     required 
-// // // // // //                                     value={newUser.email} 
-// // // // // //                                     onChange={e => setNewUser({...newUser, email: e.target.value})}
-// // // // // //                                     aria-label="Email"
-// // // // // //                                     title="Email"
-// // // // // //                                 />
-// // // // // //                             </div>
-// // // // // //                             <div>
-// // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Password</label>
-// // // // // //                                 <input 
-// // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
-// // // // // //                                     type="password" 
-// // // // // //                                     required 
-// // // // // //                                     value={newUser.password} 
-// // // // // //                                     onChange={e => setNewUser({...newUser, password: e.target.value})}
-// // // // // //                                     aria-label="Password"
-// // // // // //                                     title="Password"
-// // // // // //                                 />
-// // // // // //                             </div>
-// // // // // //                             <div>
-// // // // // //                                 <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Role</label>
-// // // // // //                                 <select 
-// // // // // //                                     className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" 
-// // // // // //                                     value={newUser.role} 
-// // // // // //                                     onChange={e => setNewUser({...newUser, role: e.target.value})}
-// // // // // //                                     aria-label="Pilih Role"
-// // // // // //                                     title="Pilih Role"
-// // // // // //                                 >
-// // // // // //                                     <option value="STUDENT">STUDENT (Peserta)</option>
-// // // // // //                                     <option value="FACILITATOR">FACILITATOR (Pengajar)</option>
-// // // // // //                                     <option value="ADMIN">ADMIN (Wilayah)</option>
-// // // // // //                                 </select>
-// // // // // //                             </div>
+// // // // // //                             <div><label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Nama Lengkap</label><input className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} aria-label="Nama" title="Nama"/></div>
+// // // // // //                             <div><label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Email</label><input className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" type="email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} aria-label="Email" title="Email"/></div>
+// // // // // //                             <div><label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Password</label><input className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" type="password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} aria-label="Password" title="Password"/></div>
+// // // // // //                             <div><label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Role</label><select className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} aria-label="Role" title="Role"><option value="STUDENT">STUDENT (Peserta)</option><option value="FACILITATOR">FACILITATOR (Pengajar)</option><option value="ADMIN">ADMIN (Wilayah)</option></select></div>
 // // // // // //                             {newUser.role === 'ADMIN' && (<div className="bg-orange-50 p-4 rounded-xl border border-orange-100"><RegionSelector value={regionConfig} onChange={setRegionConfig} /></div>)}
 // // // // // //                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
 // // // // // //                                 <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-100 rounded-xl text-sm">Batal</button>
@@ -2597,14 +3000,9 @@
 // // // // // //                     </div>
 // // // // // //                 </div>
 // // // // // //             )}
-
-// // // // // //             {/* MODAL LIHAT/EDIT PROFIL */}
+            
 // // // // // //             {showProfileModal && selectedUser && (
-// // // // // //                 <UserProfileForm 
-// // // // // //                     initialData={selectedUser}
-// // // // // //                     onClose={() => setShowProfileModal(false)}
-// // // // // //                     onSave={handleUpdateProfile}
-// // // // // //                 />
+// // // // // //                 <UserProfileForm initialData={selectedUser} onClose={() => setShowProfileModal(false)} onSave={handleUpdateProfile} />
 // // // // // //             )}
 // // // // // //         </div>
 // // // // // //     );
@@ -2619,17 +3017,12 @@
 // // // // // import Link from 'next/link';
 // // // // // import { 
 // // // // //     Loader2, Plus, Trash2, Search, MapPin, KeyRound, Eye, 
-// // // // //     ChevronDown, ChevronRight, LayoutList, Layers, FileSpreadsheet, X, Settings, Briefcase, Building2, Users
+// // // // //     ChevronDown, ChevronRight, LayoutList, Layers, FileSpreadsheet, 
+// // // // //     X, Settings, Briefcase, Building2, FileText, Filter
 // // // // // } from 'lucide-react';
 // // // // // import RegionSelector from '@/components/admin/RegionSelector'; 
 // // // // // import { usePermission } from '@/hooks/usePermission';
 // // // // // import UserProfileForm from '@/app/admin/members/UserProfileForm';
-
-// // // // // interface RegionConfig {
-// // // // //     scope: 'national' | 'province' | 'regency';
-// // // // //     provinces: string[];
-// // // // //     regencies: string[];
-// // // // // }
 
 // // // // // export default function AdminUsersPage() {
 // // // // //     const { hasPermission } = usePermission();
@@ -2637,25 +3030,31 @@
 
 // // // // //     const [users, setUsers] = useState<any[]>([]);
 // // // // //     const [loading, setLoading] = useState(true);
-// // // // //     const [search, setSearch] = useState('');
     
-// // // // //     // View Mode
+// // // // //     // --- STATE FILTER & PENCARIAN ---
+// // // // //     const [search, setSearch] = useState('');
+// // // // //     const [filterRole, setFilterRole] = useState('');
+// // // // //     const [filterProv, setFilterProv] = useState(''); // Filter Provinsi
+// // // // //     const [filterCity, setFilterCity] = useState(''); // Filter Kota
+    
 // // // // //     const [viewMode, setViewMode] = useState<'list' | 'cluster'>('cluster');
     
-// // // // //     // State untuk Accordion (Grouping 3 Level)
+// // // // //     // Accordion State
 // // // // //     const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
 // // // // //     const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
-// // // // //     const [expandedPositions, setExpandedPositions] = useState<Record<string, boolean>>({}); // [BARU] Level 3
 
-// // // // //     // State Modals
+// // // // //     // Modal State
 // // // // //     const [showAddModal, setShowAddModal] = useState(false);
 // // // // //     const [selectedUser, setSelectedUser] = useState<any>(null); 
 // // // // //     const [showProfileModal, setShowProfileModal] = useState(false);
 
-// // // // //     // State Form Create
+// // // // //     // Create User State
 // // // // //     const [isSaving, setIsSaving] = useState(false);
 // // // // //     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
-// // // // //     const [regionConfig, setRegionConfig] = useState<RegionConfig>({ scope: 'national', provinces: [], regencies: [] });
+// // // // //     const [regionConfig, setRegionConfig] = useState<any>({ scope: 'national', provinces: [], regencies: [] });
+
+// // // // //     // Data Wilayah untuk Filter Dropdown
+// // // // //     const [provincesList, setProvincesList] = useState<string[]>([]);
 
 // // // // //     useEffect(() => { loadUsers(); }, []);
 
@@ -2663,62 +3062,56 @@
 // // // // //         try {
 // // // // //             setLoading(true);
 // // // // //             const res = await api('/api/admin/users');
-// // // // //             setUsers(res.users || []);
+// // // // //             const data = res.users || [];
+// // // // //             setUsers(data);
+
+// // // // //             // Ekstrak list provinsi unik untuk filter
+// // // // //             const uniqueProvs = Array.from(new Set(data.map((u:any) => u.province).filter(Boolean))) as string[];
+// // // // //             setProvincesList(uniqueProvs.sort());
+
 // // // // //         } catch (err: any) { console.error(err); } finally { setLoading(false); }
 // // // // //     };
 
-// // // // //     // --- LOGIKA GROUPING 3 LEVEL (PROVINSI > KABUPATEN > JABATAN) ---
+// // // // //     // --- LOGIKA FILTERING ---
+// // // // //     const getFilteredUsers = () => {
+// // // // //         return users.filter(u => {
+// // // // //             const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || 
+// // // // //                                 u.email.toLowerCase().includes(search.toLowerCase()) ||
+// // // // //                                 (u.memberData?.unit || '').toLowerCase().includes(search.toLowerCase());
+// // // // //             const matchRole = filterRole ? u.role === filterRole : true;
+// // // // //             const matchProv = filterProv ? u.province === filterProv : true;
+// // // // //             const matchCity = filterCity ? (u.city || '').includes(filterCity) : true;
+
+// // // // //             return matchSearch && matchRole && matchProv && matchCity;
+// // // // //         });
+// // // // //     };
+
+// // // // //     // --- LOGIKA CLUSTERING ---
 // // // // //     const getClusteredUsers = () => {
-// // // // //         // Struktur Baru: { "JAWA TIMUR": { "SAMPANG": { "KSR": [User...], "TSR": [User...] } } }
-// // // // //         const groups: Record<string, Record<string, Record<string, any[]>>> = {};
-        
-// // // // //         const filtered = users.filter(u => 
-// // // // //             u.name.toLowerCase().includes(search.toLowerCase()) || 
-// // // // //             u.email.toLowerCase().includes(search.toLowerCase()) ||
-// // // // //             (u.memberData?.nia || '').includes(search) ||
-// // // // //             (u.memberData?.unit || '').toLowerCase().includes(search.toLowerCase())
-// // // // //         );
+// // // // //         const groups: Record<string, Record<string, any[]>> = {};
+// // // // //         const filtered = getFilteredUsers();
 
 // // // // //         filtered.forEach(user => {
-// // // // //             // 1. Level Provinsi
-// // // // //             let rawProv = user.province || user.memberData?.province || 'LAINNYA';
+// // // // //             let rawProv = user.province || 'LAINNYA';
 // // // // //             let prov = rawProv.toString().toUpperCase().trim();
 // // // // //             if (prov === '35') prov = 'JAWA TIMUR'; 
 
-// // // // //             // 2. Level Kabupaten
-// // // // //             let rawKab = user.city || user.memberData?.regency || 'UMUM / PUSAT';
+// // // // //             let rawKab = user.city || 'UMUM / PUSAT';
 // // // // //             let kab = rawKab.toString().toUpperCase().trim();
 
-// // // // //             // 3. Level Posisi / Jabatan (Grouping Baru)
-// // // // //             let rawPos = user.memberType || user.memberData?.position || 'LAINNYA';
-// // // // //             let pos = rawPos.toString().toUpperCase().trim();
-
-// // // // //             // Normalisasi Nama Group (Opsional, agar rapi)
-// // // // //             if (pos.includes('KSR')) pos = 'KSR';
-// // // // //             else if (pos.includes('TSR')) pos = 'TSR';
-// // // // //             else if (pos.includes('PEGAWAI') || pos.includes('STAFF')) pos = 'PEGAWAI';
-// // // // //             else if (pos.includes('PENGURUS')) pos = 'PENGURUS';
-// // // // //             else if (pos.includes('PMR') || pos.includes('MULA') || pos.includes('MADYA') || pos.includes('WIRA')) pos = 'PMR';
-
-// // // // //             // Inisialisasi Nested Object
 // // // // //             if (!groups[prov]) groups[prov] = {};
-// // // // //             if (!groups[prov][kab]) groups[prov][kab] = {};
-// // // // //             if (!groups[prov][kab][pos]) groups[prov][kab][pos] = [];
-            
-// // // // //             groups[prov][kab][pos].push(user);
+// // // // //             if (!groups[prov][kab]) groups[prov][kab] = [];
+// // // // //             groups[prov][kab].push(user);
 // // // // //         });
-        
 // // // // //         return groups;
 // // // // //     };
 
 // // // // //     const clusteredData = getClusteredUsers();
+// // // // //     const filteredList = getFilteredUsers(); 
 
-// // // // //     // Toggle Functions dengan ID Unik
-// // // // //     const toggleProvince = (id: string) => setExpandedProvinces(p => ({...p, [id]: !p[id]}));
-// // // // //     const toggleRegency = (id: string) => setExpandedRegencies(p => ({...p, [id]: !p[id]}));
-// // // // //     const togglePosition = (id: string) => setExpandedPositions(p => ({...p, [id]: !p[id]})); // [BARU]
+// // // // //     const toggleProvince = (key: string) => setExpandedProvinces(p => ({...p, [key]: !p[key]}));
+// // // // //     const toggleRegency = (key: string) => setExpandedRegencies(p => ({...p, [key]: !p[key]}));
 
-// // // // //     // ... (Fungsi CRUD User sama seperti sebelumnya, tidak berubah) ...
 // // // // //     const handleCreateUser = async (e: React.FormEvent) => {
 // // // // //         e.preventDefault();
 // // // // //         setIsSaving(true);
@@ -2731,119 +3124,67 @@
 // // // // //                 payload.permissions = []; 
 // // // // //             }
 // // // // //             await api('/api/admin/users', { method: 'POST', body: payload });
-// // // // //             alert('User berhasil dibuat!');
-// // // // //             setShowAddModal(false);
-// // // // //             loadUsers();
-// // // // //         } catch (err: any) { alert(err.message || 'Gagal buat user'); } finally { setIsSaving(false); }
+// // // // //             alert('User berhasil dibuat!'); setShowAddModal(false); loadUsers();
+// // // // //         } catch (err: any) { alert(err.message); } finally { setIsSaving(false); }
 // // // // //     };
 
-// // // // //     const handleDelete = async (userId: string) => {
+// // // // //     const handleDelete = async (id: string) => {
 // // // // //         if (!confirm('Hapus user ini?')) return;
-// // // // //         try {
-// // // // //             await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
-// // // // //             setUsers(prev => prev.filter(u => u._id !== userId));
-// // // // //         } catch (e) { alert('Gagal hapus'); }
+// // // // //         try { await api(`/api/admin/users/${id}`, { method: 'DELETE' }); loadUsers(); } catch (e) { alert('Gagal hapus'); }
 // // // // //     };
 
-// // // // //     const handleResetPassword = async (userId: string, userName: string) => {
-// // // // //         if (!confirm(`Reset password "${userName}" menjadi "123456"?`)) return;
-// // // // //         try {
-// // // // //             await api(`/api/admin/users/${userId}/reset-password`, { method: 'PATCH' });
-// // // // //             alert(`✅ Password ${userName} di-reset ke: 123456`);
-// // // // //         } catch (e: any) { alert(`Gagal: ${e.message}`); }
+// // // // //     const handleResetPassword = async (id: string, name: string) => {
+// // // // //         if (!confirm(`Reset password ${name}?`)) return;
+// // // // //         try { await api(`/api/admin/users/${id}/reset-password`, { method: 'PATCH' }); alert('Password Reset: 123456'); } catch (e: any) { alert(e.message); }
 // // // // //     };
 
-// // // // //     const handleViewProfile = (user: any) => {
-// // // // //         setSelectedUser(user);
-// // // // //         setShowProfileModal(true);
+// // // // //     const handleUpdateProfile = async (data: any) => {
+// // // // //         try { await api(`/api/admin/users/${selectedUser._id}`, { method: 'PATCH', body: data }); alert("Profil diperbarui!"); setShowProfileModal(false); loadUsers(); } catch (e: any) { alert(e.message); }
 // // // // //     };
 
-// // // // //     const handleUpdateProfile = async (updatedData: any) => {
-// // // // //         try {
-// // // // //             await api(`/api/admin/users/${selectedUser._id}`, { method: 'PATCH', body: updatedData });
-// // // // //             alert("Data user berhasil diperbarui!");
-// // // // //             setShowProfileModal(false);
-// // // // //             loadUsers(); 
-// // // // //         } catch (err: any) { alert("Gagal update: " + err.message); }
-// // // // //     };
-
-// // // // //     // --- KOMPONEN TABEL USER ---
+// // // // //     // --- SUB-COMPONENT: TABLE ---
 // // // // //     const UserTable = ({ data }: { data: any[] }) => (
 // // // // //         <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
 // // // // //             <table className="w-full text-left text-sm">
 // // // // //                 <thead className="bg-gray-50 text-gray-600 font-bold text-xs uppercase border-b border-gray-200">
 // // // // //                     <tr>
 // // // // //                         <th className="px-6 py-3">Nama Anggota</th>
-// // // // //                         <th className="px-6 py-3">Posisi Detail</th>
-// // // // //                         <th className="px-6 py-3">Role Sistem</th>
-// // // // //                         <th className="px-6 py-3">Unit / Asal</th>
+// // // // //                         <th className="px-6 py-3">Posisi & Jabatan</th>
+// // // // //                         <th className="px-6 py-3">Role</th>
+// // // // //                         <th className="px-6 py-3">Wilayah</th>
 // // // // //                         <th className="px-6 py-3 text-right">Aksi</th>
 // // // // //                     </tr>
 // // // // //                 </thead>
 // // // // //                 <tbody className="divide-y divide-gray-100">
 // // // // //                     {data.map(user => (
-// // // // //                         <tr key={user._id} className="hover:bg-blue-50/30 transition-colors group">
+// // // // //                         <tr key={user._id} className="hover:bg-blue-50/30 transition-colors">
 // // // // //                             <td className="px-6 py-4">
 // // // // //                                 <div className="flex items-center gap-3">
-// // // // //                                     <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden border border-gray-200 flex-shrink-0">
-// // // // //                                         <img src={getImageUrl(user.avatarUrl)} className="w-full h-full object-cover" alt=""/>
+// // // // //                                     <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+// // // // //                                         <img src={getImageUrl(user.avatarUrl)} className="w-full h-full object-cover" alt="Avatar" onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/150'}}/>
 // // // // //                                     </div>
-// // // // //                                     <div>
-// // // // //                                         <p className="font-bold text-gray-900 text-sm">{user.name}</p>
-// // // // //                                         <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-// // // // //                                             <span>{user.email}</span>
-// // // // //                                             {(user.memberData?.nia || user.memberData?.kode) && (
-// // // // //                                                 <span className="bg-gray-100 px-1.5 rounded text-[10px] font-mono border border-gray-200 text-gray-600">
-// // // // //                                                     {user.memberData.nia || user.memberData.kode}
-// // // // //                                                 </span>
-// // // // //                                             )}
-// // // // //                                         </div>
-// // // // //                                     </div>
+// // // // //                                     <div><p className="font-bold text-gray-900 text-sm">{user.name}</p><p className="text-xs text-gray-500">{user.email}</p></div>
 // // // // //                                 </div>
 // // // // //                             </td>
 // // // // //                             <td className="px-6 py-4">
-// // // // //                                 <div className="flex flex-col items-start gap-1">
-// // // // //                                     <span className="inline-block px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
-// // // // //                                         {user.memberType || 'Anggota'}
-// // // // //                                     </span>
-// // // // //                                     {user.memberData?.position && user.memberData.position !== user.memberType && (
-// // // // //                                         <div className="flex items-center gap-1 text-xs text-gray-500">
-// // // // //                                             <Briefcase size={12}/> <span className="truncate max-w-[150px]">{user.memberData.position}</span>
-// // // // //                                         </div>
-// // // // //                                     )}
-// // // // //                                 </div>
+// // // // //                                 <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">{user.memberType || 'Anggota'}</span>
+// // // // //                                 {user.memberData?.position && <div className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Briefcase size={10}/> {user.memberData.position}</div>}
 // // // // //                             </td>
 // // // // //                             <td className="px-6 py-4">
-// // // // //                                 <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold border ${
-// // // // //                                     user.role === 'ADMIN' ? 'bg-orange-50 border-orange-200 text-orange-700' : 
-// // // // //                                     user.role === 'SUPER_ADMIN' ? 'bg-purple-50 border-purple-200 text-purple-700' :
-// // // // //                                     user.role === 'FACILITATOR' ? 'bg-green-50 border-green-200 text-green-700' :
-// // // // //                                     'bg-gray-100 border-gray-200 text-gray-600'
-// // // // //                                 }`}>{user.role}</span>
+// // // // //                                 <span className={`text-[10px] px-2 py-1 rounded font-bold border ${user.role==='ADMIN'?'bg-orange-50 text-orange-700':user.role==='FACILITATOR'?'bg-green-50 text-green-700':'bg-gray-100 text-gray-600'}`}>{user.role}</span>
 // // // // //                             </td>
-// // // // //                             <td className="px-6 py-4">
-// // // // //                                 <div className="text-xs space-y-1">
-// // // // //                                     <div className="flex items-center gap-1.5 font-medium text-gray-800">
-// // // // //                                         <Building2 size={12} className="text-gray-400"/> <span className="truncate max-w-[180px]">{user.memberData?.unit || '-'}</span>
-// // // // //                                     </div>
-// // // // //                                     {(user.city || user.province) && (
-// // // // //                                         <div className="flex items-center gap-1.5 text-gray-500 pl-4">
-// // // // //                                             <MapPin size={10}/> <span className="truncate max-w-[160px]">{user.city || user.province}</span>
-// // // // //                                         </div>
-// // // // //                                     )}
-// // // // //                                 </div>
+// // // // //                             <td className="px-6 py-4 text-xs text-gray-600">
+// // // // //                                 {user.province ? <div className="flex items-center gap-1"><MapPin size={10}/> {user.city}, {user.province}</div> : '-'}
 // // // // //                             </td>
-// // // // //                             <td className="px-6 py-4 text-right">
-// // // // //                                 <div className="flex justify-end gap-1">
-// // // // //                                      <button onClick={() => handleViewProfile(user)} className="p-1.5 text-blue-600 bg-white border border-blue-200 rounded hover:bg-blue-50 transition" title="Lihat Profil" aria-label="Lihat Profil"><Eye size={16}/></button>
-// // // // //                                      <Link href={`/admin/users/${user._id}`} className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-100 transition" title="Setting Role" aria-label="Setting Role"><Settings size={16}/></Link>
-// // // // //                                      {canManageUsers && (
-// // // // //                                          <>
-// // // // //                                             <button onClick={() => handleResetPassword(user._id, user.name)} className="p-1.5 text-orange-600 bg-white border border-orange-200 rounded hover:bg-orange-50 transition" title="Reset Password" aria-label="Reset Password"><KeyRound size={16}/></button>
-// // // // //                                             <button onClick={() => handleDelete(user._id)} className="p-1.5 text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition" title="Hapus User" aria-label="Hapus User"><Trash2 size={16}/></button>
-// // // // //                                          </>
-// // // // //                                      )}
-// // // // //                                 </div>
+// // // // //                             <td className="px-6 py-4 text-right flex justify-end gap-1">
+// // // // //                                 <button onClick={()=>{setSelectedUser(user); setShowProfileModal(true)}} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-blue-600" title="Profil" aria-label="Profil"><Eye size={16}/></button>
+// // // // //                                 <Link href={`/admin/users/${user._id}`} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-gray-600" title="Setting" aria-label="Setting"><Settings size={16}/></Link>
+// // // // //                                 {canManageUsers && (
+// // // // //                                     <>
+// // // // //                                         <button onClick={()=>handleResetPassword(user._id, user.name)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-orange-600" title="Reset Pass" aria-label="Reset Password"><KeyRound size={16}/></button>
+// // // // //                                         <button onClick={()=>handleDelete(user._id)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-red-600" title="Hapus" aria-label="Hapus"><Trash2 size={16}/></button>
+// // // // //                                     </>
+// // // // //                                 )}
 // // // // //                             </td>
 // // // // //                         </tr>
 // // // // //                     ))}
@@ -2854,164 +3195,107 @@
 
 // // // // //     return (
 // // // // //         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/50">
-// // // // //             {/* Header, Search, & Buttons (Sama seperti sebelumnya) */}
-// // // // //             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-// // // // //                 <div><h1 className="text-2xl font-black text-gray-900 tracking-tight">Data Pengguna</h1><p className="text-sm text-gray-500 mt-1">Kelola akun, import data anggota, dan hak akses.</p></div>
-// // // // //                 <div className="flex flex-wrap gap-3">
-// // // // //                     <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
-// // // // //                         <button onClick={() => setViewMode('cluster')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'cluster' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'}`} aria-label="Tampilan Wilayah"><Layers size={14}/> Wilayah</button>
-// // // // //                         <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'list' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'}`} aria-label="Tampilan Tabel"><LayoutList size={14}/> Tabel</button>
+// // // // //             {/* Header */}
+// // // // //             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+// // // // //                 <div><h1 className="text-2xl font-black text-gray-900">Data Pengguna</h1><p className="text-sm text-gray-500">Kelola akun, import data, dan hak akses.</p></div>
+// // // // //                 <div className="flex gap-2">
+// // // // //                     <div className="flex bg-white p-1 rounded-lg border shadow-sm">
+// // // // //                         <button onClick={()=>setViewMode('cluster')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='cluster'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="View Cluster"><Layers size={14}/> Wilayah</button>
+// // // // //                         <button onClick={()=>setViewMode('list')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='list'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="View Table"><LayoutList size={14}/> Tabel</button>
 // // // // //                     </div>
 // // // // //                     {canManageUsers && (
 // // // // //                         <>
-// // // // //                             <Link href="/admin/members/import"><button className="bg-green-600 text-white px-5 py-2.5 rounded-xl hover:bg-green-700 font-bold shadow-lg shadow-green-100 flex items-center gap-2 transition-all active:scale-95" aria-label="Import CSV"><FileSpreadsheet size={18}/> Import Excel/CSV</button></Link>
-// // // // //                             <button onClick={() => setShowAddModal(true)} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-black font-bold shadow-lg shadow-gray-200 flex items-center gap-2 transition-all active:scale-95" aria-label="User Manual"><Plus size={18}/> User Manual</button>
+// // // // //                             <Link href="/admin/members/import"><button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Import"><FileSpreadsheet size={16}/> Import</button></Link>
+// // // // //                             <button onClick={()=>setShowAddModal(true)} className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Tambah User"><Plus size={16}/> Manual</button>
 // // // // //                         </>
 // // // // //                     )}
 // // // // //                 </div>
 // // // // //             </div>
 
-// // // // //             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 mb-6 flex items-center gap-3 sticky top-4 z-30 ring-1 ring-gray-100">
-// // // // //                 <Search className="text-gray-400" size={20}/>
-// // // // //                 <input type="text" placeholder="Cari nama, email, NIA, unit, atau kota..." className="flex-1 outline-none text-sm font-medium bg-transparent" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Cari User"/>
-// // // // //                 {search && <button onClick={() => setSearch('')} className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 bg-red-50 rounded-lg" aria-label="Reset">RESET</button>}
+// // // // //             {/* FILTER BAR (LENGKAP) */}
+// // // // //             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+// // // // //                 <div className="relative md:col-span-1">
+// // // // //                     <Search className="absolute left-3 top-2.5 text-gray-400" size={18}/>
+// // // // //                     <input className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm" placeholder="Cari nama..." value={search} onChange={e=>setSearch(e.target.value)} aria-label="Cari Nama"/>
+// // // // //                 </div>
+// // // // //                 {/* [FIX] aria-label ditambahkan */}
+// // // // //                 <select className="p-2 border rounded-lg text-sm bg-white" value={filterRole} onChange={e=>setFilterRole(e.target.value)} aria-label="Filter Role">
+// // // // //                     <option value="">Semua Role</option>
+// // // // //                     <option value="SUPER_ADMIN">Super Admin</option>
+// // // // //                     <option value="ADMIN">Admin Wilayah</option>
+// // // // //                     <option value="FACILITATOR">Fasilitator</option>
+// // // // //                     <option value="STUDENT">Peserta</option>
+// // // // //                 </select>
+// // // // //                 {/* [FIX] aria-label ditambahkan */}
+// // // // //                 <select className="p-2 border rounded-lg text-sm bg-white" value={filterProv} onChange={e=>setFilterProv(e.target.value)} aria-label="Filter Provinsi">
+// // // // //                     <option value="">Semua Provinsi</option>
+// // // // //                     {provincesList.map(p=><option key={p} value={p}>{p}</option>)}
+// // // // //                 </select>
+// // // // //                 <input className="w-full px-4 py-2 border rounded-lg text-sm" placeholder="Filter Kota..." value={filterCity} onChange={e=>setFilterCity(e.target.value)} aria-label="Filter Kota"/>
 // // // // //             </div>
 
-// // // // //             {/* Content Area */}
-// // // // //             {loading ? (
-// // // // //                 <div className="text-center py-20 flex flex-col items-center gap-4"><Loader2 className="animate-spin text-gray-400" size={40}/><p className="text-sm text-gray-500 font-medium">Memuat data pengguna...</p></div>
-// // // // //             ) : (
+// // // // //             {/* CONTENT */}
+// // // // //             {loading ? <div className="text-center py-20"><Loader2 className="animate-spin mx-auto"/> Memuat...</div> : (
 // // // // //                 <div className="space-y-6">
-// // // // //                     {/* VIEW MODE: CLUSTER (WILAYAH > JABATAN) */}
-// // // // //                     {viewMode === 'cluster' && (
-// // // // //                         <div className="space-y-4">
-// // // // //                             {Object.keys(clusteredData).length === 0 && <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300"><p className="text-gray-400 font-medium">Tidak ada data ditemukan.</p></div>}
-                            
-// // // // //                             {/* LEVEL 1: PROVINSI */}
-// // // // //                             {Object.keys(clusteredData).sort().map(prov => {
-// // // // //                                 const isProvOpen = expandedProvinces[prov] || search !== '';
-// // // // //                                 // Hitung total user di provinsi ini (dari semua kab & posisi)
-// // // // //                                 const totalProvUsers = Object.values(clusteredData[prov]).reduce((acc, kabObj) => 
-// // // // //                                     acc + Object.values(kabObj).flat().length, 0
-// // // // //                                 );
-
-// // // // //                                 return (
-// // // // //                                     <div key={prov} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm transition-all hover:shadow-md">
-// // // // //                                         <div onClick={() => toggleProvince(prov)} className="p-5 flex justify-between items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors">
-// // // // //                                             <div className="flex items-center gap-4">
-// // // // //                                                 <div className={`p-2 rounded-full transition-transform duration-300 border ${isProvOpen ? 'rotate-90 bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-400 border-gray-200'}`}><ChevronRight size={16}/></div>
-// // // // //                                                 <div><h3 className="font-bold text-gray-800 text-lg">{prov}</h3><p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5"><MapPin size={12}/> {Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p></div>
+// // // // //                     {/* MODE CLUSTER */}
+// // // // //                     {viewMode === 'cluster' && Object.keys(clusteredData).sort().map(prov => (
+// // // // //                         <div key={prov} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+// // // // //                             <div onClick={()=>toggleProvince(prov)} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+// // // // //                                 <div className="flex items-center gap-4">
+// // // // //                                     <ChevronRight size={16} className={`transition-transform ${expandedProvinces[prov]?'rotate-90':''}`}/>
+// // // // //                                     <div><h3 className="font-bold text-gray-800">{prov}</h3><p className="text-xs text-gray-500">{Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p></div>
+// // // // //                                 </div>
+// // // // //                                 <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded text-xs font-bold">{Object.values(clusteredData[prov]).flat().length} Anggota</span>
+// // // // //                             </div>
+// // // // //                             {expandedProvinces[prov] && (
+// // // // //                                 <div className="p-4 bg-gray-50/50 border-t space-y-3">
+// // // // //                                     {Object.keys(clusteredData[prov]).sort().map(kab => (
+// // // // //                                         <div key={kab} className="bg-white border rounded-lg overflow-hidden">
+// // // // //                                             <div onClick={()=>toggleRegency(`${prov}_${kab}`)} className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+// // // // //                                                 <div className="flex items-center gap-3"><ChevronDown size={14}/> <span className="font-bold text-sm">{kab}</span></div>
+// // // // //                                                 <span className="text-xs text-gray-500">{clusteredData[prov][kab].length} User</span>
 // // // // //                                             </div>
-// // // // //                                             <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-xs font-bold border border-gray-200">{totalProvUsers} Anggota</span>
+// // // // //                                             {expandedRegencies[`${prov}_${kab}`] && <div className="border-t p-2"><UserTable data={clusteredData[prov][kab]}/></div>}
 // // // // //                                         </div>
-
-// // // // //                                         {isProvOpen && (
-// // // // //                                             <div className="p-4 bg-gray-50/50 border-t border-gray-100 space-y-3 animate-in slide-in-from-top-2">
-// // // // //                                                 {/* LEVEL 2: KABUPATEN */}
-// // // // //                                                 {Object.keys(clusteredData[prov]).sort().map(kab => {
-// // // // //                                                     const uniqueKabId = `${prov}_${kab}`.replace(/\s+/g, '_');
-// // // // //                                                     const isKabOpen = expandedRegencies[uniqueKabId] || search !== '';
-// // // // //                                                     const posGroups = clusteredData[prov][kab];
-// // // // //                                                     // Hitung total user di kabupaten ini
-// // // // //                                                     const totalKabUsers = Object.values(posGroups).flat().length;
-
-// // // // //                                                     return (
-// // // // //                                                         <div key={uniqueKabId} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-// // // // //                                                             <div onClick={() => toggleRegency(uniqueKabId)} className="px-5 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors border-l-4 border-l-transparent hover:border-l-gray-900">
-// // // // //                                                                 <div className="flex items-center gap-3">
-// // // // //                                                                     <ChevronDown size={16} className={`transition-transform duration-200 ${isKabOpen ? 'rotate-180 text-gray-900' : 'text-gray-400'}`}/>
-// // // // //                                                                     <span className="font-bold text-sm text-gray-700">{kab}</span>
-// // // // //                                                                 </div>
-// // // // //                                                                 <span className="text-xs font-medium text-gray-500">{totalKabUsers} User</span>
-// // // // //                                                             </div>
-
-// // // // //                                                             {/* LEVEL 3: POSISI / JABATAN (KSR, TSR, DLL) */}
-// // // // //                                                             {isKabOpen && (
-// // // // //                                                                 <div className="border-t border-gray-100 bg-gray-50/30 p-3 space-y-2">
-// // // // //                                                                     {Object.keys(posGroups).sort().map(pos => {
-// // // // //                                                                         const uniquePosId = `${uniqueKabId}_${pos}`;
-// // // // //                                                                         const isPosOpen = expandedPositions[uniquePosId] || search !== '';
-// // // // //                                                                         const posUsers = posGroups[pos];
-
-// // // // //                                                                         return (
-// // // // //                                                                             <div key={uniquePosId} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-// // // // //                                                                                  <div onClick={() => togglePosition(uniquePosId)} className="px-4 py-2.5 flex justify-between items-center cursor-pointer hover:bg-blue-50/50 transition-colors">
-// // // // //                                                                                     <div className="flex items-center gap-2">
-// // // // //                                                                                         <ChevronRight size={14} className={`transition-transform duration-200 ${isPosOpen ? 'rotate-90 text-blue-600' : 'text-gray-400'}`}/>
-// // // // //                                                                                         {/* Ikon Berbeda untuk tiap jabatan */}
-// // // // //                                                                                         {pos === 'KSR' || pos === 'TSR' ? <Users size={14} className="text-blue-500"/> : 
-// // // // //                                                                                          pos === 'PEGAWAI' ? <Briefcase size={14} className="text-purple-500"/> :
-// // // // //                                                                                          <Users size={14} className="text-gray-500"/>}
-// // // // //                                                                                         <span className="font-bold text-xs text-gray-800">{pos}</span>
-// // // // //                                                                                     </div>
-// // // // //                                                                                     <span className="text-[10px] font-bold bg-gray-100 px-2 py-0.5 rounded text-gray-600">{posUsers.length} Org</span>
-// // // // //                                                                                  </div>
-                                                                                 
-// // // // //                                                                                  {/* LEVEL 4: TABEL USER */}
-// // // // //                                                                                  {isPosOpen && (
-// // // // //                                                                                      <div className="border-t border-gray-100 p-2">
-// // // // //                                                                                          <UserTable data={posUsers} />
-// // // // //                                                                                      </div>
-// // // // //                                                                                  )}
-// // // // //                                                                             </div>
-// // // // //                                                                         );
-// // // // //                                                                     })}
-// // // // //                                                                 </div>
-// // // // //                                                             )}
-// // // // //                                                         </div>
-// // // // //                                                     );
-// // // // //                                                 })}
-// // // // //                                             </div>
-// // // // //                                         )}
-// // // // //                                     </div>
-// // // // //                                 );
-// // // // //                             })}
+// // // // //                                     ))}
+// // // // //                                 </div>
+// // // // //                             )}
 // // // // //                         </div>
-// // // // //                     )}
-                    
-// // // // //                     {/* VIEW MODE: LIST (TANPA GROUPING) */}
-// // // // //                     {viewMode === 'list' && (
-// // // // //                          <div className="bg-white shadow-lg shadow-gray-100 rounded-2xl border border-gray-200 overflow-hidden">
-// // // // //                             <UserTable data={users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) || (u.memberData?.nia || '').includes(search))} />
-// // // // //                          </div>
-// // // // //                     )}
+// // // // //                     ))}
+
+// // // // //                     {/* MODE LIST */}
+// // // // //                     {viewMode === 'list' && <div className="bg-white rounded-xl border shadow-sm overflow-hidden"><UserTable data={filteredList}/></div>}
 // // // // //                 </div>
 // // // // //             )}
 
-// // // // //             {/* ... Modal Tambah User & Profil (Sama seperti sebelumnya) ... */}
+// // // // //             {/* MODALS */}
 // // // // //             {showAddModal && (
-// // // // //                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in">
-// // // // //                     <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 overflow-hidden">
-// // // // //                         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-// // // // //                             <div><h2 className="font-bold text-lg text-gray-900">Tambah User Baru</h2><p className="text-xs text-gray-500 mt-1">Buat akun manual untuk Admin atau Peserta.</p></div>
-// // // // //                             <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200/50" aria-label="Tutup" title="Tutup"><X size={24}/></button>
-// // // // //                         </div>
-// // // // //                         <form onSubmit={handleCreateUser} className="p-6 space-y-5">
-// // // // //                             <div><label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Nama Lengkap</label><input className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} aria-label="Nama" title="Nama"/></div>
-// // // // //                             <div><label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Email</label><input className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" type="email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} aria-label="Email" title="Email"/></div>
-// // // // //                             <div><label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Password</label><input className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" type="password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} aria-label="Password" title="Password"/></div>
-// // // // //                             <div><label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Role</label><select className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} aria-label="Role" title="Role"><option value="STUDENT">STUDENT (Peserta)</option><option value="FACILITATOR">FACILITATOR (Pengajar)</option><option value="ADMIN">ADMIN (Wilayah)</option></select></div>
-// // // // //                             {newUser.role === 'ADMIN' && (<div className="bg-orange-50 p-4 rounded-xl border border-orange-100"><RegionSelector value={regionConfig} onChange={setRegionConfig} /></div>)}
-// // // // //                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-// // // // //                                 <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-100 rounded-xl text-sm">Batal</button>
-// // // // //                                 <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-gray-900 text-white rounded-xl font-bold hover:bg-black shadow-lg shadow-gray-200 text-sm flex items-center gap-2">{isSaving ? <Loader2 className="animate-spin" size={16}/> : <Plus size={16}/>} Simpan User</button>
-// // // // //                             </div>
+// // // // //                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+// // // // //                     <div className="bg-white rounded-xl w-full max-w-md p-6">
+// // // // //                         <h2 className="font-bold text-lg mb-4">Tambah User</h2>
+// // // // //                         <form onSubmit={handleCreateUser} className="space-y-4">
+// // // // //                             <input className="w-full border p-2 rounded" placeholder="Nama" required value={newUser.name} onChange={e=>setNewUser({...newUser, name: e.target.value})} aria-label="Nama"/>
+// // // // //                             <input className="w-full border p-2 rounded" placeholder="Email" type="email" required value={newUser.email} onChange={e=>setNewUser({...newUser, email: e.target.value})} aria-label="Email"/>
+// // // // //                             <input className="w-full border p-2 rounded" placeholder="Password" type="password" required value={newUser.password} onChange={e=>setNewUser({...newUser, password: e.target.value})} aria-label="Password"/>
+// // // // //                             {/* [FIX] aria-label */}
+// // // // //                             <select className="w-full border p-2 rounded" value={newUser.role} onChange={e=>setNewUser({...newUser, role: e.target.value})} aria-label="Pilih Role User">
+// // // // //                                 <option value="STUDENT">Peserta</option><option value="FACILITATOR">Fasilitator</option><option value="ADMIN">Admin</option>
+// // // // //                             </select>
+// // // // //                             {newUser.role==='ADMIN' && <div className="bg-orange-50 p-2 rounded border"><RegionSelector value={regionConfig} onChange={setRegionConfig}/></div>}
+// // // // //                             <div className="flex justify-end gap-2"><button type="button" onClick={()=>setShowAddModal(false)} className="px-4 py-2 text-sm font-bold">Batal</button><button type="submit" disabled={isSaving} className="px-4 py-2 bg-black text-white rounded text-sm font-bold">Simpan</button></div>
 // // // // //                         </form>
 // // // // //                     </div>
 // // // // //                 </div>
 // // // // //             )}
-            
-// // // // //             {showProfileModal && selectedUser && (
-// // // // //                 <UserProfileForm initialData={selectedUser} onClose={() => setShowProfileModal(false)} onSave={handleUpdateProfile} />
-// // // // //             )}
+
+// // // // //             {showProfileModal && selectedUser && <UserProfileForm initialData={selectedUser} onClose={()=>setShowProfileModal(false)} onSave={handleUpdateProfile}/>}
 // // // // //         </div>
 // // // // //     );
 // // // // // }
 
-
-
 // // // // 'use client';
 
+// // // // // ... (Imports sama)
 // // // // import { useEffect, useState } from 'react';
 // // // // import { api, getImageUrl } from '@/lib/api';
 // // // // import Link from 'next/link';
@@ -3027,101 +3311,50 @@
 // // // // export default function AdminUsersPage() {
 // // // //     const { hasPermission } = usePermission();
 // // // //     const canManageUsers = hasPermission('manage_users');
-
 // // // //     const [users, setUsers] = useState<any[]>([]);
 // // // //     const [loading, setLoading] = useState(true);
     
-// // // //     // --- STATE FILTER & PENCARIAN ---
+// // // //     // --- STATE ---
 // // // //     const [search, setSearch] = useState('');
 // // // //     const [filterRole, setFilterRole] = useState('');
-// // // //     const [filterProv, setFilterProv] = useState(''); // Filter Provinsi
-// // // //     const [filterCity, setFilterCity] = useState(''); // Filter Kota
-    
+// // // //     const [filterProv, setFilterProv] = useState(''); 
+// // // //     const [filterCity, setFilterCity] = useState(''); 
 // // // //     const [viewMode, setViewMode] = useState<'list' | 'cluster'>('cluster');
-    
-// // // //     // Accordion State
 // // // //     const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
 // // // //     const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
-
-// // // //     // Modal State
 // // // //     const [showAddModal, setShowAddModal] = useState(false);
 // // // //     const [selectedUser, setSelectedUser] = useState<any>(null); 
 // // // //     const [showProfileModal, setShowProfileModal] = useState(false);
-
-// // // //     // Create User State
 // // // //     const [isSaving, setIsSaving] = useState(false);
 // // // //     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
 // // // //     const [regionConfig, setRegionConfig] = useState<any>({ scope: 'national', provinces: [], regencies: [] });
-
-// // // //     // Data Wilayah untuk Filter Dropdown
 // // // //     const [provincesList, setProvincesList] = useState<string[]>([]);
 
 // // // //     useEffect(() => { loadUsers(); }, []);
 
+// // // //     // ... (Fungsi loadUsers, getFilteredUsers, getClusteredUsers, action handlers sama seperti sebelumnya)
+// // // //     // Saya hanya menampilkan bagian JSX yang diperbaiki untuk aksesibilitas
+
 // // // //     const loadUsers = async () => {
-// // // //         try {
-// // // //             setLoading(true);
-// // // //             const res = await api('/api/admin/users');
-// // // //             const data = res.users || [];
-// // // //             setUsers(data);
-
-// // // //             // Ekstrak list provinsi unik untuk filter
-// // // //             const uniqueProvs = Array.from(new Set(data.map((u:any) => u.province).filter(Boolean))) as string[];
-// // // //             setProvincesList(uniqueProvs.sort());
-
-// // // //         } catch (err: any) { console.error(err); } finally { setLoading(false); }
+// // // //        try {
+// // // //            setLoading(true);
+// // // //            const res = await api('/api/admin/users');
+// // // //            const data = res.users || [];
+// // // //            setUsers(data);
+// // // //            const uniqueProvs = Array.from(new Set(data.map((u:any) => u.province).filter(Boolean))) as string[];
+// // // //            setProvincesList(uniqueProvs.sort());
+// // // //        } catch (err: any) { console.error(err); } finally { setLoading(false); }
 // // // //     };
-
-// // // //     // --- LOGIKA FILTERING ---
-// // // //     const getFilteredUsers = () => {
-// // // //         return users.filter(u => {
-// // // //             const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || 
-// // // //                                 u.email.toLowerCase().includes(search.toLowerCase()) ||
-// // // //                                 (u.memberData?.unit || '').toLowerCase().includes(search.toLowerCase());
-// // // //             const matchRole = filterRole ? u.role === filterRole : true;
-// // // //             const matchProv = filterProv ? u.province === filterProv : true;
-// // // //             const matchCity = filterCity ? (u.city || '').includes(filterCity) : true;
-
-// // // //             return matchSearch && matchRole && matchProv && matchCity;
-// // // //         });
-// // // //     };
-
-// // // //     // --- LOGIKA CLUSTERING ---
-// // // //     const getClusteredUsers = () => {
-// // // //         const groups: Record<string, Record<string, any[]>> = {};
-// // // //         const filtered = getFilteredUsers();
-
-// // // //         filtered.forEach(user => {
-// // // //             let rawProv = user.province || 'LAINNYA';
-// // // //             let prov = rawProv.toString().toUpperCase().trim();
-// // // //             if (prov === '35') prov = 'JAWA TIMUR'; 
-
-// // // //             let rawKab = user.city || 'UMUM / PUSAT';
-// // // //             let kab = rawKab.toString().toUpperCase().trim();
-
-// // // //             if (!groups[prov]) groups[prov] = {};
-// // // //             if (!groups[prov][kab]) groups[prov][kab] = [];
-// // // //             groups[prov][kab].push(user);
-// // // //         });
-// // // //         return groups;
-// // // //     };
-
-// // // //     const clusteredData = getClusteredUsers();
-// // // //     const filteredList = getFilteredUsers(); 
-
-// // // //     const toggleProvince = (key: string) => setExpandedProvinces(p => ({...p, [key]: !p[key]}));
-// // // //     const toggleRegency = (key: string) => setExpandedRegencies(p => ({...p, [key]: !p[key]}));
-
+    
+// // // //     // ... (Handler actions sama)
 // // // //     const handleCreateUser = async (e: React.FormEvent) => {
-// // // //         e.preventDefault();
-// // // //         setIsSaving(true);
+// // // //         e.preventDefault(); setIsSaving(true);
 // // // //         try {
 // // // //             const payload: any = { ...newUser };
 // // // //             if (newUser.role === 'ADMIN') {
 // // // //                 payload.regionScope = regionConfig.scope;
 // // // //                 payload.managedProvinces = regionConfig.provinces;
 // // // //                 payload.managedRegencies = regionConfig.regencies;
-// // // //                 payload.permissions = []; 
 // // // //             }
 // // // //             await api('/api/admin/users', { method: 'POST', body: payload });
 // // // //             alert('User berhasil dibuat!'); setShowAddModal(false); loadUsers();
@@ -3142,7 +3375,21 @@
 // // // //         try { await api(`/api/admin/users/${selectedUser._id}`, { method: 'PATCH', body: data }); alert("Profil diperbarui!"); setShowProfileModal(false); loadUsers(); } catch (e: any) { alert(e.message); }
 // // // //     };
 
-// // // //     // --- SUB-COMPONENT: TABLE ---
+// // // //     const toggleProvince = (key: string) => setExpandedProvinces(p => ({...p, [key]: !p[key]}));
+// // // //     const toggleRegency = (key: string) => setExpandedRegencies(p => ({...p, [key]: !p[key]}));
+// // // //     const clusteredData = (() => { // Logic cluster simple
+// // // //         const groups: any = {};
+// // // //         users.filter(u => u.name.toLowerCase().includes(search.toLowerCase())).forEach(user => {
+// // // //              let prov = (user.province || 'LAINNYA').toString().toUpperCase().trim();
+// // // //              let kab = (user.city || 'UMUM').toString().toUpperCase().trim();
+// // // //              if (!groups[prov]) groups[prov] = {};
+// // // //              if (!groups[prov][kab]) groups[prov][kab] = [];
+// // // //              groups[prov][kab].push(user);
+// // // //         });
+// // // //         return groups;
+// // // //     })();
+
+// // // //     // SUB-COMPONENT: TABLE
 // // // //     const UserTable = ({ data }: { data: any[] }) => (
 // // // //         <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
 // // // //             <table className="w-full text-left text-sm">
@@ -3168,7 +3415,6 @@
 // // // //                             </td>
 // // // //                             <td className="px-6 py-4">
 // // // //                                 <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">{user.memberType || 'Anggota'}</span>
-// // // //                                 {user.memberData?.position && <div className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Briefcase size={10}/> {user.memberData.position}</div>}
 // // // //                             </td>
 // // // //                             <td className="px-6 py-4">
 // // // //                                 <span className={`text-[10px] px-2 py-1 rounded font-bold border ${user.role==='ADMIN'?'bg-orange-50 text-orange-700':user.role==='FACILITATOR'?'bg-green-50 text-green-700':'bg-gray-100 text-gray-600'}`}>{user.role}</span>
@@ -3177,12 +3423,12 @@
 // // // //                                 {user.province ? <div className="flex items-center gap-1"><MapPin size={10}/> {user.city}, {user.province}</div> : '-'}
 // // // //                             </td>
 // // // //                             <td className="px-6 py-4 text-right flex justify-end gap-1">
-// // // //                                 <button onClick={()=>{setSelectedUser(user); setShowProfileModal(true)}} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-blue-600" title="Profil" aria-label="Profil"><Eye size={16}/></button>
-// // // //                                 <Link href={`/admin/users/${user._id}`} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-gray-600" title="Setting" aria-label="Setting"><Settings size={16}/></Link>
+// // // //                                 <button onClick={()=>{setSelectedUser(user); setShowProfileModal(true)}} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-blue-600" title="Profil" aria-label="Lihat Profil"><Eye size={16}/></button>
+// // // //                                 <Link href={`/admin/users/${user._id}`} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-gray-600" title="Setting" aria-label="Setting User"><Settings size={16}/></Link>
 // // // //                                 {canManageUsers && (
 // // // //                                     <>
 // // // //                                         <button onClick={()=>handleResetPassword(user._id, user.name)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-orange-600" title="Reset Pass" aria-label="Reset Password"><KeyRound size={16}/></button>
-// // // //                                         <button onClick={()=>handleDelete(user._id)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-red-600" title="Hapus" aria-label="Hapus"><Trash2 size={16}/></button>
+// // // //                                         <button onClick={()=>handleDelete(user._id)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-red-600" title="Hapus" aria-label="Hapus User"><Trash2 size={16}/></button>
 // // // //                                     </>
 // // // //                                 )}
 // // // //                             </td>
@@ -3200,25 +3446,25 @@
 // // // //                 <div><h1 className="text-2xl font-black text-gray-900">Data Pengguna</h1><p className="text-sm text-gray-500">Kelola akun, import data, dan hak akses.</p></div>
 // // // //                 <div className="flex gap-2">
 // // // //                     <div className="flex bg-white p-1 rounded-lg border shadow-sm">
-// // // //                         <button onClick={()=>setViewMode('cluster')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='cluster'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="View Cluster"><Layers size={14}/> Wilayah</button>
-// // // //                         <button onClick={()=>setViewMode('list')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='list'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="View Table"><LayoutList size={14}/> Tabel</button>
+// // // //                         <button onClick={()=>setViewMode('cluster')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='cluster'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="Tampilan Cluster"><Layers size={14}/> Wilayah</button>
+// // // //                         <button onClick={()=>setViewMode('list')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='list'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="Tampilan List"><LayoutList size={14}/> Tabel</button>
 // // // //                     </div>
 // // // //                     {canManageUsers && (
 // // // //                         <>
-// // // //                             <Link href="/admin/members/import"><button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Import"><FileSpreadsheet size={16}/> Import</button></Link>
-// // // //                             <button onClick={()=>setShowAddModal(true)} className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Tambah User"><Plus size={16}/> Manual</button>
+// // // //                             <Link href="/admin/members/import"><button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Import Data"><FileSpreadsheet size={16}/> Import</button></Link>
+// // // //                             <button onClick={()=>setShowAddModal(true)} className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Tambah User Manual"><Plus size={16}/> Manual</button>
 // // // //                         </>
 // // // //                     )}
 // // // //                 </div>
 // // // //             </div>
 
-// // // //             {/* FILTER BAR (LENGKAP) */}
+// // // //             {/* FILTER BAR - FIXED ACCESSIBILITY */}
 // // // //             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
 // // // //                 <div className="relative md:col-span-1">
 // // // //                     <Search className="absolute left-3 top-2.5 text-gray-400" size={18}/>
 // // // //                     <input className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm" placeholder="Cari nama..." value={search} onChange={e=>setSearch(e.target.value)} aria-label="Cari Nama"/>
 // // // //                 </div>
-// // // //                 {/* [FIX] aria-label ditambahkan */}
+// // // //                 {/* Tambahkan aria-label pada select */}
 // // // //                 <select className="p-2 border rounded-lg text-sm bg-white" value={filterRole} onChange={e=>setFilterRole(e.target.value)} aria-label="Filter Role">
 // // // //                     <option value="">Semua Role</option>
 // // // //                     <option value="SUPER_ADMIN">Super Admin</option>
@@ -3226,7 +3472,6 @@
 // // // //                     <option value="FACILITATOR">Fasilitator</option>
 // // // //                     <option value="STUDENT">Peserta</option>
 // // // //                 </select>
-// // // //                 {/* [FIX] aria-label ditambahkan */}
 // // // //                 <select className="p-2 border rounded-lg text-sm bg-white" value={filterProv} onChange={e=>setFilterProv(e.target.value)} aria-label="Filter Provinsi">
 // // // //                     <option value="">Semua Provinsi</option>
 // // // //                     {provincesList.map(p=><option key={p} value={p}>{p}</option>)}
@@ -3262,23 +3507,19 @@
 // // // //                             )}
 // // // //                         </div>
 // // // //                     ))}
-
-// // // //                     {/* MODE LIST */}
-// // // //                     {viewMode === 'list' && <div className="bg-white rounded-xl border shadow-sm overflow-hidden"><UserTable data={filteredList}/></div>}
+// // // //                     {viewMode === 'list' && <div className="bg-white rounded-xl border shadow-sm overflow-hidden"><UserTable data={users}/></div>}
 // // // //                 </div>
 // // // //             )}
-
-// // // //             {/* MODALS */}
+            
 // // // //             {showAddModal && (
 // // // //                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
 // // // //                     <div className="bg-white rounded-xl w-full max-w-md p-6">
 // // // //                         <h2 className="font-bold text-lg mb-4">Tambah User</h2>
 // // // //                         <form onSubmit={handleCreateUser} className="space-y-4">
-// // // //                             <input className="w-full border p-2 rounded" placeholder="Nama" required value={newUser.name} onChange={e=>setNewUser({...newUser, name: e.target.value})} aria-label="Nama"/>
-// // // //                             <input className="w-full border p-2 rounded" placeholder="Email" type="email" required value={newUser.email} onChange={e=>setNewUser({...newUser, email: e.target.value})} aria-label="Email"/>
-// // // //                             <input className="w-full border p-2 rounded" placeholder="Password" type="password" required value={newUser.password} onChange={e=>setNewUser({...newUser, password: e.target.value})} aria-label="Password"/>
-// // // //                             {/* [FIX] aria-label */}
-// // // //                             <select className="w-full border p-2 rounded" value={newUser.role} onChange={e=>setNewUser({...newUser, role: e.target.value})} aria-label="Pilih Role User">
+// // // //                             <input className="w-full border p-2 rounded" placeholder="Nama" required value={newUser.name} onChange={e=>setNewUser({...newUser, name: e.target.value})} aria-label="Nama User"/>
+// // // //                             <input className="w-full border p-2 rounded" placeholder="Email" type="email" required value={newUser.email} onChange={e=>setNewUser({...newUser, email: e.target.value})} aria-label="Email User"/>
+// // // //                             <input className="w-full border p-2 rounded" placeholder="Password" type="password" required value={newUser.password} onChange={e=>setNewUser({...newUser, password: e.target.value})} aria-label="Password User"/>
+// // // //                             <select className="w-full border p-2 rounded" value={newUser.role} onChange={e=>setNewUser({...newUser, role: e.target.value})} aria-label="Pilih Role">
 // // // //                                 <option value="STUDENT">Peserta</option><option value="FACILITATOR">Fasilitator</option><option value="ADMIN">Admin</option>
 // // // //                             </select>
 // // // //                             {newUser.role==='ADMIN' && <div className="bg-orange-50 p-2 rounded border"><RegionSelector value={regionConfig} onChange={setRegionConfig}/></div>}
@@ -3287,22 +3528,19 @@
 // // // //                     </div>
 // // // //                 </div>
 // // // //             )}
-
 // // // //             {showProfileModal && selectedUser && <UserProfileForm initialData={selectedUser} onClose={()=>setShowProfileModal(false)} onSave={handleUpdateProfile}/>}
 // // // //         </div>
 // // // //     );
 // // // // }
-
 // // // 'use client';
 
-// // // // ... (Imports sama)
-// // // import { useEffect, useState } from 'react';
+// // // import { useEffect, useState, useCallback } from 'react';
 // // // import { api, getImageUrl } from '@/lib/api';
 // // // import Link from 'next/link';
 // // // import { 
 // // //     Loader2, Plus, Trash2, Search, MapPin, KeyRound, Eye, 
 // // //     ChevronDown, ChevronRight, LayoutList, Layers, FileSpreadsheet, 
-// // //     X, Settings, Briefcase, Building2, FileText, Filter
+// // //     Settings, Briefcase
 // // // } from 'lucide-react';
 // // // import RegionSelector from '@/components/admin/RegionSelector'; 
 // // // import { usePermission } from '@/hooks/usePermission';
@@ -3311,44 +3549,107 @@
 // // // export default function AdminUsersPage() {
 // // //     const { hasPermission } = usePermission();
 // // //     const canManageUsers = hasPermission('manage_users');
+
 // // //     const [users, setUsers] = useState<any[]>([]);
 // // //     const [loading, setLoading] = useState(true);
     
-// // //     // --- STATE ---
+// // //     // --- STATE FILTER ---
 // // //     const [search, setSearch] = useState('');
+// // //     const [debouncedSearch, setDebouncedSearch] = useState(''); // Utk delay pencarian
+    
 // // //     const [filterRole, setFilterRole] = useState('');
 // // //     const [filterProv, setFilterProv] = useState(''); 
 // // //     const [filterCity, setFilterCity] = useState(''); 
-// // //     const [viewMode, setViewMode] = useState<'list' | 'cluster'>('cluster');
+    
+// // //     // Data List Provinsi (Agar dropdown tidak kosong saat search)
+// // //     const [provincesList, setProvincesList] = useState<string[]>([]);
+
+// // //     const [viewMode, setViewMode] = useState<'list' | 'cluster'>('list');
+    
+// // //     // Accordion State
 // // //     const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
 // // //     const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
+
+// // //     // Modal State
 // // //     const [showAddModal, setShowAddModal] = useState(false);
 // // //     const [selectedUser, setSelectedUser] = useState<any>(null); 
 // // //     const [showProfileModal, setShowProfileModal] = useState(false);
 // // //     const [isSaving, setIsSaving] = useState(false);
+    
+// // //     // Create User Data
 // // //     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
 // // //     const [regionConfig, setRegionConfig] = useState<any>({ scope: 'national', provinces: [], regencies: [] });
-// // //     const [provincesList, setProvincesList] = useState<string[]>([]);
 
-// // //     useEffect(() => { loadUsers(); }, []);
+// // //     // 1. DEBOUNCE SEARCH (Tunggu 500ms setelah mengetik baru search)
+// // //     useEffect(() => {
+// // //         const handler = setTimeout(() => {
+// // //             setDebouncedSearch(search);
+// // //         }, 500);
+// // //         return () => clearTimeout(handler);
+// // //     }, [search]);
 
-// // //     // ... (Fungsi loadUsers, getFilteredUsers, getClusteredUsers, action handlers sama seperti sebelumnya)
-// // //     // Saya hanya menampilkan bagian JSX yang diperbaiki untuk aksesibilitas
+// // //     // 2. LOAD DATA UTAMA (Dipanggil saat filter/search berubah)
+// // //     useEffect(() => {
+// // //         loadUsers();
+// // //     }, [debouncedSearch, filterRole, filterProv, filterCity]);
 
 // // //     const loadUsers = async () => {
-// // //        try {
-// // //            setLoading(true);
-// // //            const res = await api('/api/admin/users');
-// // //            const data = res.users || [];
-// // //            setUsers(data);
-// // //            const uniqueProvs = Array.from(new Set(data.map((u:any) => u.province).filter(Boolean))) as string[];
-// // //            setProvincesList(uniqueProvs.sort());
-// // //        } catch (err: any) { console.error(err); } finally { setLoading(false); }
+// // //         try {
+// // //             setLoading(true);
+            
+// // //             // Construct Query Params
+// // //             const params = new URLSearchParams();
+// // //             if (debouncedSearch) params.append('q', debouncedSearch);
+// // //             if (filterRole) params.append('role', filterRole);
+// // //             if (filterProv) params.append('province', filterProv);
+// // //             if (filterCity) params.append('city', filterCity);
+
+// // //             console.log("🔍 Fetching Users with params:", params.toString());
+
+// // //             const res = await api(`/api/admin/users?${params.toString()}`);
+// // //             const data = res.users || [];
+// // //             setUsers(data);
+
+// // //             // [FIX] Isi dropdown provinsi hanya jika list masih kosong (initial load)
+// // //             // agar pilihan provinsi tidak hilang saat user melakukan search text
+// // //             if (provincesList.length === 0) {
+// // //                 const uniqueProvs = Array.from(new Set(data.map((u:any) => u.province).filter(Boolean))) as string[];
+// // //                 setProvincesList(uniqueProvs.sort());
+// // //             }
+
+// // //         } catch (err: any) { 
+// // //             console.error("Gagal load users:", err); 
+// // //         } finally { 
+// // //             setLoading(false); 
+// // //         }
 // // //     };
-    
-// // //     // ... (Handler actions sama)
+
+// // //     // --- LOGIKA CLUSTERING (Client Side grouping dari data yang sudah difetch) ---
+// // //     const getClusteredUsers = () => {
+// // //         const groups: Record<string, Record<string, any[]>> = {};
+// // //         users.forEach(user => {
+// // //             let rawProv = user.province || 'LAINNYA';
+// // //             let prov = rawProv.toString().toUpperCase().trim();
+// // //             if (prov === '35') prov = 'JAWA TIMUR'; 
+
+// // //             let rawKab = user.city || 'UMUM / PUSAT';
+// // //             let kab = rawKab.toString().toUpperCase().trim();
+
+// // //             if (!groups[prov]) groups[prov] = {};
+// // //             if (!groups[prov][kab]) groups[prov][kab] = [];
+// // //             groups[prov][kab].push(user);
+// // //         });
+// // //         return groups;
+// // //     };
+
+// // //     const clusteredData = getClusteredUsers();
+// // //     const toggleProvince = (key: string) => setExpandedProvinces(p => ({...p, [key]: !p[key]}));
+// // //     const toggleRegency = (key: string) => setExpandedRegencies(p => ({...p, [key]: !p[key]}));
+
+// // //     // --- CRUD HANDLERS ---
 // // //     const handleCreateUser = async (e: React.FormEvent) => {
-// // //         e.preventDefault(); setIsSaving(true);
+// // //         e.preventDefault();
+// // //         setIsSaving(true);
 // // //         try {
 // // //             const payload: any = { ...newUser };
 // // //             if (newUser.role === 'ADMIN') {
@@ -3357,7 +3658,10 @@
 // // //                 payload.managedRegencies = regionConfig.regencies;
 // // //             }
 // // //             await api('/api/admin/users', { method: 'POST', body: payload });
-// // //             alert('User berhasil dibuat!'); setShowAddModal(false); loadUsers();
+// // //             alert('User berhasil dibuat!'); 
+// // //             setShowAddModal(false); 
+// // //             setNewUser({ name: '', email: '', password: '', role: 'STUDENT' }); // Reset form
+// // //             loadUsers();
 // // //         } catch (err: any) { alert(err.message); } finally { setIsSaving(false); }
 // // //     };
 
@@ -3375,21 +3679,7 @@
 // // //         try { await api(`/api/admin/users/${selectedUser._id}`, { method: 'PATCH', body: data }); alert("Profil diperbarui!"); setShowProfileModal(false); loadUsers(); } catch (e: any) { alert(e.message); }
 // // //     };
 
-// // //     const toggleProvince = (key: string) => setExpandedProvinces(p => ({...p, [key]: !p[key]}));
-// // //     const toggleRegency = (key: string) => setExpandedRegencies(p => ({...p, [key]: !p[key]}));
-// // //     const clusteredData = (() => { // Logic cluster simple
-// // //         const groups: any = {};
-// // //         users.filter(u => u.name.toLowerCase().includes(search.toLowerCase())).forEach(user => {
-// // //              let prov = (user.province || 'LAINNYA').toString().toUpperCase().trim();
-// // //              let kab = (user.city || 'UMUM').toString().toUpperCase().trim();
-// // //              if (!groups[prov]) groups[prov] = {};
-// // //              if (!groups[prov][kab]) groups[prov][kab] = [];
-// // //              groups[prov][kab].push(user);
-// // //         });
-// // //         return groups;
-// // //     })();
-
-// // //     // SUB-COMPONENT: TABLE
+// // //     // --- SUB-COMPONENT: TABLE ---
 // // //     const UserTable = ({ data }: { data: any[] }) => (
 // // //         <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
 // // //             <table className="w-full text-left text-sm">
@@ -3403,37 +3693,42 @@
 // // //                     </tr>
 // // //                 </thead>
 // // //                 <tbody className="divide-y divide-gray-100">
-// // //                     {data.map(user => (
-// // //                         <tr key={user._id} className="hover:bg-blue-50/30 transition-colors">
-// // //                             <td className="px-6 py-4">
-// // //                                 <div className="flex items-center gap-3">
-// // //                                     <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-// // //                                         <img src={getImageUrl(user.avatarUrl)} className="w-full h-full object-cover" alt="Avatar" onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/150'}}/>
+// // //                     {data.length === 0 ? (
+// // //                         <tr><td colSpan={5} className="p-8 text-center text-gray-400">Data tidak ditemukan.</td></tr>
+// // //                     ) : (
+// // //                         data.map(user => (
+// // //                             <tr key={user._id} className="hover:bg-blue-50/30 transition-colors">
+// // //                                 <td className="px-6 py-4">
+// // //                                     <div className="flex items-center gap-3">
+// // //                                         <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+// // //                                             <img src={getImageUrl(user.avatarUrl)} className="w-full h-full object-cover" alt="Avatar" onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/150'}}/>
+// // //                                         </div>
+// // //                                         <div><p className="font-bold text-gray-900 text-sm">{user.name}</p><p className="text-xs text-gray-500">{user.email}</p></div>
 // // //                                     </div>
-// // //                                     <div><p className="font-bold text-gray-900 text-sm">{user.name}</p><p className="text-xs text-gray-500">{user.email}</p></div>
-// // //                                 </div>
-// // //                             </td>
-// // //                             <td className="px-6 py-4">
-// // //                                 <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">{user.memberType || 'Anggota'}</span>
-// // //                             </td>
-// // //                             <td className="px-6 py-4">
-// // //                                 <span className={`text-[10px] px-2 py-1 rounded font-bold border ${user.role==='ADMIN'?'bg-orange-50 text-orange-700':user.role==='FACILITATOR'?'bg-green-50 text-green-700':'bg-gray-100 text-gray-600'}`}>{user.role}</span>
-// // //                             </td>
-// // //                             <td className="px-6 py-4 text-xs text-gray-600">
-// // //                                 {user.province ? <div className="flex items-center gap-1"><MapPin size={10}/> {user.city}, {user.province}</div> : '-'}
-// // //                             </td>
-// // //                             <td className="px-6 py-4 text-right flex justify-end gap-1">
-// // //                                 <button onClick={()=>{setSelectedUser(user); setShowProfileModal(true)}} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-blue-600" title="Profil" aria-label="Lihat Profil"><Eye size={16}/></button>
-// // //                                 <Link href={`/admin/users/${user._id}`} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-gray-600" title="Setting" aria-label="Setting User"><Settings size={16}/></Link>
-// // //                                 {canManageUsers && (
-// // //                                     <>
-// // //                                         <button onClick={()=>handleResetPassword(user._id, user.name)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-orange-600" title="Reset Pass" aria-label="Reset Password"><KeyRound size={16}/></button>
-// // //                                         <button onClick={()=>handleDelete(user._id)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-red-600" title="Hapus" aria-label="Hapus User"><Trash2 size={16}/></button>
-// // //                                     </>
-// // //                                 )}
-// // //                             </td>
-// // //                         </tr>
-// // //                     ))}
+// // //                                 </td>
+// // //                                 <td className="px-6 py-4">
+// // //                                     <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">{user.memberType || 'Anggota'}</span>
+// // //                                     {user.memberData?.position && <div className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Briefcase size={10}/> {user.memberData.position}</div>}
+// // //                                 </td>
+// // //                                 <td className="px-6 py-4">
+// // //                                     <span className={`text-[10px] px-2 py-1 rounded font-bold border ${user.role==='ADMIN'?'bg-orange-50 text-orange-700':user.role==='FACILITATOR'?'bg-green-50 text-green-700':'bg-gray-100 text-gray-600'}`}>{user.role}</span>
+// // //                                 </td>
+// // //                                 <td className="px-6 py-4 text-xs text-gray-600">
+// // //                                     {user.province ? <div className="flex items-center gap-1"><MapPin size={10}/> {user.city}, {user.province}</div> : '-'}
+// // //                                 </td>
+// // //                                 <td className="px-6 py-4 text-right flex justify-end gap-1">
+// // //                                     <button onClick={()=>{setSelectedUser(user); setShowProfileModal(true)}} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-blue-600" title="Profil" aria-label="Profil"><Eye size={16}/></button>
+// // //                                     <Link href={`/admin/users/${user._id}`} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-gray-600" title="Setting" aria-label="Setting"><Settings size={16}/></Link>
+// // //                                     {canManageUsers && (
+// // //                                         <>
+// // //                                             <button onClick={()=>handleResetPassword(user._id, user.name)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-orange-600" title="Reset Pass" aria-label="Reset Password"><KeyRound size={16}/></button>
+// // //                                             <button onClick={()=>handleDelete(user._id)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-red-600" title="Hapus" aria-label="Hapus"><Trash2 size={16}/></button>
+// // //                                         </>
+// // //                                     )}
+// // //                                 </td>
+// // //                             </tr>
+// // //                         ))
+// // //                     )}
 // // //                 </tbody>
 // // //             </table>
 // // //         </div>
@@ -3446,37 +3741,48 @@
 // // //                 <div><h1 className="text-2xl font-black text-gray-900">Data Pengguna</h1><p className="text-sm text-gray-500">Kelola akun, import data, dan hak akses.</p></div>
 // // //                 <div className="flex gap-2">
 // // //                     <div className="flex bg-white p-1 rounded-lg border shadow-sm">
-// // //                         <button onClick={()=>setViewMode('cluster')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='cluster'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="Tampilan Cluster"><Layers size={14}/> Wilayah</button>
-// // //                         <button onClick={()=>setViewMode('list')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='list'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="Tampilan List"><LayoutList size={14}/> Tabel</button>
+// // //                         <button onClick={()=>setViewMode('cluster')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='cluster'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="View Cluster"><Layers size={14}/> Wilayah</button>
+// // //                         <button onClick={()=>setViewMode('list')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='list'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="View Table"><LayoutList size={14}/> Tabel</button>
 // // //                     </div>
 // // //                     {canManageUsers && (
 // // //                         <>
-// // //                             <Link href="/admin/members/import"><button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Import Data"><FileSpreadsheet size={16}/> Import</button></Link>
-// // //                             <button onClick={()=>setShowAddModal(true)} className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Tambah User Manual"><Plus size={16}/> Manual</button>
+// // //                             <Link href="/admin/members/import"><button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Import"><FileSpreadsheet size={16}/> Import</button></Link>
+// // //                             <button onClick={()=>setShowAddModal(true)} className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Tambah User"><Plus size={16}/> Manual</button>
 // // //                         </>
 // // //                     )}
 // // //                 </div>
 // // //             </div>
 
-// // //             {/* FILTER BAR - FIXED ACCESSIBILITY */}
+// // //             {/* FILTER BAR */}
 // // //             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
 // // //                 <div className="relative md:col-span-1">
 // // //                     <Search className="absolute left-3 top-2.5 text-gray-400" size={18}/>
-// // //                     <input className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm" placeholder="Cari nama..." value={search} onChange={e=>setSearch(e.target.value)} aria-label="Cari Nama"/>
+// // //                     <input 
+// // //                         className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" 
+// // //                         placeholder="Cari nama, email..." 
+// // //                         value={search} 
+// // //                         onChange={e=>setSearch(e.target.value)} 
+// // //                         aria-label="Cari Nama"
+// // //                     />
 // // //                 </div>
-// // //                 {/* Tambahkan aria-label pada select */}
-// // //                 <select className="p-2 border rounded-lg text-sm bg-white" value={filterRole} onChange={e=>setFilterRole(e.target.value)} aria-label="Filter Role">
+// // //                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterRole} onChange={e=>setFilterRole(e.target.value)} aria-label="Filter Role">
 // // //                     <option value="">Semua Role</option>
 // // //                     <option value="SUPER_ADMIN">Super Admin</option>
 // // //                     <option value="ADMIN">Admin Wilayah</option>
 // // //                     <option value="FACILITATOR">Fasilitator</option>
 // // //                     <option value="STUDENT">Peserta</option>
 // // //                 </select>
-// // //                 <select className="p-2 border rounded-lg text-sm bg-white" value={filterProv} onChange={e=>setFilterProv(e.target.value)} aria-label="Filter Provinsi">
+// // //                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterProv} onChange={e=>setFilterProv(e.target.value)} aria-label="Filter Provinsi">
 // // //                     <option value="">Semua Provinsi</option>
 // // //                     {provincesList.map(p=><option key={p} value={p}>{p}</option>)}
 // // //                 </select>
-// // //                 <input className="w-full px-4 py-2 border rounded-lg text-sm" placeholder="Filter Kota..." value={filterCity} onChange={e=>setFilterCity(e.target.value)} aria-label="Filter Kota"/>
+// // //                 <input 
+// // //                     className="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" 
+// // //                     placeholder="Filter Kota..." 
+// // //                     value={filterCity} 
+// // //                     onChange={e=>setFilterCity(e.target.value)} 
+// // //                     aria-label="Filter Kota"
+// // //                 />
 // // //             </div>
 
 // // //             {/* CONTENT */}
@@ -3507,18 +3813,21 @@
 // // //                             )}
 // // //                         </div>
 // // //                     ))}
+
+// // //                     {/* MODE LIST */}
 // // //                     {viewMode === 'list' && <div className="bg-white rounded-xl border shadow-sm overflow-hidden"><UserTable data={users}/></div>}
 // // //                 </div>
 // // //             )}
-            
+
+// // //             {/* Modal Tambah User */}
 // // //             {showAddModal && (
 // // //                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
 // // //                     <div className="bg-white rounded-xl w-full max-w-md p-6">
 // // //                         <h2 className="font-bold text-lg mb-4">Tambah User</h2>
 // // //                         <form onSubmit={handleCreateUser} className="space-y-4">
-// // //                             <input className="w-full border p-2 rounded" placeholder="Nama" required value={newUser.name} onChange={e=>setNewUser({...newUser, name: e.target.value})} aria-label="Nama User"/>
-// // //                             <input className="w-full border p-2 rounded" placeholder="Email" type="email" required value={newUser.email} onChange={e=>setNewUser({...newUser, email: e.target.value})} aria-label="Email User"/>
-// // //                             <input className="w-full border p-2 rounded" placeholder="Password" type="password" required value={newUser.password} onChange={e=>setNewUser({...newUser, password: e.target.value})} aria-label="Password User"/>
+// // //                             <input className="w-full border p-2 rounded" placeholder="Nama" required value={newUser.name} onChange={e=>setNewUser({...newUser, name: e.target.value})} aria-label="Nama"/>
+// // //                             <input className="w-full border p-2 rounded" placeholder="Email" type="email" required value={newUser.email} onChange={e=>setNewUser({...newUser, email: e.target.value})} aria-label="Email"/>
+// // //                             <input className="w-full border p-2 rounded" placeholder="Password" type="password" required value={newUser.password} onChange={e=>setNewUser({...newUser, password: e.target.value})} aria-label="Password"/>
 // // //                             <select className="w-full border p-2 rounded" value={newUser.role} onChange={e=>setNewUser({...newUser, role: e.target.value})} aria-label="Pilih Role">
 // // //                                 <option value="STUDENT">Peserta</option><option value="FACILITATOR">Fasilitator</option><option value="ADMIN">Admin</option>
 // // //                             </select>
@@ -3528,23 +3837,29 @@
 // // //                     </div>
 // // //                 </div>
 // // //             )}
+
 // // //             {showProfileModal && selectedUser && <UserProfileForm initialData={selectedUser} onClose={()=>setShowProfileModal(false)} onSave={handleUpdateProfile}/>}
 // // //         </div>
 // // //     );
 // // // }
+
+
+
 // // 'use client';
 
-// // import { useEffect, useState, useCallback } from 'react';
+// // import { useEffect, useState } from 'react';
 // // import { api, getImageUrl } from '@/lib/api';
 // // import Link from 'next/link';
 // // import { 
 // //     Loader2, Plus, Trash2, Search, MapPin, KeyRound, Eye, 
 // //     ChevronDown, ChevronRight, LayoutList, Layers, FileSpreadsheet, 
-// //     Settings, Briefcase
+// //     Settings, Briefcase, Filter
 // // } from 'lucide-react';
 // // import RegionSelector from '@/components/admin/RegionSelector'; 
 // // import { usePermission } from '@/hooks/usePermission';
 // // import UserProfileForm from '@/app/admin/members/UserProfileForm';
+// // // [PENTING] Import helper region lokal
+// // import { getProvinces, getRegencies } from '@/lib/indonesia';
 
 // // export default function AdminUsersPage() {
 // //     const { hasPermission } = usePermission();
@@ -3555,131 +3870,100 @@
     
 // //     // --- STATE FILTER ---
 // //     const [search, setSearch] = useState('');
-// //     const [debouncedSearch, setDebouncedSearch] = useState(''); // Utk delay pencarian
-    
+// //     const [debouncedSearch, setDebouncedSearch] = useState('');
 // //     const [filterRole, setFilterRole] = useState('');
-// //     const [filterProv, setFilterProv] = useState(''); 
-// //     const [filterCity, setFilterCity] = useState(''); 
-    
-// //     // Data List Provinsi (Agar dropdown tidak kosong saat search)
-// //     const [provincesList, setProvincesList] = useState<string[]>([]);
+// //     const [filterProv, setFilterProv] = useState(''); // Nama Provinsi
+// //     const [filterCity, setFilterCity] = useState(''); // Nama Kota
+// //     const [filterPosition, setFilterPosition] = useState(''); // Jabatan
+
+// //     // Data Dropdown
+// //     const [provincesList, setProvincesList] = useState<any[]>([]);
+// //     const [regenciesList, setRegenciesList] = useState<any[]>([]);
 
 // //     const [viewMode, setViewMode] = useState<'list' | 'cluster'>('list');
     
-// //     // Accordion State
+// //     // ... State lainnya (tidak berubah)
 // //     const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
 // //     const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
-
-// //     // Modal State
 // //     const [showAddModal, setShowAddModal] = useState(false);
 // //     const [selectedUser, setSelectedUser] = useState<any>(null); 
 // //     const [showProfileModal, setShowProfileModal] = useState(false);
 // //     const [isSaving, setIsSaving] = useState(false);
-    
-// //     // Create User Data
 // //     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
 // //     const [regionConfig, setRegionConfig] = useState<any>({ scope: 'national', provinces: [], regencies: [] });
 
-// //     // 1. DEBOUNCE SEARCH (Tunggu 500ms setelah mengetik baru search)
+// //     // 1. INIT PROVINCES LIST (Sekali saja saat mount)
 // //     useEffect(() => {
-// //         const handler = setTimeout(() => {
-// //             setDebouncedSearch(search);
-// //         }, 500);
+// //         setProvincesList(getProvinces());
+// //     }, []);
+
+// //     // 2. UPDATE REGENCIES LIST saat Provinsi berubah
+// //     useEffect(() => {
+// //         if (filterProv) {
+// //             // Cari kode dari nama provinsi terpilih
+// //             const p = provincesList.find(prov => prov.name === filterProv);
+// //             if (p) {
+// //                 setRegenciesList(getRegencies(p.code));
+// //             } else {
+// //                 setRegenciesList([]);
+// //             }
+// //         } else {
+// //             setRegenciesList([]);
+// //         }
+// //         setFilterCity(''); // Reset kota jika provinsi ganti
+// //     }, [filterProv, provincesList]);
+
+// //     // 3. DEBOUNCE SEARCH
+// //     useEffect(() => {
+// //         const handler = setTimeout(() => setDebouncedSearch(search), 500);
 // //         return () => clearTimeout(handler);
 // //     }, [search]);
 
-// //     // 2. LOAD DATA UTAMA (Dipanggil saat filter/search berubah)
+// //     // 4. LOAD DATA (Server Side Filter)
 // //     useEffect(() => {
 // //         loadUsers();
-// //     }, [debouncedSearch, filterRole, filterProv, filterCity]);
+// //     }, [debouncedSearch, filterRole, filterProv, filterCity, filterPosition]);
 
 // //     const loadUsers = async () => {
 // //         try {
 // //             setLoading(true);
-            
-// //             // Construct Query Params
 // //             const params = new URLSearchParams();
 // //             if (debouncedSearch) params.append('q', debouncedSearch);
 // //             if (filterRole) params.append('role', filterRole);
 // //             if (filterProv) params.append('province', filterProv);
 // //             if (filterCity) params.append('city', filterCity);
-
-// //             console.log("🔍 Fetching Users with params:", params.toString());
+// //             if (filterPosition) params.append('position', filterPosition);
 
 // //             const res = await api(`/api/admin/users?${params.toString()}`);
-// //             const data = res.users || [];
-// //             setUsers(data);
-
-// //             // [FIX] Isi dropdown provinsi hanya jika list masih kosong (initial load)
-// //             // agar pilihan provinsi tidak hilang saat user melakukan search text
-// //             if (provincesList.length === 0) {
-// //                 const uniqueProvs = Array.from(new Set(data.map((u:any) => u.province).filter(Boolean))) as string[];
-// //                 setProvincesList(uniqueProvs.sort());
-// //             }
-
+// //             setUsers(res.users || []);
 // //         } catch (err: any) { 
-// //             console.error("Gagal load users:", err); 
+// //             console.error(err); 
 // //         } finally { 
 // //             setLoading(false); 
 // //         }
 // //     };
 
-// //     // --- LOGIKA CLUSTERING (Client Side grouping dari data yang sudah difetch) ---
-// //     const getClusteredUsers = () => {
-// //         const groups: Record<string, Record<string, any[]>> = {};
-// //         users.forEach(user => {
-// //             let rawProv = user.province || 'LAINNYA';
-// //             let prov = rawProv.toString().toUpperCase().trim();
-// //             if (prov === '35') prov = 'JAWA TIMUR'; 
-
-// //             let rawKab = user.city || 'UMUM / PUSAT';
-// //             let kab = rawKab.toString().toUpperCase().trim();
-
-// //             if (!groups[prov]) groups[prov] = {};
-// //             if (!groups[prov][kab]) groups[prov][kab] = [];
-// //             groups[prov][kab].push(user);
-// //         });
-// //         return groups;
-// //     };
-
-// //     const clusteredData = getClusteredUsers();
+// //     // ... Helper Functions (getClusteredUsers, Toggles, CRUD) TETAP SAMA ...
 // //     const toggleProvince = (key: string) => setExpandedProvinces(p => ({...p, [key]: !p[key]}));
 // //     const toggleRegency = (key: string) => setExpandedRegencies(p => ({...p, [key]: !p[key]}));
+// //     const clusteredData = (() => {
+// //         const groups: any = {};
+// //         users.forEach(user => {
+// //              let prov = (user.province || 'LAINNYA').toString().toUpperCase().trim();
+// //              let kab = (user.city || 'UMUM').toString().toUpperCase().trim();
+// //              if (!groups[prov]) groups[prov] = {};
+// //              if (!groups[prov][kab]) groups[prov][kab] = [];
+// //              groups[prov][kab].push(user);
+// //         });
+// //         return groups;
+// //     })();
 
-// //     // --- CRUD HANDLERS ---
-// //     const handleCreateUser = async (e: React.FormEvent) => {
-// //         e.preventDefault();
-// //         setIsSaving(true);
-// //         try {
-// //             const payload: any = { ...newUser };
-// //             if (newUser.role === 'ADMIN') {
-// //                 payload.regionScope = regionConfig.scope;
-// //                 payload.managedProvinces = regionConfig.provinces;
-// //                 payload.managedRegencies = regionConfig.regencies;
-// //             }
-// //             await api('/api/admin/users', { method: 'POST', body: payload });
-// //             alert('User berhasil dibuat!'); 
-// //             setShowAddModal(false); 
-// //             setNewUser({ name: '', email: '', password: '', role: 'STUDENT' }); // Reset form
-// //             loadUsers();
-// //         } catch (err: any) { alert(err.message); } finally { setIsSaving(false); }
-// //     };
+// //     const handleCreateUser = async (e: React.FormEvent) => { e.preventDefault(); setIsSaving(true); try { const payload: any = { ...newUser }; if (newUser.role === 'ADMIN') { payload.regionScope = regionConfig.scope; payload.managedProvinces = regionConfig.provinces; payload.managedRegencies = regionConfig.regencies; } await api('/api/admin/users', { method: 'POST', body: payload }); alert('User berhasil dibuat!'); setShowAddModal(false); loadUsers(); } catch (err: any) { alert(err.message); } finally { setIsSaving(false); } };
+// //     const handleDelete = async (id: string) => { if (!confirm('Hapus user ini?')) return; try { await api(`/api/admin/users/${id}`, { method: 'DELETE' }); loadUsers(); } catch (e) { alert('Gagal hapus'); } };
+// //     const handleResetPassword = async (id: string, name: string) => { if (!confirm(`Reset password ${name}?`)) return; try { await api(`/api/admin/users/${id}/reset-password`, { method: 'PATCH' }); alert('Password Reset: 123456'); } catch (e: any) { alert(e.message); } };
+// //     const handleUpdateProfile = async (data: any) => { try { await api(`/api/admin/users/${selectedUser._id}`, { method: 'PATCH', body: data }); alert("Profil diperbarui!"); setShowProfileModal(false); loadUsers(); } catch (e: any) { alert(e.message); } };
 
-// //     const handleDelete = async (id: string) => {
-// //         if (!confirm('Hapus user ini?')) return;
-// //         try { await api(`/api/admin/users/${id}`, { method: 'DELETE' }); loadUsers(); } catch (e) { alert('Gagal hapus'); }
-// //     };
-
-// //     const handleResetPassword = async (id: string, name: string) => {
-// //         if (!confirm(`Reset password ${name}?`)) return;
-// //         try { await api(`/api/admin/users/${id}/reset-password`, { method: 'PATCH' }); alert('Password Reset: 123456'); } catch (e: any) { alert(e.message); }
-// //     };
-
-// //     const handleUpdateProfile = async (data: any) => {
-// //         try { await api(`/api/admin/users/${selectedUser._id}`, { method: 'PATCH', body: data }); alert("Profil diperbarui!"); setShowProfileModal(false); loadUsers(); } catch (e: any) { alert(e.message); }
-// //     };
-
-// //     // --- SUB-COMPONENT: TABLE ---
+// //     // --- UI TABLE ---
 // //     const UserTable = ({ data }: { data: any[] }) => (
 // //         <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
 // //             <table className="w-full text-left text-sm">
@@ -3717,12 +4001,12 @@
 // //                                     {user.province ? <div className="flex items-center gap-1"><MapPin size={10}/> {user.city}, {user.province}</div> : '-'}
 // //                                 </td>
 // //                                 <td className="px-6 py-4 text-right flex justify-end gap-1">
-// //                                     <button onClick={()=>{setSelectedUser(user); setShowProfileModal(true)}} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-blue-600" title="Profil" aria-label="Profil"><Eye size={16}/></button>
-// //                                     <Link href={`/admin/users/${user._id}`} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-gray-600" title="Setting" aria-label="Setting"><Settings size={16}/></Link>
+// //                                     <button onClick={()=>{setSelectedUser(user); setShowProfileModal(true)}} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-blue-600" aria-label="Lihat Profil"><Eye size={16}/></button>
+// //                                     <Link href={`/admin/users/${user._id}`} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-gray-600" aria-label="Setting"><Settings size={16}/></Link>
 // //                                     {canManageUsers && (
 // //                                         <>
-// //                                             <button onClick={()=>handleResetPassword(user._id, user.name)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-orange-600" title="Reset Pass" aria-label="Reset Password"><KeyRound size={16}/></button>
-// //                                             <button onClick={()=>handleDelete(user._id)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-red-600" title="Hapus" aria-label="Hapus"><Trash2 size={16}/></button>
+// //                                             <button onClick={()=>handleResetPassword(user._id, user.name)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-orange-600" aria-label="Reset Password"><KeyRound size={16}/></button>
+// //                                             <button onClick={()=>handleDelete(user._id)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-red-600" aria-label="Hapus"><Trash2 size={16}/></button>
 // //                                         </>
 // //                                     )}
 // //                                 </td>
@@ -3736,66 +4020,71 @@
 
 // //     return (
 // //         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/50">
-// //             {/* Header */}
+// //             {/* Header ... (Sama) */}
 // //             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
 // //                 <div><h1 className="text-2xl font-black text-gray-900">Data Pengguna</h1><p className="text-sm text-gray-500">Kelola akun, import data, dan hak akses.</p></div>
 // //                 <div className="flex gap-2">
 // //                     <div className="flex bg-white p-1 rounded-lg border shadow-sm">
-// //                         <button onClick={()=>setViewMode('cluster')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='cluster'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="View Cluster"><Layers size={14}/> Wilayah</button>
-// //                         <button onClick={()=>setViewMode('list')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='list'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="View Table"><LayoutList size={14}/> Tabel</button>
+// //                         <button onClick={()=>setViewMode('cluster')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='cluster'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="Cluster View"><Layers size={14}/> Wilayah</button>
+// //                         <button onClick={()=>setViewMode('list')} className={`px-3 py-1.5 rounded text-xs font-bold flex gap-2 ${viewMode==='list'?'bg-gray-900 text-white':'text-gray-500'}`} aria-label="List View"><LayoutList size={14}/> Tabel</button>
 // //                     </div>
 // //                     {canManageUsers && (
 // //                         <>
-// //                             <Link href="/admin/members/import"><button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Import"><FileSpreadsheet size={16}/> Import</button></Link>
-// //                             <button onClick={()=>setShowAddModal(true)} className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Tambah User"><Plus size={16}/> Manual</button>
+// //                             <Link href="/admin/members/import"><button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Import CSV"><FileSpreadsheet size={16}/> Import</button></Link>
+// //                             <button onClick={()=>setShowAddModal(true)} className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Manual Add"><Plus size={16}/> Manual</button>
 // //                         </>
 // //                     )}
 // //                 </div>
 // //             </div>
 
-// //             {/* FILTER BAR */}
-// //             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+// //             {/* --- FILTER BAR BARU (5 KOLOM) --- */}
+// //             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 grid grid-cols-1 md:grid-cols-5 gap-3">
+                
+// //                 {/* 1. Search General */}
 // //                 <div className="relative md:col-span-1">
 // //                     <Search className="absolute left-3 top-2.5 text-gray-400" size={18}/>
-// //                     <input 
-// //                         className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" 
-// //                         placeholder="Cari nama, email..." 
-// //                         value={search} 
-// //                         onChange={e=>setSearch(e.target.value)} 
-// //                         aria-label="Cari Nama"
-// //                     />
+// //                     <input className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" placeholder="Cari nama/email..." value={search} onChange={e=>setSearch(e.target.value)} aria-label="Cari"/>
 // //                 </div>
-// //                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterRole} onChange={e=>setFilterRole(e.target.value)} aria-label="Filter Role">
+
+// //                 {/* 2. Filter Role */}
+// //                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterRole} onChange={e=>setFilterRole(e.target.value)} aria-label="Role">
 // //                     <option value="">Semua Role</option>
 // //                     <option value="SUPER_ADMIN">Super Admin</option>
 // //                     <option value="ADMIN">Admin Wilayah</option>
 // //                     <option value="FACILITATOR">Fasilitator</option>
 // //                     <option value="STUDENT">Peserta</option>
 // //                 </select>
-// //                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterProv} onChange={e=>setFilterProv(e.target.value)} aria-label="Filter Provinsi">
+
+// //                 {/* 3. Filter Provinsi (Dropdown dari JSON) */}
+// //                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterProv} onChange={e=>setFilterProv(e.target.value)} aria-label="Provinsi">
 // //                     <option value="">Semua Provinsi</option>
-// //                     {provincesList.map(p=><option key={p} value={p}>{p}</option>)}
+// //                     {provincesList.map(p=><option key={p.code} value={p.name}>{p.name}</option>)}
 // //                 </select>
-// //                 <input 
-// //                     className="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" 
-// //                     placeholder="Filter Kota..." 
+
+// //                 {/* 4. Filter Kota (Dropdown Dinamis) */}
+// //                 <select 
+// //                     className="p-2 border rounded-lg text-sm bg-white cursor-pointer disabled:bg-gray-100 disabled:text-gray-400" 
 // //                     value={filterCity} 
 // //                     onChange={e=>setFilterCity(e.target.value)} 
-// //                     aria-label="Filter Kota"
-// //                 />
+// //                     disabled={!filterProv}
+// //                     aria-label="Kota"
+// //                 >
+// //                     <option value="">{filterProv ? "Semua Kab/Kota" : "Pilih Provinsi Dulu"}</option>
+// //                     {regenciesList.map(r=><option key={r.code} value={r.name}>{r.name}</option>)}
+// //                 </select>
+
+// //                 {/* 5. Filter Jabatan/Posisi */}
+// //                 <input className="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" placeholder="Posisi / Jabatan..." value={filterPosition} onChange={e=>setFilterPosition(e.target.value)} aria-label="Jabatan"/>
 // //             </div>
 
-// //             {/* CONTENT */}
+// //             {/* CONTENT LIST */}
 // //             {loading ? <div className="text-center py-20"><Loader2 className="animate-spin mx-auto"/> Memuat...</div> : (
 // //                 <div className="space-y-6">
-// //                     {/* MODE CLUSTER */}
+// //                     {/* ... (Tampilan Cluster tetap sama) ... */}
 // //                     {viewMode === 'cluster' && Object.keys(clusteredData).sort().map(prov => (
 // //                         <div key={prov} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
 // //                             <div onClick={()=>toggleProvince(prov)} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-// //                                 <div className="flex items-center gap-4">
-// //                                     <ChevronRight size={16} className={`transition-transform ${expandedProvinces[prov]?'rotate-90':''}`}/>
-// //                                     <div><h3 className="font-bold text-gray-800">{prov}</h3><p className="text-xs text-gray-500">{Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p></div>
-// //                                 </div>
+// //                                 <div className="flex items-center gap-4"><ChevronRight size={16} className={`transition-transform ${expandedProvinces[prov]?'rotate-90':''}`}/><div><h3 className="font-bold text-gray-800">{prov}</h3><p className="text-xs text-gray-500">{Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p></div></div>
 // //                                 <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded text-xs font-bold">{Object.values(clusteredData[prov]).flat().length} Anggota</span>
 // //                             </div>
 // //                             {expandedProvinces[prov] && (
@@ -3814,35 +4103,16 @@
 // //                         </div>
 // //                     ))}
 
-// //                     {/* MODE LIST */}
 // //                     {viewMode === 'list' && <div className="bg-white rounded-xl border shadow-sm overflow-hidden"><UserTable data={users}/></div>}
 // //                 </div>
 // //             )}
 
-// //             {/* Modal Tambah User */}
-// //             {showAddModal && (
-// //                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-// //                     <div className="bg-white rounded-xl w-full max-w-md p-6">
-// //                         <h2 className="font-bold text-lg mb-4">Tambah User</h2>
-// //                         <form onSubmit={handleCreateUser} className="space-y-4">
-// //                             <input className="w-full border p-2 rounded" placeholder="Nama" required value={newUser.name} onChange={e=>setNewUser({...newUser, name: e.target.value})} aria-label="Nama"/>
-// //                             <input className="w-full border p-2 rounded" placeholder="Email" type="email" required value={newUser.email} onChange={e=>setNewUser({...newUser, email: e.target.value})} aria-label="Email"/>
-// //                             <input className="w-full border p-2 rounded" placeholder="Password" type="password" required value={newUser.password} onChange={e=>setNewUser({...newUser, password: e.target.value})} aria-label="Password"/>
-// //                             <select className="w-full border p-2 rounded" value={newUser.role} onChange={e=>setNewUser({...newUser, role: e.target.value})} aria-label="Pilih Role">
-// //                                 <option value="STUDENT">Peserta</option><option value="FACILITATOR">Fasilitator</option><option value="ADMIN">Admin</option>
-// //                             </select>
-// //                             {newUser.role==='ADMIN' && <div className="bg-orange-50 p-2 rounded border"><RegionSelector value={regionConfig} onChange={setRegionConfig}/></div>}
-// //                             <div className="flex justify-end gap-2"><button type="button" onClick={()=>setShowAddModal(false)} className="px-4 py-2 text-sm font-bold">Batal</button><button type="submit" disabled={isSaving} className="px-4 py-2 bg-black text-white rounded text-sm font-bold">Simpan</button></div>
-// //                         </form>
-// //                     </div>
-// //                 </div>
-// //             )}
-
+// //             {/* Modal Tambah & Edit tetap sama */}
+// //             {showAddModal && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"><div className="bg-white p-6 rounded-xl w-full max-w-md"><h2 className="font-bold mb-4">Tambah User</h2><form onSubmit={handleCreateUser} className="space-y-4"><input className="w-full border p-2 rounded" placeholder="Nama" value={newUser.name} onChange={e=>setNewUser({...newUser, name:e.target.value})}/><input className="w-full border p-2 rounded" placeholder="Email" type="email" value={newUser.email} onChange={e=>setNewUser({...newUser, email:e.target.value})}/><input className="w-full border p-2 rounded" placeholder="Password" type="password" value={newUser.password} onChange={e=>setNewUser({...newUser, password:e.target.value})}/><select className="w-full border p-2 rounded" value={newUser.role} onChange={e=>setNewUser({...newUser, role:e.target.value})}><option value="STUDENT">Peserta</option><option value="FACILITATOR">Fasilitator</option><option value="ADMIN">Admin</option></select>{newUser.role==='ADMIN' && <div className="bg-orange-50 p-2 rounded border"><RegionSelector value={regionConfig} onChange={setRegionConfig}/></div>}<div className="flex justify-end gap-2"><button type="button" onClick={()=>setShowAddModal(false)}>Batal</button><button type="submit" disabled={isSaving} className="bg-black text-white px-4 py-2 rounded">Simpan</button></div></form></div></div>}
 // //             {showProfileModal && selectedUser && <UserProfileForm initialData={selectedUser} onClose={()=>setShowProfileModal(false)} onSave={handleUpdateProfile}/>}
 // //         </div>
 // //     );
 // // }
-
 
 
 // 'use client';
@@ -3858,7 +4128,7 @@
 // import RegionSelector from '@/components/admin/RegionSelector'; 
 // import { usePermission } from '@/hooks/usePermission';
 // import UserProfileForm from '@/app/admin/members/UserProfileForm';
-// // [PENTING] Import helper region lokal
+// // Helper lokal
 // import { getProvinces, getRegencies } from '@/lib/indonesia';
 
 // export default function AdminUsersPage() {
@@ -3872,17 +4142,16 @@
 //     const [search, setSearch] = useState('');
 //     const [debouncedSearch, setDebouncedSearch] = useState('');
 //     const [filterRole, setFilterRole] = useState('');
-//     const [filterProv, setFilterProv] = useState(''); // Nama Provinsi
-//     const [filterCity, setFilterCity] = useState(''); // Nama Kota
-//     const [filterPosition, setFilterPosition] = useState(''); // Jabatan
+//     const [filterProv, setFilterProv] = useState(''); 
+//     const [filterCity, setFilterCity] = useState(''); 
+//     const [filterPosition, setFilterPosition] = useState('');
 
-//     // Data Dropdown
 //     const [provincesList, setProvincesList] = useState<any[]>([]);
 //     const [regenciesList, setRegenciesList] = useState<any[]>([]);
 
 //     const [viewMode, setViewMode] = useState<'list' | 'cluster'>('list');
     
-//     // ... State lainnya (tidak berubah)
+//     // Other State
 //     const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
 //     const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
 //     const [showAddModal, setShowAddModal] = useState(false);
@@ -3892,15 +4161,14 @@
 //     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
 //     const [regionConfig, setRegionConfig] = useState<any>({ scope: 'national', provinces: [], regencies: [] });
 
-//     // 1. INIT PROVINCES LIST (Sekali saja saat mount)
+//     // 1. INIT PROVINCES LIST
 //     useEffect(() => {
 //         setProvincesList(getProvinces());
 //     }, []);
 
-//     // 2. UPDATE REGENCIES LIST saat Provinsi berubah
+//     // 2. UPDATE REGENCIES LIST
 //     useEffect(() => {
 //         if (filterProv) {
-//             // Cari kode dari nama provinsi terpilih
 //             const p = provincesList.find(prov => prov.name === filterProv);
 //             if (p) {
 //                 setRegenciesList(getRegencies(p.code));
@@ -3910,7 +4178,7 @@
 //         } else {
 //             setRegenciesList([]);
 //         }
-//         setFilterCity(''); // Reset kota jika provinsi ganti
+//         setFilterCity(''); 
 //     }, [filterProv, provincesList]);
 
 //     // 3. DEBOUNCE SEARCH
@@ -3943,7 +4211,6 @@
 //         }
 //     };
 
-//     // ... Helper Functions (getClusteredUsers, Toggles, CRUD) TETAP SAMA ...
 //     const toggleProvince = (key: string) => setExpandedProvinces(p => ({...p, [key]: !p[key]}));
 //     const toggleRegency = (key: string) => setExpandedRegencies(p => ({...p, [key]: !p[key]}));
 //     const clusteredData = (() => {
@@ -3963,7 +4230,6 @@
 //     const handleResetPassword = async (id: string, name: string) => { if (!confirm(`Reset password ${name}?`)) return; try { await api(`/api/admin/users/${id}/reset-password`, { method: 'PATCH' }); alert('Password Reset: 123456'); } catch (e: any) { alert(e.message); } };
 //     const handleUpdateProfile = async (data: any) => { try { await api(`/api/admin/users/${selectedUser._id}`, { method: 'PATCH', body: data }); alert("Profil diperbarui!"); setShowProfileModal(false); loadUsers(); } catch (e: any) { alert(e.message); } };
 
-//     // --- UI TABLE ---
 //     const UserTable = ({ data }: { data: any[] }) => (
 //         <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
 //             <table className="w-full text-left text-sm">
@@ -4020,7 +4286,6 @@
 
 //     return (
 //         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50/50">
-//             {/* Header ... (Sama) */}
 //             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
 //                 <div><h1 className="text-2xl font-black text-gray-900">Data Pengguna</h1><p className="text-sm text-gray-500">Kelola akun, import data, dan hak akses.</p></div>
 //                 <div className="flex gap-2">
@@ -4037,50 +4302,38 @@
 //                 </div>
 //             </div>
 
-//             {/* --- FILTER BAR BARU (5 KOLOM) --- */}
 //             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 grid grid-cols-1 md:grid-cols-5 gap-3">
-                
-//                 {/* 1. Search General */}
 //                 <div className="relative md:col-span-1">
 //                     <Search className="absolute left-3 top-2.5 text-gray-400" size={18}/>
 //                     <input className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" placeholder="Cari nama/email..." value={search} onChange={e=>setSearch(e.target.value)} aria-label="Cari"/>
 //                 </div>
-
-//                 {/* 2. Filter Role */}
-//                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterRole} onChange={e=>setFilterRole(e.target.value)} aria-label="Role">
+//                 {/* FIX ACCESSIBILITY: Tambahkan aria-label pada semua select/input */}
+//                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterRole} onChange={e=>setFilterRole(e.target.value)} aria-label="Filter Role">
 //                     <option value="">Semua Role</option>
 //                     <option value="SUPER_ADMIN">Super Admin</option>
 //                     <option value="ADMIN">Admin Wilayah</option>
 //                     <option value="FACILITATOR">Fasilitator</option>
 //                     <option value="STUDENT">Peserta</option>
 //                 </select>
-
-//                 {/* 3. Filter Provinsi (Dropdown dari JSON) */}
-//                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterProv} onChange={e=>setFilterProv(e.target.value)} aria-label="Provinsi">
+//                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterProv} onChange={e=>setFilterProv(e.target.value)} aria-label="Filter Provinsi">
 //                     <option value="">Semua Provinsi</option>
 //                     {provincesList.map(p=><option key={p.code} value={p.name}>{p.name}</option>)}
 //                 </select>
-
-//                 {/* 4. Filter Kota (Dropdown Dinamis) */}
 //                 <select 
 //                     className="p-2 border rounded-lg text-sm bg-white cursor-pointer disabled:bg-gray-100 disabled:text-gray-400" 
 //                     value={filterCity} 
 //                     onChange={e=>setFilterCity(e.target.value)} 
 //                     disabled={!filterProv}
-//                     aria-label="Kota"
+//                     aria-label="Filter Kota"
 //                 >
 //                     <option value="">{filterProv ? "Semua Kab/Kota" : "Pilih Provinsi Dulu"}</option>
 //                     {regenciesList.map(r=><option key={r.code} value={r.name}>{r.name}</option>)}
 //                 </select>
-
-//                 {/* 5. Filter Jabatan/Posisi */}
-//                 <input className="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" placeholder="Posisi / Jabatan..." value={filterPosition} onChange={e=>setFilterPosition(e.target.value)} aria-label="Jabatan"/>
+//                 <input className="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" placeholder="Posisi / Jabatan..." value={filterPosition} onChange={e=>setFilterPosition(e.target.value)} aria-label="Filter Jabatan"/>
 //             </div>
 
-//             {/* CONTENT LIST */}
 //             {loading ? <div className="text-center py-20"><Loader2 className="animate-spin mx-auto"/> Memuat...</div> : (
 //                 <div className="space-y-6">
-//                     {/* ... (Tampilan Cluster tetap sama) ... */}
 //                     {viewMode === 'cluster' && Object.keys(clusteredData).sort().map(prov => (
 //                         <div key={prov} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
 //                             <div onClick={()=>toggleProvince(prov)} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
@@ -4102,18 +4355,15 @@
 //                             )}
 //                         </div>
 //                     ))}
-
 //                     {viewMode === 'list' && <div className="bg-white rounded-xl border shadow-sm overflow-hidden"><UserTable data={users}/></div>}
 //                 </div>
 //             )}
 
-//             {/* Modal Tambah & Edit tetap sama */}
-//             {showAddModal && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"><div className="bg-white p-6 rounded-xl w-full max-w-md"><h2 className="font-bold mb-4">Tambah User</h2><form onSubmit={handleCreateUser} className="space-y-4"><input className="w-full border p-2 rounded" placeholder="Nama" value={newUser.name} onChange={e=>setNewUser({...newUser, name:e.target.value})}/><input className="w-full border p-2 rounded" placeholder="Email" type="email" value={newUser.email} onChange={e=>setNewUser({...newUser, email:e.target.value})}/><input className="w-full border p-2 rounded" placeholder="Password" type="password" value={newUser.password} onChange={e=>setNewUser({...newUser, password:e.target.value})}/><select className="w-full border p-2 rounded" value={newUser.role} onChange={e=>setNewUser({...newUser, role:e.target.value})}><option value="STUDENT">Peserta</option><option value="FACILITATOR">Fasilitator</option><option value="ADMIN">Admin</option></select>{newUser.role==='ADMIN' && <div className="bg-orange-50 p-2 rounded border"><RegionSelector value={regionConfig} onChange={setRegionConfig}/></div>}<div className="flex justify-end gap-2"><button type="button" onClick={()=>setShowAddModal(false)}>Batal</button><button type="submit" disabled={isSaving} className="bg-black text-white px-4 py-2 rounded">Simpan</button></div></form></div></div>}
+//             {showAddModal && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"><div className="bg-white p-6 rounded-xl w-full max-w-md"><h2 className="font-bold mb-4">Tambah User</h2><form onSubmit={handleCreateUser} className="space-y-4"><input className="w-full border p-2 rounded" placeholder="Nama" value={newUser.name} onChange={e=>setNewUser({...newUser, name:e.target.value})} aria-label="Nama"/><input className="w-full border p-2 rounded" placeholder="Email" type="email" value={newUser.email} onChange={e=>setNewUser({...newUser, email:e.target.value})} aria-label="Email"/><input className="w-full border p-2 rounded" placeholder="Password" type="password" value={newUser.password} onChange={e=>setNewUser({...newUser, password:e.target.value})} aria-label="Password"/><select className="w-full border p-2 rounded" value={newUser.role} onChange={e=>setNewUser({...newUser, role:e.target.value})} aria-label="Role"><option value="STUDENT">Peserta</option><option value="FACILITATOR">Fasilitator</option><option value="ADMIN">Admin</option></select>{newUser.role==='ADMIN' && <div className="bg-orange-50 p-2 rounded border"><RegionSelector value={regionConfig} onChange={setRegionConfig}/></div>}<div className="flex justify-end gap-2"><button type="button" onClick={()=>setShowAddModal(false)}>Batal</button><button type="submit" disabled={isSaving} className="bg-black text-white px-4 py-2 rounded">Simpan</button></div></form></div></div>}
 //             {showProfileModal && selectedUser && <UserProfileForm initialData={selectedUser} onClose={()=>setShowProfileModal(false)} onSave={handleUpdateProfile}/>}
 //         </div>
 //     );
 // }
-
 
 'use client';
 
@@ -4155,8 +4405,11 @@ export default function AdminUsersPage() {
     const [expandedProvinces, setExpandedProvinces] = useState<Record<string, boolean>>({});
     const [expandedRegencies, setExpandedRegencies] = useState<Record<string, boolean>>({});
     const [showAddModal, setShowAddModal] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<any>(null); 
-    const [showProfileModal, setShowProfileModal] = useState(false);
+    
+    // Modal Profil Dihapus karena diganti Navigasi
+    // const [selectedUser, setSelectedUser] = useState<any>(null); 
+    // const [showProfileModal, setShowProfileModal] = useState(false);
+    
     const [isSaving, setIsSaving] = useState(false);
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' });
     const [regionConfig, setRegionConfig] = useState<any>({ scope: 'national', provinces: [], regencies: [] });
@@ -4213,6 +4466,7 @@ export default function AdminUsersPage() {
 
     const toggleProvince = (key: string) => setExpandedProvinces(p => ({...p, [key]: !p[key]}));
     const toggleRegency = (key: string) => setExpandedRegencies(p => ({...p, [key]: !p[key]}));
+    
     const clusteredData = (() => {
         const groups: any = {};
         users.forEach(user => {
@@ -4225,10 +4479,46 @@ export default function AdminUsersPage() {
         return groups;
     })();
 
-    const handleCreateUser = async (e: React.FormEvent) => { e.preventDefault(); setIsSaving(true); try { const payload: any = { ...newUser }; if (newUser.role === 'ADMIN') { payload.regionScope = regionConfig.scope; payload.managedProvinces = regionConfig.provinces; payload.managedRegencies = regionConfig.regencies; } await api('/api/admin/users', { method: 'POST', body: payload }); alert('User berhasil dibuat!'); setShowAddModal(false); loadUsers(); } catch (err: any) { alert(err.message); } finally { setIsSaving(false); } };
-    const handleDelete = async (id: string) => { if (!confirm('Hapus user ini?')) return; try { await api(`/api/admin/users/${id}`, { method: 'DELETE' }); loadUsers(); } catch (e) { alert('Gagal hapus'); } };
-    const handleResetPassword = async (id: string, name: string) => { if (!confirm(`Reset password ${name}?`)) return; try { await api(`/api/admin/users/${id}/reset-password`, { method: 'PATCH' }); alert('Password Reset: 123456'); } catch (e: any) { alert(e.message); } };
-    const handleUpdateProfile = async (data: any) => { try { await api(`/api/admin/users/${selectedUser._id}`, { method: 'PATCH', body: data }); alert("Profil diperbarui!"); setShowProfileModal(false); loadUsers(); } catch (e: any) { alert(e.message); } };
+    const handleCreateUser = async (e: React.FormEvent) => { 
+        e.preventDefault(); 
+        setIsSaving(true); 
+        try { 
+            const payload: any = { ...newUser }; 
+            if (newUser.role === 'ADMIN') { 
+                payload.regionScope = regionConfig.scope; 
+                payload.managedProvinces = regionConfig.provinces; 
+                payload.managedRegencies = regionConfig.regencies; 
+            } 
+            await api('/api/admin/users', { method: 'POST', body: payload }); 
+            alert('User berhasil dibuat!'); 
+            setShowAddModal(false); 
+            loadUsers(); 
+        } catch (err: any) { 
+            alert(err.message); 
+        } finally { 
+            setIsSaving(false); 
+        } 
+    };
+    
+    const handleDelete = async (id: string) => { 
+        if (!confirm('Hapus user ini?')) return; 
+        try { 
+            await api(`/api/admin/users/${id}`, { method: 'DELETE' }); 
+            loadUsers(); 
+        } catch (e) { 
+            alert('Gagal hapus. User virtual tidak bisa dihapus dari sini.'); 
+        } 
+    };
+    
+    const handleResetPassword = async (id: string, name: string) => { 
+        if (!confirm(`Reset password ${name}?`)) return; 
+        try { 
+            await api(`/api/admin/users/${id}/reset-password`, { method: 'PATCH' }); 
+            alert('Password Reset: 123456'); 
+        } catch (e: any) { 
+            alert(e.message); 
+        } 
+    };
 
     const UserTable = ({ data }: { data: any[] }) => (
         <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
@@ -4247,32 +4537,77 @@ export default function AdminUsersPage() {
                         <tr><td colSpan={5} className="p-8 text-center text-gray-400">Data tidak ditemukan.</td></tr>
                     ) : (
                         data.map(user => (
-                            <tr key={user._id} className="hover:bg-blue-50/30 transition-colors">
+                            <tr key={user._id || user.id} className="hover:bg-blue-50/30 transition-colors">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                                            <img src={getImageUrl(user.avatarUrl)} className="w-full h-full object-cover" alt="Avatar" onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/150'}}/>
+                                        <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-100">
+                                            <img 
+                                                src={getImageUrl(user.avatarUrl)} 
+                                                className="w-full h-full object-cover" 
+                                                alt="Avatar" 
+                                                onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/150'}}
+                                            />
                                         </div>
-                                        <div><p className="font-bold text-gray-900 text-sm">{user.name}</p><p className="text-xs text-gray-500">{user.email}</p></div>
+                                        <div>
+                                            <p className="font-bold text-gray-900 text-sm">{user.name}</p>
+                                            <p className="text-xs text-gray-500">{user.email}</p>
+                                        </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">{user.memberType || 'Anggota'}</span>
+                                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase">
+                                        {user.memberType || 'Anggota'}
+                                    </span>
                                     {user.memberData?.position && <div className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Briefcase size={10}/> {user.memberData.position}</div>}
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className={`text-[10px] px-2 py-1 rounded font-bold border ${user.role==='ADMIN'?'bg-orange-50 text-orange-700':user.role==='FACILITATOR'?'bg-green-50 text-green-700':'bg-gray-100 text-gray-600'}`}>{user.role}</span>
+                                    <span className={`text-[10px] px-2 py-1 rounded font-bold border uppercase ${user.role==='ADMIN'?'bg-orange-50 text-orange-700':user.role==='FACILITATOR'?'bg-green-50 text-green-700':user.role==='BELUM_AKTIF'?'bg-gray-200 text-gray-600':'bg-gray-100 text-gray-600'}`}>
+                                        {user.role === 'BELUM_AKTIF' ? 'NON-AKTIF' : user.role}
+                                    </span>
                                 </td>
                                 <td className="px-6 py-4 text-xs text-gray-600">
-                                    {user.province ? <div className="flex items-center gap-1"><MapPin size={10}/> {user.city}, {user.province}</div> : '-'}
+                                    {user.province ? <div className="flex items-center gap-1 uppercase"><MapPin size={10}/> {user.city}, {user.province}</div> : '-'}
                                 </td>
                                 <td className="px-6 py-4 text-right flex justify-end gap-1">
-                                    <button onClick={()=>{setSelectedUser(user); setShowProfileModal(true)}} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-blue-600" aria-label="Lihat Profil"><Eye size={16}/></button>
-                                    <Link href={`/admin/users/${user._id}`} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-gray-600" aria-label="Setting"><Settings size={16}/></Link>
+                                    {/* [FIX] Tombol Mata -> Link ke Detail Page */}
+                                   <Link 
+    href={`/profile/${user._id || user.id}`} // Pastikan ini mengarah ke /profile/[id]
+    className="p-1.5 bg-white border rounded hover:bg-blue-50 text-blue-600 transition-colors" 
+    aria-label="Lihat Profil Lengkap"
+    target="_blank" // Agar membuka tab baru
+>
+    <Eye size={16}/>
+</Link>
+                                    
+                                    {/* Tombol Setting (Sama ke Detail Page, bisa dibedakan jika ada halaman setting khusus) */}
+                                    <Link 
+                                        href={`/admin/users/${user._id || user.id}`} 
+                                        className="p-1.5 bg-white border rounded hover:bg-gray-50 text-gray-600 transition-colors" 
+                                        aria-label="Edit User"
+                                    >
+                                        <Settings size={16}/>
+                                    </Link>
+
                                     {canManageUsers && (
                                         <>
-                                            <button onClick={()=>handleResetPassword(user._id, user.name)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-orange-600" aria-label="Reset Password"><KeyRound size={16}/></button>
-                                            <button onClick={()=>handleDelete(user._id)} className="p-1.5 bg-white border rounded hover:bg-gray-50 text-red-600" aria-label="Hapus"><Trash2 size={16}/></button>
+                                            <button 
+                                                onClick={()=>handleResetPassword(user._id || user.id, user.name)} 
+                                                className="p-1.5 bg-white border rounded hover:bg-orange-50 text-orange-600 transition-colors" 
+                                                aria-label="Reset Password"
+                                                disabled={user.isVirtual} // Disable reset for virtual user
+                                                title={user.isVirtual ? "User belum aktif" : "Reset Password"}
+                                            >
+                                                <KeyRound size={16}/>
+                                            </button>
+                                            <button 
+                                                onClick={()=>handleDelete(user._id || user.id)} 
+                                                className="p-1.5 bg-white border rounded hover:bg-red-50 text-red-600 transition-colors" 
+                                                aria-label="Hapus"
+                                                disabled={user.isVirtual} // Disable delete for virtual user
+                                                title={user.isVirtual ? "User belum aktif" : "Hapus User"}
+                                            >
+                                                <Trash2 size={16}/>
+                                            </button>
                                         </>
                                     )}
                                 </td>
@@ -4295,8 +4630,8 @@ export default function AdminUsersPage() {
                     </div>
                     {canManageUsers && (
                         <>
-                            <Link href="/admin/members/import"><button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Import CSV"><FileSpreadsheet size={16}/> Import</button></Link>
-                            <button onClick={()=>setShowAddModal(true)} className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center" aria-label="Manual Add"><Plus size={16}/> Manual</button>
+                            <Link href="/admin/members/import"><button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center hover:bg-green-700 transition-colors" aria-label="Import CSV"><FileSpreadsheet size={16}/> Import</button></Link>
+                            <button onClick={()=>setShowAddModal(true)} className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex gap-2 text-sm items-center hover:bg-black transition-colors" aria-label="Manual Add"><Plus size={16}/> Manual</button>
                         </>
                     )}
                 </div>
@@ -4307,7 +4642,6 @@ export default function AdminUsersPage() {
                     <Search className="absolute left-3 top-2.5 text-gray-400" size={18}/>
                     <input className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" placeholder="Cari nama/email..." value={search} onChange={e=>setSearch(e.target.value)} aria-label="Cari"/>
                 </div>
-                {/* FIX ACCESSIBILITY: Tambahkan aria-label pada semua select/input */}
                 <select className="p-2 border rounded-lg text-sm bg-white cursor-pointer" value={filterRole} onChange={e=>setFilterRole(e.target.value)} aria-label="Filter Role">
                     <option value="">Semua Role</option>
                     <option value="SUPER_ADMIN">Super Admin</option>
@@ -4332,19 +4666,19 @@ export default function AdminUsersPage() {
                 <input className="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-100 outline-none" placeholder="Posisi / Jabatan..." value={filterPosition} onChange={e=>setFilterPosition(e.target.value)} aria-label="Filter Jabatan"/>
             </div>
 
-            {loading ? <div className="text-center py-20"><Loader2 className="animate-spin mx-auto"/> Memuat...</div> : (
+            {loading ? <div className="text-center py-20"><Loader2 className="animate-spin mx-auto text-red-600"/> <span className="text-gray-500 text-sm mt-2 block">Memuat Data...</span></div> : (
                 <div className="space-y-6">
                     {viewMode === 'cluster' && Object.keys(clusteredData).sort().map(prov => (
                         <div key={prov} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                            <div onClick={()=>toggleProvince(prov)} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+                            <div onClick={()=>toggleProvince(prov)} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors">
                                 <div className="flex items-center gap-4"><ChevronRight size={16} className={`transition-transform ${expandedProvinces[prov]?'rotate-90':''}`}/><div><h3 className="font-bold text-gray-800">{prov}</h3><p className="text-xs text-gray-500">{Object.keys(clusteredData[prov]).length} Kabupaten/Kota</p></div></div>
                                 <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded text-xs font-bold">{Object.values(clusteredData[prov]).flat().length} Anggota</span>
                             </div>
                             {expandedProvinces[prov] && (
-                                <div className="p-4 bg-gray-50/50 border-t space-y-3">
+                                <div className="p-4 bg-gray-50/50 border-t space-y-3 animate-in slide-in-from-top-2">
                                     {Object.keys(clusteredData[prov]).sort().map(kab => (
                                         <div key={kab} className="bg-white border rounded-lg overflow-hidden">
-                                            <div onClick={()=>toggleRegency(`${prov}_${kab}`)} className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+                                            <div onClick={()=>toggleRegency(`${prov}_${kab}`)} className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors">
                                                 <div className="flex items-center gap-3"><ChevronDown size={14}/> <span className="font-bold text-sm">{kab}</span></div>
                                                 <span className="text-xs text-gray-500">{clusteredData[prov][kab].length} User</span>
                                             </div>
@@ -4359,8 +4693,7 @@ export default function AdminUsersPage() {
                 </div>
             )}
 
-            {showAddModal && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"><div className="bg-white p-6 rounded-xl w-full max-w-md"><h2 className="font-bold mb-4">Tambah User</h2><form onSubmit={handleCreateUser} className="space-y-4"><input className="w-full border p-2 rounded" placeholder="Nama" value={newUser.name} onChange={e=>setNewUser({...newUser, name:e.target.value})} aria-label="Nama"/><input className="w-full border p-2 rounded" placeholder="Email" type="email" value={newUser.email} onChange={e=>setNewUser({...newUser, email:e.target.value})} aria-label="Email"/><input className="w-full border p-2 rounded" placeholder="Password" type="password" value={newUser.password} onChange={e=>setNewUser({...newUser, password:e.target.value})} aria-label="Password"/><select className="w-full border p-2 rounded" value={newUser.role} onChange={e=>setNewUser({...newUser, role:e.target.value})} aria-label="Role"><option value="STUDENT">Peserta</option><option value="FACILITATOR">Fasilitator</option><option value="ADMIN">Admin</option></select>{newUser.role==='ADMIN' && <div className="bg-orange-50 p-2 rounded border"><RegionSelector value={regionConfig} onChange={setRegionConfig}/></div>}<div className="flex justify-end gap-2"><button type="button" onClick={()=>setShowAddModal(false)}>Batal</button><button type="submit" disabled={isSaving} className="bg-black text-white px-4 py-2 rounded">Simpan</button></div></form></div></div>}
-            {showProfileModal && selectedUser && <UserProfileForm initialData={selectedUser} onClose={()=>setShowProfileModal(false)} onSave={handleUpdateProfile}/>}
+            {showAddModal && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm animate-in fade-in"><div className="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl"><h2 className="font-bold mb-4 text-lg">Tambah User Baru</h2><form onSubmit={handleCreateUser} className="space-y-4"><input className="w-full border p-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100" placeholder="Nama Lengkap" value={newUser.name} onChange={e=>setNewUser({...newUser, name:e.target.value})} aria-label="Nama"/><input className="w-full border p-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100" placeholder="Email" type="email" value={newUser.email} onChange={e=>setNewUser({...newUser, email:e.target.value})} aria-label="Email"/><input className="w-full border p-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100" placeholder="Password" type="password" value={newUser.password} onChange={e=>setNewUser({...newUser, password:e.target.value})} aria-label="Password"/><select className="w-full border p-3 rounded-lg text-sm bg-white cursor-pointer outline-none focus:ring-2 focus:ring-blue-100" value={newUser.role} onChange={e=>setNewUser({...newUser, role:e.target.value})} aria-label="Role"><option value="STUDENT">Peserta (Student)</option><option value="FACILITATOR">Fasilitator</option><option value="ADMIN">Admin Wilayah</option></select>{newUser.role==='ADMIN' && <div className="bg-orange-50 p-4 rounded-lg border border-orange-100"><p className="text-xs font-bold text-orange-800 mb-2 uppercase">Cakupan Wilayah Admin</p><RegionSelector value={regionConfig} onChange={setRegionConfig}/></div>}<div className="flex justify-end gap-2 pt-2"><button type="button" onClick={()=>setShowAddModal(false)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-bold transition-colors">Batal</button><button type="submit" disabled={isSaving} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black transition-colors disabled:opacity-50">{isSaving ? 'Menyimpan...' : 'Simpan User'}</button></div></form></div></div>}
         </div>
     );
 }
