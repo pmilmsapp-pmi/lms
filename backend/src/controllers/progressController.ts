@@ -1522,26 +1522,39 @@ import Enrollment from '../models/Enrollment';
 import { Course } from '../models/Course';
 import { AuthedRequest } from '../middleware/auth'; 
 
-// --- HELPER: HITUNG & UPDATE PROGRESS KURSUS ---
+// --- HELPER: HITUNG TOTAL MATERI AKTIF & SYNC ---
 const updateEnrollmentProgress = async (userId: string, courseId: string) => {
     try {
         const progress = await Progress.findOne({ userId, courseId });
         if (!progress) return;
 
-        const course: any = await Course.findById(courseId).select('modules');
+        const course: any = await Course.findById(courseId); // Remove select to ensure full obj
         if (!course) return;
 
         let totalLessons = 0;
-        course.modules.forEach((m: any) => {
-            if (m.isActive) {
-                m.lessons.forEach((l: any) => { if (l.isActive) totalLessons++; });
-            }
-        });
+        const validIds = new Set<string>();
 
-        const completedCount = progress.completedLessons.length;
+        // Hitung Total Lesson Aktif
+        if (course.modules) {
+            course.modules.forEach((m: any) => {
+                if (m.isActive) {
+                    m.lessons.forEach((l: any) => {
+                        if (l.isActive) {
+                            totalLessons++;
+                            validIds.add(l._id.toString());
+                        }
+                    });
+                }
+            });
+        }
+
+        // Hitung Completed (Hanya yang ID-nya valid)
+        const completedCount = progress.completedLessons.filter(id => validIds.has(id.toString())).length;
+        
         let percentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
         if (percentage > 100) percentage = 100;
 
+        // Update Enrollment (Untuk Dashboard Operator)
         await Enrollment.findOneAndUpdate(
             { user: userId, course: courseId },
             { 
@@ -1564,10 +1577,29 @@ export const getProgress = async (req: AuthedRequest, res: Response) => {
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const progress = await Progress.findOne({ userId, courseId });
-    if (!progress) {
-        return res.json({ completedLessons: [], lessonDetails: [], quizScores: [] });
+    
+    // Hitung ulang persentase saat get (agar Player Header selalu update)
+    let percent = 0;
+    const course: any = await Course.findById(courseId);
+    if (course && progress) {
+        let total = 0;
+        const validIds = new Set<string>();
+        course.modules.forEach((m: any) => {
+            if (m.isActive) {
+                m.lessons.forEach((l: any) => {
+                    if (l.isActive) { total++; validIds.add(l._id.toString()); }
+                });
+            }
+        });
+        const completedCount = progress.completedLessons.filter(id => validIds.has(id.toString())).length;
+        percent = total > 0 ? Math.round((completedCount / total) * 100) : 0;
     }
-    res.json(progress);
+
+    if (!progress) {
+        return res.json({ completedLessons: [], lessonDetails: [], percent: 0 });
+    }
+    
+    res.json({ ...progress.toObject(), percent });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -1575,7 +1607,6 @@ export const getProgress = async (req: AuthedRequest, res: Response) => {
 
 export const markLessonComplete = async (req: AuthedRequest, res: Response) => {
   try {
-    // [FIX] Ambil courseId dari body jika tidak ada di params
     const courseId = req.params.courseId || req.body.courseId;
     const { lessonId, pollAnswer, score, attempts } = req.body; 
     const userId = req.user?.id; 
@@ -1588,34 +1619,20 @@ export const markLessonComplete = async (req: AuthedRequest, res: Response) => {
 
     const strLessonId = lessonId.toString();
 
-    // LOGIKA UPDATE / REPLACE DETAIL
+    // 1. Update Detail
     const existingIdx = progress.lessonDetails.findIndex((d: any) => d.lessonId.toString() === strLessonId);
-
-    const detailData: any = { 
-        lessonId, 
-        type: 'lesson', 
-        submittedAt: new Date() 
-    };
+    const detailData: any = { lessonId, type: 'lesson', submittedAt: new Date() };
     
-    if (pollAnswer) {
-        detailData.type = 'poll';
-        detailData.pollAnswer = pollAnswer;
-    }
-
-    if (score !== undefined) {
-        detailData.type = 'quiz';
-        detailData.score = score;
-        detailData.attempts = attempts || 1; 
-    }
+    if (pollAnswer) { detailData.type = 'poll'; detailData.pollAnswer = pollAnswer; }
+    if (score !== undefined) { detailData.type = 'quiz'; detailData.score = score; detailData.attempts = attempts || 1; }
 
     if (existingIdx > -1) {
-        const oldData = progress.lessonDetails[existingIdx];
-        progress.lessonDetails[existingIdx] = { ...oldData, ...detailData };
+        progress.lessonDetails[existingIdx] = { ...progress.lessonDetails[existingIdx], ...detailData };
     } else {
         progress.lessonDetails.push(detailData);
     }
 
-    // Tandai Selesai di completedLessons
+    // 2. Push Completed
     if (!progress.completedLessons.some((id: any) => id.toString() === strLessonId)) {
       progress.completedLessons.push(lessonId);
     }
@@ -1623,9 +1640,21 @@ export const markLessonComplete = async (req: AuthedRequest, res: Response) => {
     progress.lastAccessed = new Date();
     await progress.save();
     
+    // 3. Sync ke Enrollment
     await updateEnrollmentProgress(userId, courseId);
 
-    res.json({ message: 'Lesson completed', completedLessons: progress.completedLessons });
+    // 4. Return new percent
+    // Recalculate percent locally for immediate response
+    const course: any = await Course.findById(courseId);
+    let total = 0;
+    const validIds = new Set<string>();
+    if(course) {
+        course.modules.forEach((m: any) => { if(m.isActive) m.lessons.forEach((l: any) => { if(l.isActive) { total++; validIds.add(l._id.toString()); } }); });
+    }
+    const completedCount = progress.completedLessons.filter(id => validIds.has(id.toString())).length;
+    const percent = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+    res.json({ message: 'Lesson completed', completedLessons: progress.completedLessons, percent });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -1633,7 +1662,7 @@ export const markLessonComplete = async (req: AuthedRequest, res: Response) => {
 
 export const submitEssay = async (req: AuthedRequest, res: Response) => {
   try {
-    const courseId = req.params.courseId || req.body.courseId; // [FIX] Support Body
+    const courseId = req.params.courseId || req.body.courseId;
     const { lessonId, answers } = req.body; 
     const userId = req.user?.id; 
 
@@ -1644,18 +1673,8 @@ export const submitEssay = async (req: AuthedRequest, res: Response) => {
 
     const strLessonId = lessonId.toString();
     
-    if (progress.lessonDetails) {
-        progress.lessonDetails = progress.lessonDetails.filter((d: any) => d.lessonId.toString() !== strLessonId);
-    } else {
-        progress.lessonDetails = [];
-    }
-
-    progress.lessonDetails.push({
-        lessonId,
-        type: 'essay',
-        essayAnswers: answers, 
-        submittedAt: new Date()
-    });
+    progress.lessonDetails = progress.lessonDetails.filter((d: any) => d.lessonId.toString() !== strLessonId);
+    progress.lessonDetails.push({ lessonId, type: 'essay', essayAnswers: answers, submittedAt: new Date() });
 
     if (!progress.completedLessons.some((id: any) => id.toString() === strLessonId)) {
         progress.completedLessons.push(lessonId);
@@ -1672,7 +1691,7 @@ export const submitEssay = async (req: AuthedRequest, res: Response) => {
 
 export const submitTask = async (req: AuthedRequest, res: Response) => {
   try {
-    const courseId = req.params.courseId || req.body.courseId; // [FIX] Support Body
+    const courseId = req.params.courseId || req.body.courseId;
     const { lessonId, fileUrl, fileName } = req.body;
     const userId = req.user?.id; 
 
@@ -1683,18 +1702,8 @@ export const submitTask = async (req: AuthedRequest, res: Response) => {
 
     const strLessonId = lessonId.toString();
 
-    if (progress.lessonDetails) {
-        progress.lessonDetails = progress.lessonDetails.filter((d: any) => d.lessonId.toString() !== strLessonId);
-    } else {
-        progress.lessonDetails = [];
-    }
-
-    progress.lessonDetails.push({
-        lessonId,
-        type: 'upload_doc',
-        uploadedFile: { url: fileUrl, name: fileName, uploadedAt: new Date() },
-        submittedAt: new Date()
-    });
+    progress.lessonDetails = progress.lessonDetails.filter((d: any) => d.lessonId.toString() !== strLessonId);
+    progress.lessonDetails.push({ lessonId, type: 'upload_doc', uploadedFile: { url: fileUrl, name: fileName, uploadedAt: new Date() }, submittedAt: new Date() });
 
     if (!progress.completedLessons.some((id: any) => id.toString() === strLessonId)) {
         progress.completedLessons.push(lessonId);
