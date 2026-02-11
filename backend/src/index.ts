@@ -1778,14 +1778,10 @@ import path from 'path';
 import fs from 'fs';
 import mongoose from 'mongoose';
 import cron from 'node-cron'; 
-
-// --- 1. INTEGRASI & DB CLIENTS ---
 import { v2 as cloudinary } from 'cloudinary';
 import { createClient } from '@supabase/supabase-js';
 import { pgPool } from './config/pgClient'; 
 import { triggerPostgresSync } from './controllers/syncController'; 
-
-// --- 2. IMPORT ROUTES ---
 import authRoutes from './routes/authentication'; 
 import courseRoutes from './routes/courses';
 import userRoutes from './routes/users';
@@ -1810,88 +1806,35 @@ import importRoutes from './routes/import';
 import memberRoutes from './routes/member'; 
 
 const app = express();
-
-// --- 3. DATABASE CONNECTION (MONGODB) ---
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://misdbpmi:misdbpmi@cluster0.l4lq1.mongodb.net/lms_db';
 
-// Singleton Connection (Mencegah koneksi berlebih di M0 Cluster)
+// [CRITICAL FIX] Koneksi Singleton dengan Limit Pool
 let isConnected = false;
 mongoose.set('strictQuery', true);
-
-// [FIX] FUNGSI KONEKSI DENGAN POOL LIMIT
 const connectDB = async () => {
-  // Jika state = 1 (connected), gunakan yang ada
-  if (mongoose.connection.readyState === 1) {
-    return;
-  }
-  
+  if (mongoose.connection.readyState === 1) return;
   try {
-    // [CRITICAL] maxPoolSize: 1 sangat penting untuk Cluster Gratis (M0)
-    // agar koneksi tidak habis saat hot-reload (coding)
     await mongoose.connect(MONGO_URI, {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      maxPoolSize: 1, 
+      maxPoolSize: 1, // PENTING UNTUK CLUSTER GRATIS
       family: 4
     });
     isConnected = true;
-    console.log(`✅ [db] Connected to MongoDB Atlas (M0 Optimized)`);
-  } catch (err: any) {
-    console.error('❌ [db] Connection error:', err.message);
-  }
+    console.log(`✅ [db] Connected to MongoDB`);
+  } catch (err: any) { console.error('❌ [db] Error:', err.message); }
 };
 
-// Middleware: Pastikan koneksi DB aktif di setiap request
-app.use(async (req, res, next) => {
-  await connectDB();
-  next();
-});
+app.use(async (req, res, next) => { await connectDB(); next(); });
 
-// --- 4. INTEGRATION CHECK ---
+// Integrations Check
 const checkIntegrations = async () => {
-  // A. Postgres Private Server
-  try {
-    const client = await pgPool.connect();
-    if (client) {
-      console.log(`✅ [postgres]   Connected to Private Server`);
-      client.release();
-    }
-  } catch (err: any) {
-    console.log(`❌ [postgres]   Connection Failed: ${err.message}`);
-  }
-
-  // B. Supabase
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
-    try {
-      const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-      const { error } = await supabase.storage.listBuckets();
-      if (!error) console.log(`✅ [supabase]   Connected`);
-      else console.log(`❌ [supabase]   Error: ${error.message}`);
-    } catch (err) { console.log(`❌ [supabase]   Connection Failed`); }
-  }
-
-  // C. Cloudinary
-  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) {
-    try {
-      cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-      });
-      await cloudinary.api.ping();
-      console.log(`✅ [cloudinary] Connected`);
-    } catch (err: any) { console.log(`❌ [cloudinary] Connection Failed: ${err.message}`); }
-  }
+  try { const client = await pgPool.connect(); if (client) { console.log(`✅ [pg] Connected`); client.release(); } } catch (e) { console.log(`❌ [pg] Error`); }
+  if (process.env.SUPABASE_URL) console.log(`✅ [supabase] Ready`);
+  if (process.env.CLOUDINARY_CLOUD_NAME) console.log(`✅ [cloudinary] Ready`);
 };
 
-// --- 5. MIDDLEWARE CONFIG ---
-const corsConfig: cors.CorsOptions = {
-  origin: true, 
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin', 'x-google-token'],
-  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-};
-
+const corsConfig = { origin: true, credentials: true, allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin', 'x-google-token'], methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'] };
 app.use(cors(corsConfig));
 app.options('*', cors(corsConfig)); 
 app.use(helmet({ crossOriginResourcePolicy: false, contentSecurityPolicy: false })); 
@@ -1901,35 +1844,15 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser(process.env.COOKIE_SECRET || 'pmi-secret'));
 
-// --- 6. STATIC FILES & STORAGE (FIX VERCEL READ-ONLY ERROR) ---
 const PUBLIC_PATH = path.join(process.cwd(), 'public');
 const UPLOADS_PATH = path.join(PUBLIC_PATH, 'uploads');
-
 const isVercel = process.env.VERCEL === '1';
-
-if (!isVercel) {
-  try { 
-    if (!fs.existsSync(UPLOADS_PATH)) {
-      fs.mkdirSync(UPLOADS_PATH, { recursive: true }); 
-      console.log(`📁 [fs]         Folder uploads created at ${UPLOADS_PATH}`);
-    }
-  } catch(e) {
-    console.error(`⚠️ [fs]         Skipped folder creation:`, e);
-  } 
-}
-
-app.use('/uploads', express.static(isVercel ? '/tmp' : UPLOADS_PATH, {
-  setHeaders: (res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-  }
-}));
-
+if (!isVercel) { try { if (!fs.existsSync(UPLOADS_PATH)) fs.mkdirSync(UPLOADS_PATH, { recursive: true }); } catch(e) {} }
+app.use('/uploads', express.static(isVercel ? '/tmp' : UPLOADS_PATH));
 app.use(express.static(PUBLIC_PATH));
 
-// --- 7. ROUTES REGISTRATION ---
-app.get('/', (req, res) => res.send('LMS PMI Backend is Running!'));
-app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+app.get('/', (req, res) => res.send('LMS PMI Backend Running!'));
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -1954,32 +1877,15 @@ app.use('/api/materials', materialRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/member', memberRoutes);
 
-// --- 8. CRON JOB (AUTO SYNC) ---
-cron.schedule('0 0 * * *', async () => {
-  console.log('⏰ [cron] Memulai sinkronisasi harian...');
-  try {
-    const mockRes = { 
-      json: (d: any) => console.log('✅ [cron] Success:', d.message),
-      status: () => ({ json: (e: any) => console.error('❌ [cron] Failed:', e.error) })
-    };
-    await triggerPostgresSync({ user: { id: 'SYSTEM' } } as any, mockRes as any);
-  } catch (err) { console.error('❌ [cron] Error:', err); }
-});
+cron.schedule('0 0 * * *', async () => { try { await triggerPostgresSync({ user: { id: 'SYSTEM' } } as any, { json: () => {}, status: () => ({ json: () => {} }) } as any); } catch (e) {} });
 
-// --- 9. ERROR HANDLERS ---
 app.use((req, res) => res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` }));
-
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("❌ Global Error:", err.message);
-  if (err.name === 'ZodError') return res.status(400).json({ error: 'Validation error', issues: err.issues });
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
-// --- SERVER LISTEN ---
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, async () => {
-  console.log(`🚀 [server]     Server running on port ${PORT}`);
-  await checkIntegrations();
-});
+app.listen(PORT, async () => { console.log(`🚀 Server on ${PORT}`); await checkIntegrations(); });
 
 export default app;

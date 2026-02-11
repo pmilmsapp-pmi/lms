@@ -4,7 +4,11 @@ git add .
 git commit -m "fix: perbaikan index koneksi ke mongo"
 git commit -m "fix: perbaikan tampilan chat bug dan pengajuan"
 git commit -m "fix: content editor kurikulum sama studen play"
-git commit -m "fix: installan"
+git commit -m "fix: installan 1"
+git commit -m "fix: update content editor"
+git commit -m "fix: update koneksi tresshold ke mongosh di index.ts backend"
+
+
 
 
 git push origin main

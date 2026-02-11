@@ -1116,110 +1116,51 @@ import { Router } from 'express';
 import { requireAuth, requirePermission, requireCourseOwnership } from '../middleware/auth';
 import { applyCourseScope } from '../middleware/scope';
 import { 
-    getCourses, 
-    getCourseById, 
-    createCourse, 
-    updateCourse, 
-    deleteCourse, 
-    addModule, 
-    addLesson,
-    togglePublishCourse, 
-    deleteModule, 
-    updateModule, 
-    deleteLesson, 
-    updateLesson, 
-    getCourseParticipants,
-    updateCourseStatus,
-    enrollCourse, 
-    checkEnrollmentStatus,
-    getGroupMessages,   
-    sendGroupMessage,
-    // [FIX] Import Controller Tambahan
-    markCompleteLessonByAdmin, 
-    resetQuizByAdmin,
-    getMessageCount    
+    getCourses, getCourseById, createCourse, updateCourse, deleteCourse, 
+    addModule, addLesson, togglePublishCourse, deleteModule, updateModule, 
+    deleteLesson, updateLesson, getCourseParticipants, updateCourseStatus,
+    enrollCourse, checkEnrollmentStatus, getGroupMessages, sendGroupMessage,
+    // [FIX] Import Actions
+    markCompleteLessonByAdmin, resetQuizByAdmin, getMessageCount, checkStudentProgress
 } from '../controllers/courseController';
 
 const router = Router();
 
-// ============================================================================
-// 1. PUBLIC / READ ROUTES
-// ============================================================================
+// --- PUBLIC ---
 router.get('/', requireAuth, applyCourseScope, getCourses); 
 router.get('/:id', requireAuth, getCourseById); 
 
-// ============================================================================
-// 2. ENROLLMENT ROUTES
-// ============================================================================
+// --- ENROLLMENT ---
 router.post('/:courseId/enroll', requireAuth, enrollCourse);
 router.get('/:courseId/enrollment-status', requireAuth, checkEnrollmentStatus);
 
-// ============================================================================
-// 3. ADMIN ACTIONS (MANAJEMEN PESERTA)
-// [FIX] Route ini untuk tombol Reset & Lulus di Dashboard Operator
-// ============================================================================
+// --- ADMIN ACTIONS (RESET/PASS) ---
 router.post('/mark-complete-lesson', requireAuth, requirePermission('course.manage_content'), markCompleteLessonByAdmin);
 router.post('/reset-quiz', requireAuth, requirePermission('course.manage_content'), resetQuizByAdmin);
+// [FIX] DEBUG ROUTE (Untuk cek isi DB jika masih error)
+router.get('/:courseId/student/:studentId/debug', requireAuth, checkStudentProgress);
 
-// ============================================================================
-// 4. CORE MANAGEMENT (CREATE, UPDATE, DELETE)
-// ============================================================================
-
-// Create
-router.post('/', requireAuth, requirePermission('course.create'), createCourse);
-
-// Status Approval (Draft -> Published/Ready)
-router.patch('/:id/status', requireAuth, requirePermission('verify_course_submission'), updateCourseStatus);
-
-// Update (Content)
-router.patch('/:id', 
-    requireAuth, 
-    requirePermission('course.update_own'), 
-    requireCourseOwnership, 
-    updateCourse
-);
-
-// Publish Toggle
-router.patch('/:id/publish', 
-    requireAuth, 
-    requirePermission('course.update_own'), 
-    requireCourseOwnership, 
-    togglePublishCourse
-);
-
-// Delete
-router.delete('/:id', 
-    requireAuth, 
-    requirePermission('course.delete'), 
-    requireCourseOwnership, 
-    deleteCourse
-);
-
-// ============================================================================
-// 5. MODULES MANAGEMENT
-// ============================================================================
-router.post('/:id/modules', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, addModule);
-router.patch('/:id/modules/:moduleId', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, updateModule);
-router.delete('/:id/modules/:moduleId', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, deleteModule);
-
-// ============================================================================
-// 6. LESSONS MANAGEMENT
-// ============================================================================
-router.post('/:id/modules/:moduleId/lessons', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, addLesson);
-router.patch('/:id/modules/:moduleId/lessons/:lessonId', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, updateLesson);
-router.delete('/:id/modules/:moduleId/lessons/:lessonId', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, deleteLesson);
-
-// ============================================================================
-// 7. MESSAGES / CHAT / FORUM
-// ============================================================================
-// [FIX] Tambahkan route count agar tidak error 404
+// --- CHAT FIX 404 ---
 router.get('/:id/messages/count', requireAuth, getMessageCount);
 router.get('/:id/messages', requireAuth, getGroupMessages);
 router.post('/:id/messages', requireAuth, sendGroupMessage);
 
-// ============================================================================
-// 8. OTHER UTILS
-// ============================================================================
+// --- CORE CRUD ---
+router.post('/', requireAuth, requirePermission('course.create'), createCourse);
+router.patch('/:id/status', requireAuth, requirePermission('verify_course_submission'), updateCourseStatus);
+router.patch('/:id', requireAuth, requirePermission('course.update_own'), requireCourseOwnership, updateCourse);
+router.patch('/:id/publish', requireAuth, requirePermission('course.update_own'), requireCourseOwnership, togglePublishCourse);
+router.delete('/:id', requireAuth, requirePermission('course.delete'), requireCourseOwnership, deleteCourse);
+
+// --- MODULES & LESSONS ---
+router.post('/:id/modules', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, addModule);
+router.patch('/:id/modules/:moduleId', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, updateModule);
+router.delete('/:id/modules/:moduleId', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, deleteModule);
+router.post('/:id/modules/:moduleId/lessons', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, addLesson);
+router.patch('/:id/modules/:moduleId/lessons/:lessonId', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, updateLesson);
+router.delete('/:id/modules/:moduleId/lessons/:lessonId', requireAuth, requirePermission('course.manage_content'), requireCourseOwnership, deleteLesson);
+
+// --- PARTICIPANTS ---
 router.get('/:id/participants', requireAuth, requirePermission('course.access'), getCourseParticipants);
 
 export default router;
