@@ -3682,7 +3682,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api, getImageUrl, apiUpload } from '@/lib/api';
 import { useAuth } from '@/lib/AuthProvider';
@@ -3693,12 +3693,25 @@ import {
     HeadphonesIcon, Menu, X, BarChart2, Paperclip, 
     Mic, RotateCw, Layers, Globe, ChevronUp, ChevronDown, 
     Maximize2, Minimize2, Smile, Gamepad2, Camera, Video, Clock,
-    RefreshCw, UploadCloud
+    RefreshCw, UploadCloud, XCircle, AlertTriangle, Check
 } from 'lucide-react';
 import Link from 'next/link';
 
+import dynamic from 'next/dynamic';
+import 'react-quill/dist/quill.snow.css'; 
+
+const ReactQuill = dynamic(() => import('react-quill'), { 
+    ssr: false,
+    loading: () => <div className="h-32 bg-gray-100 animate-pulse rounded-lg border border-gray-300 flex items-center justify-center text-gray-400 text-sm">Memuat Editor Teks...</div>
+});
+
 import GameMemory from '@/components/course/GameMemory';
 import GameScavenger from '@/components/course/GameScavenger';
+
+const quillStyle = {
+    height: '350px',
+    marginBottom: '50px' 
+};
 
 const getSidebarIcon = (type: string, isCompleted: boolean) => {
     if (isCompleted) return <CheckCircle className="text-green-500 shrink-0" size={18}/>;
@@ -3733,7 +3746,6 @@ export default function CoursePlayPage() {
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(true);
 
-    // --- INTERACTIVE STATES ---
     const [emojiAnswer, setEmojiAnswer] = useState('');
     const [isEmojiCorrect, setIsEmojiCorrect] = useState<boolean | null>(null);
     const [flippedCards, setFlippedCards] = useState<{ [key: number]: boolean }>({});
@@ -3741,13 +3753,65 @@ export default function CoursePlayPage() {
     const [essayAnswers, setEssayAnswers] = useState<string[]>([]);
     const [taskFile, setTaskFile] = useState<File | null>(null);
     const [isSubmittingTask, setIsSubmittingTask] = useState(false);
+    
+    // [QUIZ STATE]
+    const [quizAnswers, setQuizAnswers] = useState<{ [key: number]: number }>({});
+    const [submittedQuizAnswers, setSubmittedQuizAnswers] = useState<{ [key: number]: number } | null>(null);
 
-    // --- TIMER STATES ---
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [isTimerStarted, setIsTimerStarted] = useState<boolean>(true); 
 
     const progressBarRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const quillRefs = useRef<(any)[]>([]); 
+
+    // --- [FIX] UPLOAD HANDLER UNTUK EDITOR TEKS ---
+    const imageHandler = (index: number) => {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+
+        input.onchange = async () => {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    // Gunakan endpoint yang sama dengan UploadTest
+                    const res = await apiUpload('/api/materials/upload', formData); 
+                    // [FIX] Ambil URL dari path yang benar (res.data.url)
+                    const url = res.data?.url || res.url || res.secure_url; 
+                    
+                    if (url) {
+                        const quill = quillRefs.current[index]?.getEditor();
+                        const range = quill?.getSelection(true);
+                        if (quill && range) {
+                            quill.insertEmbed(range.index, 'image', url);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Upload gambar gagal:', error);
+                    alert('Gagal mengupload gambar. Silakan coba lagi.');
+                }
+            }
+        };
+    };
+
+    const getModules = (index: number) => ({
+        toolbar: {
+            container: [
+                ['bold', 'italic', 'underline'], 
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'image'],
+                ['clean']
+            ],
+            handlers: {
+                image: () => imageHandler(index)
+            }
+        }
+    });
 
     const isDone = (id: string) => {
         if (!progressData?.completedLessons) return false;
@@ -3756,7 +3820,6 @@ export default function CoursePlayPage() {
 
     const getTimerKey = () => `timer_${courseId}_${activeLesson?._id}_${(user as any)?._id}`;
 
-    // --- EFFECT: INITIAL LOAD ---
     useEffect(() => {
         if (!courseId || !user) return;
         if (user.role === 'SUPER_ADMIN' || user.role === 'FACILITATOR') {
@@ -3766,7 +3829,6 @@ export default function CoursePlayPage() {
         checkEnrollmentAndLoad();
     }, [courseId, user]);
 
-    // --- EFFECT: AUTO SYNC PROGRESS ---
     useEffect(() => {
         if (!courseId) return;
         const interval = setInterval(async () => {
@@ -3783,7 +3845,6 @@ export default function CoursePlayPage() {
         return () => clearInterval(interval);
     }, [courseId]);
 
-    // --- EFFECT: PROGRESS BAR UI ---
     useEffect(() => {
         if (progressBarRef.current) {
             const percent = Math.round(progressData?.percent || 0);
@@ -3792,14 +3853,12 @@ export default function CoursePlayPage() {
         }
     }, [progressData?.percent]);
 
-    // --- EFFECT: AUTO SCROLL CHAT ---
     useEffect(() => {
         if (showChat) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, showChat]);
 
     const isCurrentLessonDone = activeLesson ? isDone(activeLesson._id) : false;
 
-    // --- EFFECT: INIT MATERI BARU & PERSISTENT TIMER ---
     useEffect(() => {
         if (!activeLesson) return;
 
@@ -3808,7 +3867,16 @@ export default function CoursePlayPage() {
             setEmojiAnswer('');
             setIsEmojiCorrect(null);
             setFlippedCards({});
-            setEssayAnswers(activeLesson.questions?.map(() => '') || []);
+            setQuizAnswers({});
+            setSubmittedQuizAnswers(null); 
+            
+            if (activeLesson.type === 'essay' && activeLesson.questions) {
+                setEssayAnswers(new Array(activeLesson.questions.length).fill(''));
+                quillRefs.current = new Array(activeLesson.questions.length).fill(null);
+            } else {
+                setEssayAnswers([]);
+            }
+
             setTaskFile(null);
             setIsSubmittingTask(false);
             
@@ -3843,13 +3911,26 @@ export default function CoursePlayPage() {
                 const detail = progressData.lessonDetails.find((d: any) => String(d.lessonId) === String(activeLesson._id));
                 if (detail?.pollAnswer) setSelectedPollOption(detail.pollAnswer);
                 if (activeLesson.type === 'game_emoji') setIsEmojiCorrect(true);
+                
+                // LOAD JAWABAN KUIS LAMA UNTUK REVIEW
+                if (activeLesson.type === 'quiz' && detail?.quizAnswers) {
+                    const answerMap: any = {};
+                    detail.quizAnswers.forEach((ans: any, idx: number) => {
+                        answerMap[idx] = ans;
+                    });
+                    setSubmittedQuizAnswers(answerMap);
+                }
             }
         }
     }, [activeLesson?._id, isCurrentLessonDone]); 
 
-    // --- EFFECT: COUNTDOWN TIMER TICK REALTIME ---
     useEffect(() => {
-        if (timeLeft === null || timeLeft <= 0 || !isTimerStarted) return;
+        if (timeLeft === null || timeLeft <= 0 || !isTimerStarted) {
+            if (timeLeft === 0 && activeLesson?.type === 'quiz' && !isCurrentLessonDone && !isSubmittingTask) {
+                handleQuizSubmit(true); 
+            }
+            return;
+        }
         
         const timerKey = getTimerKey();
         const timer = setInterval(() => {
@@ -3868,7 +3949,7 @@ export default function CoursePlayPage() {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft, activeLesson, isTimerStarted]);
+    }, [timeLeft, activeLesson, isTimerStarted, isCurrentLessonDone]);
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -3958,7 +4039,6 @@ export default function CoursePlayPage() {
         }
     };
 
-    // --- FUNGSI SUBMIT BERBAGAI TIPE INTERAKTIF ---
     const handleMarkComplete = async (lessonId: string, extraData: any = {}) => {
         try {
             const body = { courseId, lessonId, ...extraData };
@@ -3988,7 +4068,13 @@ export default function CoursePlayPage() {
     };
 
     const handleEssaySubmit = async () => {
-        if (essayAnswers.some(a => !a.trim())) return alert("Harap isi semua jawaban.");
+        const isAllEmpty = essayAnswers.some(a => {
+            const textOnly = a.replace(/<[^>]*>/g, '').trim();
+            return !textOnly;
+        });
+
+        if (isAllEmpty) return alert("Harap isi semua jawaban dengan teks.");
+        
         setIsSubmittingTask(true);
         try {
             const body = { courseId, lessonId: activeLesson._id, answers: essayAnswers };
@@ -4007,6 +4093,48 @@ export default function CoursePlayPage() {
         }
     };
 
+    const handleQuizSubmit = async (forced = false) => {
+        if (!forced && Object.keys(quizAnswers).length < (activeLesson.questions?.length || 0)) {
+            if (!confirm("Masih ada soal yang belum dijawab. Yakin ingin mengumpulkan?")) return;
+        }
+
+        setIsSubmittingTask(true);
+        try {
+            const body = { 
+                courseId, 
+                lessonId: activeLesson._id, 
+                answers: quizAnswers 
+            };
+            
+            const res = await api(`/api/progress/submit-quiz`, { method: 'POST', body });
+            
+            setSubmittedQuizAnswers(quizAnswers);
+
+            setProgressData((prev: any) => ({ 
+                ...prev, 
+                completedLessons: res.completedLessons 
+            }));
+            
+            localStorage.removeItem(getTimerKey());
+            setTimeLeft(null); 
+            
+            const prog = await api(`/api/progress/${courseId}?t=${Date.now()}`);
+            setProgressData(prog);
+            
+            if (forced) {
+                alert(`Waktu Habis! Jawaban dikirim otomatis.\nNilai: ${res.score || 0}`);
+            } else {
+                alert(`Kuis Selesai! Nilai Anda: ${res.score || 0}`);
+            }
+
+        } catch (e: any) {
+            alert("Gagal kirim kuis: " + e.message);
+        } finally {
+            setIsSubmittingTask(false);
+        }
+    };
+
+    // --- [FIX] UPLOAD HANDLER TUGAS (MENGGUNAKAN ENDPOINT /api/materials/upload) ---
     const handleTaskSubmit = async () => {
         if (!taskFile) return alert("Pilih file terlebih dahulu.");
         setIsSubmittingTask(true);
@@ -4014,8 +4142,13 @@ export default function CoursePlayPage() {
             const formData = new FormData();
             formData.append('file', taskFile);
             
-            const uploadRes = await apiUpload('/api/upload', formData);
-            const fileUrl = uploadRes.url || uploadRes.file?.url || uploadRes.imageUrl || uploadRes.secure_url;
+            // GUNAKAN ENDPOINT YANG SAMA DENGAN UPLOAD TEST
+            const uploadRes = await apiUpload('/api/materials/upload', formData);
+            
+            // AMBIL URL DARI STRUKTUR RESPONSE YANG BENAR (res.data.url)
+            const fileUrl = uploadRes.data?.url || uploadRes.url; 
+
+            if (!fileUrl) throw new Error("Gagal mendapatkan URL file dari server");
 
             const body = { courseId, lessonId: activeLesson._id, fileUrl, fileName: taskFile.name };
             const res = await api(`/api/progress/submit-task`, { method: 'POST', body });
@@ -4027,7 +4160,8 @@ export default function CoursePlayPage() {
             const prog = await api(`/api/progress/${courseId}?t=${Date.now()}`);
             setProgressData(prog);
         } catch (e: any) {
-            alert("Gagal upload: " + e.message);
+            console.error("Upload Error:", e);
+            alert("Gagal upload: " + (e.message || "Terjadi kesalahan sistem"));
         } finally {
             setIsSubmittingTask(false);
         }
@@ -4070,7 +4204,6 @@ export default function CoursePlayPage() {
         switch (activeLesson.type) {
             case 'video_url': return <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl"><iframe src={activeLesson.videoUrl?.replace('watch?v=', 'embed/')} className="w-full h-full" allowFullScreen title={activeLesson.title}/></div>;
             
-            // [UPDATE] TINGGI BINGKAI DI-ADJUST JADI 60vh dan min-450px
             case 'embed': 
                 return (
                     <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4">
@@ -4088,9 +4221,9 @@ export default function CoursePlayPage() {
                                     if (iframe) {
                                         if (iframe.requestFullscreen) {
                                             iframe.requestFullscreen();
-                                        } else if ((iframe as any).webkitRequestFullscreen) { /* Safari */
+                                        } else if ((iframe as any).webkitRequestFullscreen) { 
                                             (iframe as any).webkitRequestFullscreen();
-                                        } else if ((iframe as any).msRequestFullscreen) { /* IE11 */
+                                        } else if ((iframe as any).msRequestFullscreen) { 
                                             (iframe as any).msRequestFullscreen();
                                         }
                                     }
@@ -4102,7 +4235,6 @@ export default function CoursePlayPage() {
                                 <Maximize2 size={14} /> Layar Penuh
                             </button>
                         </div>
-                        {/* Height disesuaikan jadi h-[60vh] min-h-[450px] agar pas tapi tidak terlalu pendek */}
                         <div className="w-full h-[60vh] min-h-[450px] bg-gray-50 rounded-2xl overflow-hidden border border-gray-200 shadow-md relative group">
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
                                 <Loader2 className="animate-spin text-teal-500 mb-2" size={32} />
@@ -4228,33 +4360,36 @@ export default function CoursePlayPage() {
                         <div className="prose prose-indigo max-w-none bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-6">
                             <div dangerouslySetInnerHTML={{ __html: activeLesson.content || '' }} />
                         </div>
-                        <div className="space-y-6 border-t border-gray-200 pt-6">
+                        <div className="space-y-8 border-t border-gray-200 pt-6">
                             {activeLesson.questions?.map((q: any, idx: number) => (
-                                <div key={idx} className="space-y-2">
-                                    <div className="font-bold text-gray-800" dangerouslySetInnerHTML={{__html: q.question}}></div>
-                                    <textarea 
-                                        className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none min-h-[120px] ${isCurrentLessonDone ? 'bg-gray-100 text-gray-500 border-gray-200' : 'border-gray-300 bg-white'}`}
-                                        placeholder={isTimeUp ? "Waktu Habis!" : "Tulis jawaban Anda di sini..."}
-                                        value={essayAnswers[idx] || ''}
-                                        onChange={(e) => {
-                                            const newAns = [...essayAnswers];
-                                            newAns[idx] = e.target.value;
-                                            setEssayAnswers(newAns);
-                                        }}
-                                        disabled={isCurrentLessonDone || isTimeUp}
-                                        aria-label={`Jawaban Esai ${idx + 1}`}
-                                        title={`Jawaban Esai ${idx + 1}`}
-                                    />
+                                <div key={idx} className="space-y-3">
+                                    <div className="font-bold text-gray-800 text-lg border-l-4 border-indigo-500 pl-3" dangerouslySetInnerHTML={{__html: q.question}}></div>
+                                    <div className={`rounded-xl overflow-hidden border ${isCurrentLessonDone ? 'border-gray-200 bg-gray-50 opacity-80' : 'border-gray-300'}`}>
+                                        <ReactQuill
+                                            ref={(el: any) => (quillRefs.current[idx] = el)} 
+                                            theme="snow"
+                                            value={essayAnswers[idx] || ''}
+                                            onChange={(val) => {
+                                                const newAns = [...essayAnswers];
+                                                newAns[idx] = val;
+                                                setEssayAnswers(newAns);
+                                            }}
+                                            modules={getModules(idx)} 
+                                            readOnly={isCurrentLessonDone || isTimeUp}
+                                            style={quillStyle} 
+                                            placeholder={isTimeUp ? "Waktu Habis!" : "Tulis jawaban Anda di sini (Bisa insert gambar)..."}
+                                        />
+                                    </div>
                                 </div>
                             ))}
                             {!isCurrentLessonDone ? (
                                 <button 
                                     onClick={handleEssaySubmit}
-                                    disabled={essayAnswers.some(a => !a.trim()) || isSubmittingTask || isTimeUp}
-                                    className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all active:scale-95"
+                                    disabled={essayAnswers.some(a => !a.replace(/<[^>]*>/g, '').trim()) || isSubmittingTask || isTimeUp}
+                                    className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
                                     title="Kirim Jawaban Esai"
                                 >
-                                    {isSubmittingTask ? 'Mengirim...' : 'Kirim Jawaban Esai'}
+                                    <Send size={18} /> {isSubmittingTask ? 'Mengirim...' : 'Kirim Jawaban Esai'}
                                 </button>
                             ) : (
                                 <div className="bg-green-50 text-green-700 p-4 rounded-xl border border-green-200 font-bold flex items-center justify-center gap-2">
@@ -4265,6 +4400,7 @@ export default function CoursePlayPage() {
                     </div>
                 );
 
+            // [FIX] UPLOAD HANDLER DIPERBAIKI (SINKRON DENGAN UPLOAD TEST)
             case 'upload_doc':
                 return (
                     <div className="bg-white p-8 rounded-3xl border border-cyan-100 shadow-sm">
@@ -4305,17 +4441,79 @@ export default function CoursePlayPage() {
                 return (
                     <div className="bg-white p-8 rounded-3xl border border-indigo-100 shadow-sm">
                         <h2 className="text-xl font-bold text-gray-900 mb-6">{activeLesson.title}</h2>
-                        <div className="prose prose-indigo max-w-none bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-6">
-                            <div dangerouslySetInnerHTML={{ __html: activeLesson.content }} />
-                        </div>
-                        <div className="border-t pt-6">
+                        {activeLesson.content && (
+                            <div className="prose prose-indigo max-w-none bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-6">
+                                <div dangerouslySetInnerHTML={{ __html: activeLesson.content }} />
+                            </div>
+                        )}
+                        
+                        <div className="space-y-8 border-t border-gray-200 pt-6">
+                            {activeLesson.questions?.map((q: any, idx: number) => (
+                                <div key={idx} className="space-y-3 bg-gray-50 p-6 rounded-2xl border border-gray-200 relative overflow-hidden">
+                                    <div className="flex gap-3 relative z-10">
+                                        <span className="font-bold text-indigo-600 bg-indigo-100 w-8 h-8 flex items-center justify-center rounded-full shrink-0">{idx + 1}</span>
+                                        <div className="font-bold text-gray-800 text-lg" dangerouslySetInnerHTML={{__html: q.question}}></div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 relative z-10">
+                                        {q.options?.map((opt: string, optIdx: number) => {
+                                            let borderStyle = 'border-gray-200 bg-white hover:border-indigo-200';
+                                            let icon = <div className="w-5 h-5 rounded-full border border-gray-400" />;
+                                            const isSelected = quizAnswers[idx] === optIdx || (submittedQuizAnswers && submittedQuizAnswers[idx] === optIdx);
+                                            
+                                            if (isCurrentLessonDone) {
+                                                const isCorrectAnswer = Number(q.correctAnswer) === optIdx;
+                                                
+                                                if (isCorrectAnswer) {
+                                                    borderStyle = 'border-green-500 bg-green-50 text-green-900 font-bold';
+                                                    icon = <CheckCircle className="text-green-600" size={20} />;
+                                                } else if (isSelected && !isCorrectAnswer) {
+                                                    borderStyle = 'border-red-500 bg-red-50 text-red-900 font-bold';
+                                                    icon = <XCircle className="text-red-600" size={20} />;
+                                                } else {
+                                                    borderStyle = 'border-gray-200 bg-white opacity-60';
+                                                }
+                                            } else if (isSelected) {
+                                                borderStyle = 'border-indigo-500 bg-indigo-50 text-indigo-900 font-bold';
+                                                icon = <div className="w-5 h-5 rounded-full border border-indigo-600 bg-indigo-600 flex items-center justify-center"><div className="w-2 h-2 bg-white rounded-full" /></div>;
+                                            }
+
+                                            return (
+                                                <button 
+                                                    key={optIdx}
+                                                    onClick={() => !isCurrentLessonDone && setQuizAnswers(prev => ({...prev, [idx]: optIdx}))}
+                                                    disabled={isCurrentLessonDone || isTimeUp}
+                                                    className={`text-left p-4 rounded-xl border-2 transition-all flex items-center justify-between ${borderStyle}`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        {icon}
+                                                        <span>{opt}</span>
+                                                    </div>
+                                                    {isCurrentLessonDone && Number(q.correctAnswer) === optIdx && (
+                                                        <span className="text-[10px] bg-green-200 text-green-800 px-2 py-1 rounded-full font-bold uppercase flex items-center gap-1">
+                                                            <Check size={12}/> Jawaban Benar
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+
                             {!isCurrentLessonDone ? (
-                                <Link href={`/courses/${courseId}/quiz/${activeLesson._id}`} className={`block w-full text-center py-4 rounded-xl font-bold shadow-md transition-all ${isTimeUp ? 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
-                                    {isTimeUp ? 'Waktu Habis' : 'Mulai Kuis'}
-                                </Link>
+                                <button 
+                                    onClick={() => handleQuizSubmit(false)}
+                                    disabled={isSubmittingTask || isTimeUp}
+                                    className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all active:scale-95"
+                                >
+                                    {isSubmittingTask ? 'Mengirim...' : 'Kumpulkan Jawaban Kuis'}
+                                </button>
                             ) : (
-                                <div className="bg-green-50 text-green-700 p-4 rounded-xl border border-green-200 font-bold flex items-center justify-center gap-2">
-                                    <CheckCircle size={20}/> Kuis Telah Diselesaikan
+                                <div className="bg-green-50 text-green-700 p-4 rounded-xl border border-green-200 font-bold flex flex-col items-center justify-center gap-2 text-center">
+                                    <div className="flex items-center gap-2 text-lg">
+                                        <CheckCircle size={24}/> Kuis Telah Diselesaikan
+                                    </div>
+                                    <p className="text-sm opacity-80">Anda dapat melihat kunci jawaban di atas.</p>
                                 </div>
                             )}
                         </div>
@@ -4420,23 +4618,24 @@ export default function CoursePlayPage() {
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        {isTimeUp && !isCurrentLessonDone && (
+                                        {/* TOMBOL MENYERAH JIKA TIMER MASIH JALAN */}
+                                        {timeLeft !== null && !isCurrentLessonDone && !isTimeUp && (
                                             <button 
-                                                onClick={handleRestartTimer} 
-                                                className="px-4 py-2 rounded-xl font-bold text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center gap-2 transition-all shadow-sm"
-                                                title="Ulangi Waktu"
-                                                aria-label="Ulangi Waktu"
+                                                onClick={() => handleQuizSubmit(true)} 
+                                                className="px-4 py-2 rounded-xl font-bold text-xs bg-gray-100 text-red-600 hover:bg-gray-200 flex items-center gap-2 transition-all shadow-sm"
+                                                title="Akhiri Sesi (Menyerah)"
+                                                aria-label="Akhiri Sesi"
                                             >
-                                                <RotateCw size={14}/> Ulangi Waktu
+                                                <AlertTriangle size={14}/> Menyerah / Selesaikan
                                             </button>
                                         )}
 
                                         {!isCurrentLessonDone ? (
                                             <button 
                                                 onClick={() => handleMarkComplete(activeLesson?._id)} 
-                                                disabled={isInteractive || isTimeUp} 
+                                                disabled={isSubmittingTask || isTimeUp || (isInteractive && !isCurrentLessonDone && activeLesson.type !== 'lesson')} 
                                                 className={`w-full md:w-auto px-6 py-2 rounded-xl font-black text-xs shadow-xl transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${
-                                                    isInteractive || isTimeUp 
+                                                    isSubmittingTask || isTimeUp || (isInteractive && !isCurrentLessonDone && activeLesson.type !== 'lesson')
                                                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                                                     : 'bg-red-600 hover:bg-red-700 text-white shadow-red-200 active:scale-95'
                                                 }`}
