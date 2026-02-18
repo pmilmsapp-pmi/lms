@@ -3702,16 +3702,11 @@ import 'react-quill/dist/quill.snow.css';
 
 const ReactQuill = dynamic(() => import('react-quill'), { 
     ssr: false,
-    loading: () => <div className="h-32 bg-gray-100 animate-pulse rounded-lg border border-gray-300 flex items-center justify-center text-gray-400 text-sm">Memuat Editor Teks...</div>
+    loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded-lg border border-gray-300 flex items-center justify-center text-gray-400 text-sm">Memuat Editor Teks...</div>
 });
 
 import GameMemory from '@/components/course/GameMemory';
 import GameScavenger from '@/components/course/GameScavenger';
-
-const quillStyle = {
-    height: '350px',
-    marginBottom: '50px' 
-};
 
 const getSidebarIcon = (type: string, isCompleted: boolean) => {
     if (isCompleted) return <CheckCircle className="text-green-500 shrink-0" size={18}/>;
@@ -3765,7 +3760,7 @@ export default function CoursePlayPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const quillRefs = useRef<(any)[]>([]); 
 
-    // --- [FIX] UPLOAD HANDLER UNTUK EDITOR TEKS ---
+    // --- UPLOAD HANDLER ---
     const imageHandler = (index: number) => {
         const input = document.createElement('input');
         input.setAttribute('type', 'file');
@@ -3779,9 +3774,7 @@ export default function CoursePlayPage() {
                 formData.append('file', file);
 
                 try {
-                    // Gunakan endpoint yang sama dengan UploadTest
                     const res = await apiUpload('/api/materials/upload', formData); 
-                    // [FIX] Ambil URL dari path yang benar (res.data.url)
                     const url = res.data?.url || res.url || res.secure_url; 
                     
                     if (url) {
@@ -3912,7 +3905,6 @@ export default function CoursePlayPage() {
                 if (detail?.pollAnswer) setSelectedPollOption(detail.pollAnswer);
                 if (activeLesson.type === 'game_emoji') setIsEmojiCorrect(true);
                 
-                // LOAD JAWABAN KUIS LAMA UNTUK REVIEW
                 if (activeLesson.type === 'quiz' && detail?.quizAnswers) {
                     const answerMap: any = {};
                     detail.quizAnswers.forEach((ans: any, idx: number) => {
@@ -4134,7 +4126,6 @@ export default function CoursePlayPage() {
         }
     };
 
-    // --- [FIX] UPLOAD HANDLER TUGAS (MENGGUNAKAN ENDPOINT /api/materials/upload) ---
     const handleTaskSubmit = async () => {
         if (!taskFile) return alert("Pilih file terlebih dahulu.");
         setIsSubmittingTask(true);
@@ -4142,11 +4133,10 @@ export default function CoursePlayPage() {
             const formData = new FormData();
             formData.append('file', taskFile);
             
-            // GUNAKAN ENDPOINT YANG SAMA DENGAN UPLOAD TEST
+            // [FIX] Menggunakan Endpoint yang benar dan mengambil URL dengan benar
             const uploadRes = await apiUpload('/api/materials/upload', formData);
             
-            // AMBIL URL DARI STRUKTUR RESPONSE YANG BENAR (res.data.url)
-            const fileUrl = uploadRes.data?.url || uploadRes.url; 
+            const fileUrl = uploadRes.data?.url || uploadRes.url || uploadRes.secure_url; 
 
             if (!fileUrl) throw new Error("Gagal mendapatkan URL file dari server");
 
@@ -4353,6 +4343,7 @@ export default function CoursePlayPage() {
                 </div>
             );
 
+            // [FIX] EDITOR ESSAY LEBIH TINGGI & TIDAK HILANG SAAT SCROLL
             case 'essay': 
                 return (
                     <div className="bg-white p-8 rounded-3xl border border-indigo-100 shadow-sm">
@@ -4364,7 +4355,7 @@ export default function CoursePlayPage() {
                             {activeLesson.questions?.map((q: any, idx: number) => (
                                 <div key={idx} className="space-y-3">
                                     <div className="font-bold text-gray-800 text-lg border-l-4 border-indigo-500 pl-3" dangerouslySetInnerHTML={{__html: q.question}}></div>
-                                    <div className={`rounded-xl overflow-hidden border ${isCurrentLessonDone ? 'border-gray-200 bg-gray-50 opacity-80' : 'border-gray-300'}`}>
+                                    <div className={`rounded-xl border bg-white ${isCurrentLessonDone ? 'border-gray-200 opacity-80' : 'border-gray-300'}`}>
                                         <ReactQuill
                                             ref={(el: any) => (quillRefs.current[idx] = el)} 
                                             theme="snow"
@@ -4376,7 +4367,8 @@ export default function CoursePlayPage() {
                                             }}
                                             modules={getModules(idx)} 
                                             readOnly={isCurrentLessonDone || isTimeUp}
-                                            style={quillStyle} 
+                                            // Jangan gunakan style prop biasa, kita inject CSS global di bawah
+                                            className="min-h-[250px]"
                                             placeholder={isTimeUp ? "Waktu Habis!" : "Tulis jawaban Anda di sini (Bisa insert gambar)..."}
                                         />
                                     </div>
@@ -4400,7 +4392,6 @@ export default function CoursePlayPage() {
                     </div>
                 );
 
-            // [FIX] UPLOAD HANDLER DIPERBAIKI (SINKRON DENGAN UPLOAD TEST)
             case 'upload_doc':
                 return (
                     <div className="bg-white p-8 rounded-3xl border border-cyan-100 shadow-sm">
@@ -4537,6 +4528,19 @@ export default function CoursePlayPage() {
 
     return (
         <Protected roles={['STUDENT', 'FACILITATOR', 'SUPER_ADMIN']}>
+            {/* CSS Injection for Quill Height */}
+            <style jsx global>{`
+                .ql-editor {
+                    min-height: 400px !important;
+                    font-size: 16px;
+                }
+                .ql-container {
+                    font-family: inherit;
+                    border-bottom-left-radius: 0.5rem;
+                    border-bottom-right-radius: 0.5rem;
+                }
+            `}</style>
+
             <div className={`fixed left-0 right-0 bottom-0 z-[9999] bg-white flex flex-col font-sans transition-all duration-500 ease-in-out shadow-2xl ${isFullScreen ? 'top-0' : 'top-[80px]'}`}>
                 <header className="bg-[#B91C1C] text-white p-4 flex items-center justify-between shrink-0 shadow-md relative z-50">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 z-[60] flex justify-center"><button onClick={() => setIsFullScreen(!isFullScreen)} className="w-16 h-6 bg-white border-x border-b border-white/50 rounded-b-xl shadow-lg flex items-center justify-center text-[#B91C1C] hover:bg-gray-100 hover:h-7 transition-all group" title={isFullScreen ? "Tampilkan Menu Utama Web" : "Mode Layar Penuh"} aria-label={isFullScreen ? "Tampilkan Menu Utama Web" : "Mode Layar Penuh"}>{isFullScreen ? <ChevronDown size={20} className="group-hover:mt-1 transition-all font-bold"/> : <ChevronUp size={20} className="group-hover:-mt-1 transition-all font-bold"/>}</button></div>
